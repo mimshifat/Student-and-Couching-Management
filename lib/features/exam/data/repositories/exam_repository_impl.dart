@@ -19,6 +19,18 @@ class ExamRepositoryImpl implements ExamRepository {
   }
 
   @override
+  Future<int> updateExam(Exam exam) async {
+    final db = await _dbHelper.database;
+    final model = ExamModel.fromEntity(exam);
+    return await db.update(
+      _examTable, 
+      model.toMap(), 
+      where: 'id = ?', 
+      whereArgs: [model.id]
+    );
+  }
+
+  @override
   Future<int> deleteExam(int id) async {
     final db = await _dbHelper.database;
     return await db.delete(_examTable, where: 'id = ?', whereArgs: [id]);

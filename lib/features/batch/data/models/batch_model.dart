@@ -7,6 +7,8 @@ class BatchModel extends Batch {
     required super.name,
     super.description,
     super.monthlyFee = 0.0,
+    super.isActive = true,
+    super.studentCount = 0,
     required super.createdAt,
   });
 
@@ -16,6 +18,8 @@ class BatchModel extends Batch {
       name: entity.name,
       description: entity.description,
       monthlyFee: entity.monthlyFee,
+      isActive: entity.isActive,
+      studentCount: entity.studentCount,
       createdAt: entity.createdAt,
     );
   }
@@ -26,6 +30,8 @@ class BatchModel extends Batch {
       name: map['name'],
       description: map['description'],
       monthlyFee: (map['monthly_fee'] as num?)?.toDouble() ?? 0.0,
+      isActive: map['is_active'] == 1,
+      studentCount: map['student_count'] ?? 0,
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
     );
   }
@@ -36,6 +42,7 @@ class BatchModel extends Batch {
       'name': name,
       'description': description,
       'monthly_fee': monthlyFee,
+      'is_active': isActive ? 1 : 0,
       'created_at': DateUtilsHelper.formatForDb(createdAt),
     };
   }

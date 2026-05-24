@@ -54,7 +54,7 @@ class FeeRepositoryImpl implements FeeRepository {
   }
 
   @override
-  Future<void> generateFeeRecords(int studentId, DateTime admissionDate, double studentMonthlyFee) async {
+  Future<void> generateFeeRecords(int studentId, DateTime studentCreatedAt, double studentMonthlyFee) async {
     final db = await _dbHelper.database;
     final now = DateTime.now();
 
@@ -64,12 +64,14 @@ class FeeRepositoryImpl implements FeeRepository {
     
     // Create a lookup for batches
     Map<int, double> batchFees = {};
+    Map<int, bool> batchActive = {};
     for (var b in batchesMap) {
       batchFees[b['id'] as int] = (b['monthly_fee'] as num?)?.toDouble() ?? 0.0;
+      batchActive[b['id'] as int] = (b['is_active'] == null || b['is_active'] == 1);
     }
 
-    // Determine the start date (earliest of admission date or earliest join date)
-    DateTime startDate = admissionDate;
+    // Determine the start date (earliest of student creation date or earliest join date)
+    DateTime startDate = studentCreatedAt;
     for (var e in enrollmentsMap) {
       final joinDate = DateUtilsHelper.parseFromDb(e['join_date'] as String);
       if (joinDate.isBefore(startDate)) startDate = joinDate;
@@ -112,7 +114,7 @@ class FeeRepositoryImpl implements FeeRepository {
 
         if (activeEnrollments.isEmpty) {
           // Private Student logic (using student's base monthly fee)
-          DateTime effectiveStart = admissionDate.isAfter(firstDayOfMonth) ? admissionDate : firstDayOfMonth;
+          DateTime effectiveStart = studentCreatedAt.isAfter(firstDayOfMonth) ? studentCreatedAt : firstDayOfMonth;
           int activeDays = lastDayOfMonth.difference(effectiveStart).inDays + 1;
           if (activeDays > daysInMonth) activeDays = daysInMonth;
           if (activeDays > 0) {
@@ -122,6 +124,8 @@ class FeeRepositoryImpl implements FeeRepository {
           // Batch Student logic
           for (var e in activeEnrollments) {
             final batchId = e['batch_id'] as int;
+            if (batchActive[batchId] == false) continue; // Skip inactive batches
+
             final joinDate = DateUtilsHelper.parseFromDb(e['join_date'] as String);
             final leaveDateStr = e['leave_date'] as String?;
             final leaveDate = leaveDateStr != null ? DateUtilsHelper.parseFromDb(leaveDateStr) : null;

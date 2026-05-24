@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../domain/entities/student.dart';
 import '../providers/student_provider.dart';
+import '../../../batch/presentation/providers/batch_provider.dart';
+import '../../../enrollment/presentation/providers/enrollment_provider.dart';
+import '../../../enrollment/domain/entities/enrollment.dart';
 
 class StudentFormScreen extends StatefulWidget {
   final Student? student;
@@ -26,9 +29,14 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
   late TextEditingController _classCtrl;
   late TextEditingController _rollCtrl;
   late TextEditingController _feeCtrl;
+  late TextEditingController _gRelationCtrl;
 
-  DateTime _admissionDate = DateTime.now();
+  String _studentType = 'Normal';
   String _status = AppConstants.statusRunning;
+
+  int? _selectedBatchId;
+  DateTime _joinDate = DateTime.now();
+  late TextEditingController _discountCtrl;
 
   @override
   void initState() {
@@ -42,11 +50,17 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     _classCtrl = TextEditingController(text: s?.className ?? '');
     _rollCtrl = TextEditingController(text: s?.rollNumber?.toString() ?? '');
     _feeCtrl = TextEditingController(text: s?.monthlyFee.toString() ?? '');
+    _gRelationCtrl = TextEditingController(text: s?.guardianRelation ?? '');
+    _discountCtrl = TextEditingController(text: '0.0');
     
     if (s != null) {
-      _admissionDate = s.admissionDate;
+      _studentType = s.studentType;
       _status = s.status;
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BatchProvider>().loadBatches();
+    });
   }
 
   @override
@@ -59,21 +73,9 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     _classCtrl.dispose();
     _rollCtrl.dispose();
     _feeCtrl.dispose();
+    _gRelationCtrl.dispose();
+    _discountCtrl.dispose();
     super.dispose();
-  }
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _admissionDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        _admissionDate = picked;
-      });
-    }
   }
 
   void _save() async {
@@ -84,25 +86,39 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
         phone: _phoneCtrl.text.trim(),
         guardianName: _gNameCtrl.text.trim(),
         guardianPhone: _gPhoneCtrl.text.trim(),
+        guardianRelation: _gRelationCtrl.text.trim(),
         schoolCollege: _schoolCtrl.text.trim(),
         className: _classCtrl.text.trim(),
         rollNumber: int.tryParse(_rollCtrl.text.trim()),
-        admissionDate: _admissionDate,
-        monthlyFee: double.tryParse(_feeCtrl.text.trim()) ?? 0.0,
+        studentType: _studentType,
+        monthlyFee: _studentType == 'Private' ? (double.tryParse(_feeCtrl.text.trim()) ?? 0.0) : 0.0,
         status: _status,
         createdAt: widget.student?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
       final provider = context.read<StudentProvider>();
-      bool success;
+      int? newStudentId;
+      bool success = false;
       if (widget.student == null) {
-        success = await provider.addStudent(s);
+        newStudentId = await provider.addStudent(s);
+        success = newStudentId != null;
       } else {
         success = await provider.updateStudent(s);
+        newStudentId = s.id;
       }
 
       if (success && mounted) {
+        if (widget.student == null && _selectedBatchId != null && newStudentId != null) {
+          final enrollment = Enrollment(
+            studentId: newStudentId,
+            batchId: _selectedBatchId!,
+            joinDate: _joinDate,
+            discountAmount: double.tryParse(_discountCtrl.text.trim()) ?? 0.0,
+            createdAt: DateTime.now(),
+          );
+          await context.read<EnrollmentProvider>().enrollStudent(enrollment);
+        }
         Navigator.pop(context);
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -146,15 +162,14 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
-                      controller: _feeCtrl,
-                      decoration: const InputDecoration(labelText: 'Private/Fallback Monthly Fee *', prefixText: '৳ '),
-                      keyboardType: TextInputType.number,
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'Required';
-                        if (double.tryParse(val) == null) return 'Invalid number';
-                        return null;
-                      },
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _studentType,
+                      decoration: const InputDecoration(labelText: 'Student Type *'),
+                      items: const [
+                        DropdownMenuItem(value: 'Normal', child: Text('Normal (Batch)')),
+                        DropdownMenuItem(value: 'Private', child: Text('Private / Fallback')),
+                      ],
+                      onChanged: (val) => setState(() => _studentType = val!),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -170,14 +185,20 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   ),
                 ],
               ),
+              if (_studentType == 'Private') ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _feeCtrl,
+                  decoration: const InputDecoration(labelText: 'Private/Fallback Monthly Fee *', prefixText: '৳ '),
+                  keyboardType: TextInputType.number,
+                  validator: (val) {
+                    if (_studentType == 'Private' && (val == null || val.isEmpty)) return 'Required';
+                    if (_studentType == 'Private' && double.tryParse(val!) == null) return 'Invalid number';
+                    return null;
+                  },
+                ),
+              ],
               const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Admission Date *'),
-                subtitle: Text(DateFormat('dd MMM yyyy').format(_admissionDate)),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: _pickDate,
-              ),
               const Divider(),
               const Text('Academic Details', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
@@ -214,10 +235,43 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: _gRelationCtrl,
+                decoration: const InputDecoration(labelText: 'Relation with Guardian'),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
                 controller: _gPhoneCtrl,
                 decoration: const InputDecoration(labelText: 'Guardian Phone'),
                 keyboardType: TextInputType.phone,
               ),
+              const SizedBox(height: 16),
+              if (widget.student == null) ...[
+                const Divider(),
+                const Text('Quick Enrollment (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                Consumer<BatchProvider>(
+                  builder: (context, batchProvider, child) {
+                    if (batchProvider.isLoading) return const CircularProgressIndicator();
+                    if (batchProvider.batches.isEmpty) return const Text('No batches available.');
+                    return DropdownButtonFormField<int>(
+                      decoration: const InputDecoration(labelText: 'Select Batch'),
+                      initialValue: _selectedBatchId,
+                      items: [
+                        const DropdownMenuItem<int>(value: null, child: Text('None')),
+                        ...batchProvider.batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name))),
+                      ],
+                      onChanged: (val) => setState(() => _selectedBatchId = val),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                if (_selectedBatchId != null)
+                  TextFormField(
+                    controller: _discountCtrl,
+                    decoration: const InputDecoration(labelText: 'Discount Amount', prefixText: '৳ '),
+                    keyboardType: TextInputType.number,
+                  ),
+              ],
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,

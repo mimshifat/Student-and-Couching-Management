@@ -58,6 +58,18 @@ class RoutineProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> updateRoutine(Routine routine) async {
+    try {
+      await _repository.updateRoutine(routine);
+      await loadRoutinesByBatch(routine.batchId);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> deleteRoutine(int id, int batchId) async {
     try {
       await _repository.deleteRoutine(id);

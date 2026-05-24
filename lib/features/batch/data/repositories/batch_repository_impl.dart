@@ -55,10 +55,12 @@ class BatchRepositoryImpl implements BatchRepository {
   @override
   Future<List<Batch>> getAllBatches() async {
     final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      _tableName,
-      orderBy: 'name ASC',
-    );
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT b.*, 
+             (SELECT COUNT(*) FROM enrollments e WHERE e.batch_id = b.id AND e.leave_date IS NULL) as student_count
+      FROM $_tableName b
+      ORDER BY b.is_active DESC, b.name ASC
+    ''');
 
     return List.generate(maps.length, (i) {
       return BatchModel.fromMap(maps[i]);

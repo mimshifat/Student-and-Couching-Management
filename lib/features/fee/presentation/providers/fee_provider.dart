@@ -46,11 +46,11 @@ class FeeProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Fetch student to get admission date and monthly fee
+      // Fetch student to get created date and monthly fee
       final student = await _studentRepository.getStudentById(studentId);
       if (student != null) {
         // Auto-generate missing cycles up to today
-        await _feeRepository.generateFeeRecords(student.id!, student.admissionDate, student.monthlyFee);
+        await _feeRepository.generateFeeRecords(student.id!, student.createdAt, student.monthlyFee);
       }
 
       _studentFeeRecords = await _feeRepository.getFeeRecordsForStudent(studentId);

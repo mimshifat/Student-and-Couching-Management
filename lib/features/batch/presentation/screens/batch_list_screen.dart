@@ -27,6 +27,10 @@ class _BatchListScreenState extends State<BatchListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
         title: const Text('Batches'),
       ),
       body: Consumer<BatchProvider>(
@@ -51,51 +55,78 @@ class _BatchListScreenState extends State<BatchListScreen> {
             itemCount: provider.batches.length,
             itemBuilder: (context, index) {
               final batch = provider.batches[index];
-              return AppCard(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BatchDetailScreen(batch: batch),
-                    ),
-                  );
-                },
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
-                      foregroundColor: AppTheme.accentColor,
-                      child: const Icon(Icons.class_),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            batch.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+              return Opacity(
+                opacity: batch.isActive ? 1.0 : 0.6,
+                child: AppCard(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BatchDetailScreen(batch: batch),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: batch.isActive ? AppTheme.accentColor.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.2),
+                        foregroundColor: batch.isActive ? AppTheme.accentColor : Colors.grey,
+                        child: const Icon(Icons.class_),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    batch.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                if (!batch.isActive)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.shade100,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Text('Inactive', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
+                              ],
                             ),
-                          ),
-                          if (batch.description != null && batch.description!.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(
-                              batch.description!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              '${batch.studentCount} Student${batch.studentCount == 1 ? '' : 's'}',
                               style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 14,
+                                color: AppTheme.primaryColor.withValues(alpha: 0.8),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ]
-                        ],
+                            if (batch.description != null && batch.description!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                batch.description!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ]
+                          ],
+                        ),
                       ),
-                    ),
-                    const Icon(Icons.chevron_right, color: Colors.grey),
-                  ],
+                      const Icon(Icons.chevron_right, color: Colors.grey),
+                    ],
+                  ),
                 ),
               );
             },

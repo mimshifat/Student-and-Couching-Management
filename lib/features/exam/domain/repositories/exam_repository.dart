@@ -3,6 +3,7 @@ import '../entities/result.dart';
 
 abstract class ExamRepository {
   Future<int> insertExam(Exam exam);
+  Future<int> updateExam(Exam exam);
   Future<int> deleteExam(int id);
   Future<List<Exam>> getExamsByBatch(int batchId);
   Future<List<Exam>> getAllExams();

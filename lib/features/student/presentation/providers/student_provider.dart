@@ -53,15 +53,15 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> addStudent(Student student) async {
+  Future<int?> addStudent(Student student) async {
     try {
-      await _repository.insertStudent(student);
+      final id = await _repository.insertStudent(student);
       await loadStudents();
-      return true;
+      return id;
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
-      return false;
+      return null;
     }
   }
 

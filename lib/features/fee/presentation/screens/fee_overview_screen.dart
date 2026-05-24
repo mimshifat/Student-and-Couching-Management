@@ -113,6 +113,10 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
         title: const Text('Fee Tracking Overview'),
         actions: [
           IconButton(

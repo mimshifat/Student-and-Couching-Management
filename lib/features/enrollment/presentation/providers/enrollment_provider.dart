@@ -58,4 +58,8 @@ class EnrollmentProvider with ChangeNotifier {
       return false;
     }
   }
+
+  Future<List<Enrollment>> getStudentsByBatch(int batchId) async {
+    return await _repository.getStudentsByBatch(batchId);
+  }
 }

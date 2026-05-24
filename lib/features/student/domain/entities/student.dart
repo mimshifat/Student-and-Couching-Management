@@ -4,10 +4,11 @@ class Student {
   final String? phone;
   final String? guardianName;
   final String? guardianPhone;
+  final String? guardianRelation;
   final String? schoolCollege;
   final String? className;
   final int? rollNumber;
-  final DateTime admissionDate;
+  final String studentType; // 'Normal' or 'Private'
   final double monthlyFee;
   final String status; // 'Running' or 'Previous'
   final DateTime createdAt;
@@ -19,10 +20,11 @@ class Student {
     this.phone,
     this.guardianName,
     this.guardianPhone,
+    this.guardianRelation,
     this.schoolCollege,
     this.className,
     this.rollNumber,
-    required this.admissionDate,
+    required this.studentType,
     required this.monthlyFee,
     required this.status,
     required this.createdAt,
@@ -35,10 +37,11 @@ class Student {
     String? phone,
     String? guardianName,
     String? guardianPhone,
+    String? guardianRelation,
     String? schoolCollege,
     String? className,
     int? rollNumber,
-    DateTime? admissionDate,
+    String? studentType,
     double? monthlyFee,
     String? status,
     DateTime? createdAt,
@@ -50,10 +53,11 @@ class Student {
       phone: phone ?? this.phone,
       guardianName: guardianName ?? this.guardianName,
       guardianPhone: guardianPhone ?? this.guardianPhone,
+      guardianRelation: guardianRelation ?? this.guardianRelation,
       schoolCollege: schoolCollege ?? this.schoolCollege,
       className: className ?? this.className,
       rollNumber: rollNumber ?? this.rollNumber,
-      admissionDate: admissionDate ?? this.admissionDate,
+      studentType: studentType ?? this.studentType,
       monthlyFee: monthlyFee ?? this.monthlyFee,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,

@@ -6,6 +6,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../providers/student_provider.dart';
+import '../../../fee/presentation/providers/fee_provider.dart';
 import 'student_form_screen.dart';
 import 'student_detail_screen.dart';
 
@@ -25,6 +26,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<StudentProvider>().loadStudents();
+      context.read<FeeProvider>().loadPendingFeeRecords();
     });
   }
 
@@ -97,6 +99,10 @@ class _StudentListScreenState extends State<StudentListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
         title: const Text('Students'),
         actions: [
           Consumer<StudentProvider>(
@@ -193,6 +199,34 @@ class _StudentListScreenState extends State<StudentListScreen> {
                                       decoration: student.phone != null ? TextDecoration.underline : TextDecoration.none,
                                     ),
                                   ),
+                                ),
+                                Consumer<FeeProvider>(
+                                  builder: (context, feeProvider, _) {
+                                    final dues = feeProvider.pendingFeeRecords
+                                        .where((r) => r.studentId == student.id)
+                                        .fold(0.0, (sum, r) => sum + r.dueAmount);
+                                    if (dues > 0) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 4.0),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.errorColor.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            'Dues: ৳${dues.toStringAsFixed(0)}',
+                                            style: const TextStyle(
+                                              color: AppTheme.errorColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
                                 ),
                               ],
                             ),

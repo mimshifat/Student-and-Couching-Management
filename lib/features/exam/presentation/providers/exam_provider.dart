@@ -51,6 +51,18 @@ class ExamProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> updateExam(Exam exam) async {
+    try {
+      await _repository.updateExam(exam);
+      await loadAllExams();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> deleteExam(int id) async {
     try {
       await _repository.deleteExam(id);

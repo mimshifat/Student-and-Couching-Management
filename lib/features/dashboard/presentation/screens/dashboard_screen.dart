@@ -100,46 +100,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
         title: const Text('Dashboard'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list_rounded),
             onPressed: _showFilterSheet,
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Overview', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('Overview', style: Theme.of(context).textTheme.headlineMedium),
             if (_filterMonth != null || _filterYear != null)
               Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text('Filtered by: ${_filterMonth ?? 'All'} / ${_filterYear ?? 'All'}', style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Filtered by: ${_filterMonth ?? 'All'} / ${_filterYear ?? 'All'}',
+                    style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
+                  ),
+                ),
               ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
                   child: Consumer<StudentProvider>(
-                    builder: (context, provider, _) => StatTile(
+                    builder: (context, provider, _) => _buildGradientCard(
                       title: 'Active Students',
                       value: '${provider.students.where((s) => s.status == 'Running').length}',
-                      icon: Icons.people,
-                      color: AppTheme.primaryColor,
+                      icon: Icons.people_alt_rounded,
+                      gradient: AppTheme.primaryGradient,
                     ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Consumer<BatchProvider>(
-                    builder: (context, provider, _) => StatTile(
+                    builder: (context, provider, _) => _buildGradientCard(
                       title: 'Total Batches',
                       value: '${provider.batches.length}',
-                      icon: Icons.class_,
-                      color: AppTheme.accentColor,
+                      icon: Icons.class_rounded,
+                      gradient: AppTheme.accentGradient,
                     ),
                   ),
                 ),
@@ -154,42 +168,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   if (_filterYear != null && r.year != _filterYear) continue;
                   totalPending += r.dueAmount;
                 }
-                return StatTile(
+                return _buildGradientCard(
                   title: 'Uncollected Fees',
                   value: '৳${totalPending.toStringAsFixed(2)}',
-                  icon: Icons.monetization_on,
-                  color: AppTheme.errorColor,
+                  icon: Icons.account_balance_wallet_rounded,
+                  gradient: AppTheme.errorGradient,
+                  fullWidth: true,
                 );
               },
             ),
-            const SizedBox(height: 32),
-            const Text('Quick Links', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            AppCard(
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.notes, color: AppTheme.accentColor),
-                    title: const Text('My Notes'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.pushNamed(context, '/notes');
-                    },
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.backup, color: AppTheme.primaryColor),
-                    title: const Text('Backup Settings'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.pushNamed(context, '/backup');
-                    },
-                  ),
-                ],
-              ),
-            )
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildGradientCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Gradient gradient,
+    bool fullWidth = false,
+  }) {
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: gradient.colors.first.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: Colors.white, size: 28),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withValues(alpha: 0.9),
+            ),
+          ),
+        ],
       ),
     );
   }

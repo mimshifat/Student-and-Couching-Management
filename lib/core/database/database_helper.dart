@@ -18,8 +18,9 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'coaching_app.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
     );
   }
@@ -27,6 +28,16 @@ class DatabaseHelper {
   Future<void> _onConfigure(Database db) async {
     // Enable foreign keys
     await db.execute('PRAGMA foreign_keys = ON');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE batches ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1');
+    }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE students ADD COLUMN student_type TEXT NOT NULL DEFAULT \'Normal\'');
+      await db.execute('ALTER TABLE students ADD COLUMN guardian_relation TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -37,10 +48,11 @@ class DatabaseHelper {
         phone TEXT,
         guardian_name TEXT,
         guardian_phone TEXT,
+        guardian_relation TEXT,
         school_college TEXT,
         class_name TEXT,
         roll_number INTEGER,
-        admission_date TEXT NOT NULL,
+        student_type TEXT NOT NULL,
         monthly_fee REAL NOT NULL,
         status TEXT NOT NULL,
         created_at TEXT NOT NULL,
@@ -54,6 +66,7 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         description TEXT,
         monthly_fee REAL NOT NULL DEFAULT 0.0,
+        is_active INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL
       )
     ''');

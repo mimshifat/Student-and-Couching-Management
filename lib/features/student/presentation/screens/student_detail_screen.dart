@@ -33,24 +33,6 @@ class StudentDetailScreen extends StatelessWidget {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (_) => const ConfirmDialog(
-                  title: 'Delete Student',
-                  content: 'Are you sure you want to delete this student? All related data will be lost.',
-                ),
-              );
-              if (confirm == true) {
-                if (context.mounted) {
-                  await context.read<StudentProvider>().deleteStudent(student.id!);
-                  if (context.mounted) Navigator.pop(context);
-                }
-              }
-            },
-          )
         ],
       ),
       body: SingleChildScrollView(
@@ -86,6 +68,7 @@ class StudentDetailScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildInfoRow('Phone', student.phone),
                   _buildInfoRow('Guardian Name', student.guardianName),
+                  _buildInfoRow('Relation with Guardian', student.guardianRelation),
                   _buildInfoRow('Guardian Phone', student.guardianPhone),
                 ],
               ),
@@ -99,8 +82,9 @@ class StudentDetailScreen extends StatelessWidget {
                   _buildInfoRow('School/College', student.schoolCollege),
                   _buildInfoRow('Class', student.className),
                   _buildInfoRow('Roll Number', student.rollNumber?.toString()),
-                  _buildInfoRow('Admission Date', DateFormat('dd MMM yyyy').format(student.admissionDate)),
-                  _buildInfoRow('Monthly Fee', '৳${student.monthlyFee.toStringAsFixed(2)}'),
+                  _buildInfoRow('Student Type', student.studentType),
+                  if (student.studentType == 'Private')
+                    _buildInfoRow('Monthly Fee', '৳${student.monthlyFee.toStringAsFixed(2)}'),
                 ],
               ),
             ),

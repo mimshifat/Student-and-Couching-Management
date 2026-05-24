@@ -28,6 +28,10 @@ class _ExamListScreenState extends State<ExamListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
         title: const Text('Exams'),
       ),
       body: Consumer<ExamProvider>(
@@ -96,7 +100,32 @@ class _ExamListScreenState extends State<ExamListScreen> {
                         const Text('Total', style: TextStyle(color: Colors.grey, fontSize: 12)),
                         Text('${exam.totalMarks}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       ],
-                    )
+                    const SizedBox(width: 8),
+                    PopupMenuButton<String>(
+                      onSelected: (val) async {
+                        if (val == 'edit') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => ExamFormScreen(exam: exam)),
+                          );
+                        } else if (val == 'delete') {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (_) => const ConfirmDialog(
+                              title: 'Delete Exam',
+                              content: 'Are you sure you want to delete this exam?',
+                            ),
+                          );
+                          if (confirm == true && context.mounted) {
+                            provider.deleteExam(exam.id!);
+                          }
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                        const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppTheme.errorColor))),
+                      ],
+                    ),
                   ],
                 ),
               );

@@ -7,5 +7,5 @@ abstract class FeeRepository {
   Future<List<Payment>> getPaymentsForStudent(int studentId);
   
   Future<int> makePayment(Payment payment);
-  Future<void> generateFeeRecords(int studentId, DateTime admissionDate, double monthlyFee);
+  Future<void> generateFeeRecords(int studentId, DateTime studentCreatedAt, double monthlyFee);
 }

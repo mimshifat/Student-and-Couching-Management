@@ -7,7 +7,9 @@ import '../providers/exam_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 
 class ExamFormScreen extends StatefulWidget {
-  const ExamFormScreen({super.key});
+  final Exam? exam;
+
+  const ExamFormScreen({super.key, this.exam});
 
   @override
   State<ExamFormScreen> createState() => _ExamFormScreenState();
@@ -23,8 +25,13 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
   @override
   void initState() {
     super.initState();
-    _titleCtrl = TextEditingController();
-    _marksCtrl = TextEditingController(text: '100');
+    final e = widget.exam;
+    _selectedBatchId = e?.batchId;
+    _titleCtrl = TextEditingController(text: e?.title ?? '');
+    _marksCtrl = TextEditingController(text: e?.totalMarks.toString() ?? '100');
+    if (e != null) {
+      _examDate = e.examDate;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BatchProvider>().loadBatches();
     });
@@ -61,15 +68,21 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
 
     if (_formKey.currentState!.validate()) {
       final e = Exam(
+        id: widget.exam?.id,
         batchId: _selectedBatchId!,
         title: _titleCtrl.text.trim(),
         examDate: _examDate,
         totalMarks: double.tryParse(_marksCtrl.text.trim()) ?? 100.0,
-        createdAt: DateTime.now(),
+        createdAt: widget.exam?.createdAt ?? DateTime.now(),
       );
 
       final provider = context.read<ExamProvider>();
-      final success = await provider.addExam(e);
+      bool success;
+      if (widget.exam == null) {
+        success = await provider.addExam(e);
+      } else {
+        success = await provider.updateExam(e);
+      }
 
       if (success && mounted) {
         Navigator.pop(context);
@@ -85,7 +98,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Exam'),
+        title: Text(widget.exam == null ? 'Create Exam' : 'Edit Exam'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -144,7 +157,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _save,
-                  child: const Text('Create Exam'),
+                  child: Text(widget.exam == null ? 'Create Exam' : 'Save Exam'),
                 ),
               )
             ],

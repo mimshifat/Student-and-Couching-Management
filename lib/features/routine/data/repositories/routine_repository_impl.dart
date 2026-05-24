@@ -68,6 +68,18 @@ class RoutineRepositoryImpl implements RoutineRepository {
   }
 
   @override
+  Future<int> updateRoutine(Routine routine) async {
+    final db = await _dbHelper.database;
+    final model = RoutineModel.fromEntity(routine);
+    return await db.update(
+      _table, 
+      model.toMap(), 
+      where: 'id = ?', 
+      whereArgs: [model.id]
+    );
+  }
+
+  @override
   Future<int> deleteRoutine(int id) async {
     final db = await _dbHelper.database;
     return await db.delete(_table, where: 'id = ?', whereArgs: [id]);

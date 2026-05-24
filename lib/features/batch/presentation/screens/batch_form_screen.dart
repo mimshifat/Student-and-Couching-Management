@@ -18,6 +18,7 @@ class _BatchFormScreenState extends State<BatchFormScreen> {
   late TextEditingController _nameCtrl;
   late TextEditingController _descCtrl;
   late TextEditingController _feeCtrl;
+  bool _isActive = true;
 
   @override
   void initState() {
@@ -25,6 +26,7 @@ class _BatchFormScreenState extends State<BatchFormScreen> {
     _nameCtrl = TextEditingController(text: widget.batch?.name ?? '');
     _descCtrl = TextEditingController(text: widget.batch?.description ?? '');
     _feeCtrl = TextEditingController(text: widget.batch?.monthlyFee.toString() ?? '0.0');
+    _isActive = widget.batch?.isActive ?? true;
   }
 
   @override
@@ -42,6 +44,7 @@ class _BatchFormScreenState extends State<BatchFormScreen> {
         name: _nameCtrl.text.trim(),
         description: _descCtrl.text.trim(),
         monthlyFee: double.tryParse(_feeCtrl.text.trim()) ?? 0.0,
+        isActive: _isActive,
         createdAt: widget.batch?.createdAt ?? DateTime.now(),
       );
 
@@ -95,6 +98,15 @@ class _BatchFormScreenState extends State<BatchFormScreen> {
                   if (val == null || val.isEmpty) return 'Required';
                   if (double.tryParse(val) == null) return 'Invalid number';
                   return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Batch is Active'),
+                subtitle: const Text('Inactive batches are skipped during fee generation.'),
+                value: _isActive,
+                onChanged: (val) {
+                  setState(() => _isActive = val);
                 },
               ),
               const SizedBox(height: 32),
