@@ -53,7 +53,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Day of Week'),
-                    value: day,
+                    initialValue: day,
                     items: days.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
                     onChanged: (val) => setSheetState(() => day = val!),
                   ),

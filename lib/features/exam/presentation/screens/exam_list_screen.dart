@@ -100,6 +100,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                         const Text('Total', style: TextStyle(color: Colors.grey, fontSize: 12)),
                         Text('${exam.totalMarks}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       ],
+                    ),
                     const SizedBox(width: 8),
                     PopupMenuButton<String>(
                       onSelected: (val) async {

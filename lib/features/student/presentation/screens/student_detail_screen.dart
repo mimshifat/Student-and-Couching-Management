@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/entities/student.dart';
-import '../providers/student_provider.dart';
 import 'student_form_screen.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../enrollment/presentation/widgets/enrollment_history_widget.dart';

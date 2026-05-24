@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../domain/entities/batch.dart';
-import '../providers/batch_provider.dart';
 import 'batch_form_screen.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../routine/presentation/screens/routine_screen.dart';

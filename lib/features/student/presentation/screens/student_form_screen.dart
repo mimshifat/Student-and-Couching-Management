@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../domain/entities/student.dart';
@@ -35,7 +34,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
   String _status = AppConstants.statusRunning;
 
   int? _selectedBatchId;
-  DateTime _joinDate = DateTime.now();
+  final DateTime _joinDate = DateTime.now();
   late TextEditingController _discountCtrl;
 
   @override
@@ -118,6 +117,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
             createdAt: DateTime.now(),
           );
           await context.read<EnrollmentProvider>().enrollStudent(enrollment);
+          if (!mounted) return;
         }
         Navigator.pop(context);
       } else if (mounted) {
