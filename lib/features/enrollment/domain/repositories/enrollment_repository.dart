@@ -5,6 +5,7 @@ abstract class EnrollmentRepository {
   Future<int> deactivateEnrollment(int id, DateTime leaveDate);
   Future<List<Enrollment>> getActiveEnrollments(int studentId);
   Future<List<Enrollment>> getEnrollmentHistory(int studentId);
+  Future<List<Enrollment>> getAllEnrollments();
   Future<List<Enrollment>> getStudentsByBatch(int batchId);
   Future<bool> isStudentActive(int studentId);
 }

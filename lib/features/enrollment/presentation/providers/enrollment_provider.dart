@@ -11,6 +11,9 @@ class EnrollmentProvider with ChangeNotifier {
   List<Enrollment> _historyEnrollments = [];
   List<Enrollment> get historyEnrollments => _historyEnrollments;
 
+  List<Enrollment> _enrollments = [];
+  List<Enrollment> get enrollments => _enrollments;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -18,6 +21,19 @@ class EnrollmentProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   EnrollmentProvider(this._repository);
+
+  Future<void> loadEnrollments() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _enrollments = await _repository.getAllEnrollments();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> loadStudentEnrollments(int studentId) async {
     _isLoading = true;

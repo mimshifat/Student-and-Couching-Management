@@ -5,7 +5,6 @@ class FeeRecord {
   final int year;
   final double totalAmount;
   final double paidAmount;
-  final double dueAmount;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -19,7 +18,6 @@ class FeeRecord {
     required this.year,
     required this.totalAmount,
     this.paidAmount = 0.0,
-    required this.dueAmount,
     required this.createdAt,
     required this.updatedAt,
     this.studentName,
@@ -32,7 +30,6 @@ class FeeRecord {
     int? year,
     double? totalAmount,
     double? paidAmount,
-    double? dueAmount,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? studentName,
@@ -44,7 +41,6 @@ class FeeRecord {
       year: year ?? this.year,
       totalAmount: totalAmount ?? this.totalAmount,
       paidAmount: paidAmount ?? this.paidAmount,
-      dueAmount: dueAmount ?? this.dueAmount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       studentName: studentName ?? this.studentName,

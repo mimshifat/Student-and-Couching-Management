@@ -4,7 +4,6 @@ class Enrollment {
   final int batchId;
   final DateTime joinDate;
   final DateTime? leaveDate;
-  final double discountAmount;
   final DateTime createdAt;
 
   // Transient fields for display
@@ -17,7 +16,6 @@ class Enrollment {
     required this.batchId,
     required this.joinDate,
     this.leaveDate,
-    this.discountAmount = 0.0,
     required this.createdAt,
     this.batchName,
     this.studentName,

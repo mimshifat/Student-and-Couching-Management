@@ -1,16 +1,13 @@
 import 'package:sqflite/sqflite.dart' as sqflite;
 import '../../domain/entities/fee_record.dart';
-import '../../domain/entities/payment.dart';
 import '../../domain/repositories/fee_repository.dart';
 import '../models/fee_record_model.dart';
-import '../models/payment_model.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/utils/date_utils.dart';
 
 class FeeRepositoryImpl implements FeeRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   static const String _feeTable = 'fee_records';
-  static const String _paymentTable = 'payments';
 
   @override
   Future<List<FeeRecord>> getFeeRecordsForStudent(int studentId) async {
@@ -41,20 +38,7 @@ class FeeRepositoryImpl implements FeeRepository {
   }
 
   @override
-  Future<List<Payment>> getPaymentsForStudent(int studentId) async {
-    final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      _paymentTable,
-      where: 'student_id = ?',
-      whereArgs: [studentId],
-      orderBy: 'payment_date DESC',
-    );
-
-    return List.generate(maps.length, (i) => PaymentModel.fromMap(maps[i]));
-  }
-
-  @override
-  Future<void> generateFeeRecords(int studentId, DateTime studentCreatedAt, double studentMonthlyFee) async {
+  Future<void> generateFeeRecords(int studentId, DateTime studentCreatedAt) async {
     final db = await _dbHelper.database;
     final now = DateTime.now();
 
@@ -112,15 +96,7 @@ class FeeRepositoryImpl implements FeeRepository {
           }
         }
 
-        if (activeEnrollments.isEmpty) {
-          // Private Student logic (using student's base monthly fee)
-          DateTime effectiveStart = studentCreatedAt.isAfter(firstDayOfMonth) ? studentCreatedAt : firstDayOfMonth;
-          int activeDays = lastDayOfMonth.difference(effectiveStart).inDays + 1;
-          if (activeDays > daysInMonth) activeDays = daysInMonth;
-          if (activeDays > 0) {
-             totalMonthlyFee = (studentMonthlyFee / daysInMonth) * activeDays;
-          }
-        } else {
+        if (activeEnrollments.isNotEmpty) {
           // Batch Student logic
           for (var e in activeEnrollments) {
             final batchId = e['batch_id'] as int;
@@ -129,10 +105,9 @@ class FeeRepositoryImpl implements FeeRepository {
             final joinDate = DateUtilsHelper.parseFromDb(e['join_date'] as String);
             final leaveDateStr = e['leave_date'] as String?;
             final leaveDate = leaveDateStr != null ? DateUtilsHelper.parseFromDb(leaveDateStr) : null;
-            final discount = (e['discount_amount'] as num?)?.toDouble() ?? 0.0;
             
             double batchFee = batchFees[batchId] ?? 0.0;
-            double finalBatchFee = batchFee - discount;
+            double finalBatchFee = batchFee;
             if (finalBatchFee < 0) finalBatchFee = 0;
 
             DateTime effectiveStart = joinDate.isAfter(firstDayOfMonth) ? joinDate : firstDayOfMonth;
@@ -154,7 +129,6 @@ class FeeRepositoryImpl implements FeeRepository {
             year: year,
             totalAmount: totalMonthlyFee,
             paidAmount: 0.0,
-            dueAmount: totalMonthlyFee,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
@@ -168,56 +142,18 @@ class FeeRepositoryImpl implements FeeRepository {
   }
 
   @override
-  Future<int> makePayment(Payment payment) async {
+  Future<void> updatePaidAmount(int feeRecordId, double paidAmount) async {
     final db = await _dbHelper.database;
-    
-    int lastPaymentId = 0;
+    final nowStr = DateUtilsHelper.formatForDb(DateTime.now());
 
-    await db.transaction((txn) async {
-      // Fetch the specific fee record
-      final List<Map<String, dynamic>> recordsMap = await txn.query(
-        _feeTable,
-        where: 'id = ?',
-        whereArgs: [payment.feeRecordId],
-      );
-
-      if (recordsMap.isNotEmpty) {
-        final recordId = recordsMap.first['id'] as int;
-        final totalAmount = (recordsMap.first['total_amount'] as num).toDouble();
-        final currentPaidAmount = (recordsMap.first['paid_amount'] as num).toDouble();
-        
-        final newPaidAmount = currentPaidAmount + payment.amount;
-        double newDueAmount = totalAmount - newPaidAmount;
-        if (newDueAmount < 0) newDueAmount = 0; // Prevent negative due visually
-
-        final nowStr = DateUtilsHelper.formatForDb(DateTime.now());
-
-        // Update fee record
-        await txn.update(
-          _feeTable,
-          {
-            'paid_amount': newPaidAmount,
-            'due_amount': newDueAmount,
-            'updated_at': nowStr,
-          },
-          where: 'id = ?',
-          whereArgs: [recordId],
-        );
-
-        // Insert payment row
-        final pModel = PaymentModel(
-          feeRecordId: recordId,
-          studentId: payment.studentId,
-          amount: payment.amount,
-          paymentDate: payment.paymentDate,
-          note: payment.note,
-          createdAt: DateTime.now(),
-        );
-
-        lastPaymentId = await txn.insert(_paymentTable, pModel.toMap());
-      }
-    });
-
-    return lastPaymentId;
+    await db.update(
+      _feeTable,
+      {
+        'paid_amount': paidAmount,
+        'updated_at': nowStr,
+      },
+      where: 'id = ?',
+      whereArgs: [feeRecordId],
+    );
   }
 }

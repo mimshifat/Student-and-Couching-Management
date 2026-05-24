@@ -33,6 +33,9 @@ class PerformanceChart extends StatelessWidget {
         if (results[i].obtainedMarks! > maxMark) {
           maxMark = results[i].obtainedMarks!;
         }
+      } else if (results[i].isAbsent) {
+        // Plot absent as 0 so it's visible on the chart timeline explicitly
+        spots.add(FlSpot(i.toDouble(), 0));
       }
     }
 
@@ -94,6 +97,13 @@ class PerformanceChart extends StatelessWidget {
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
+                        final index = spot.x.toInt();
+                        if (index >= 0 && index < results.length && results[index].isAbsent) {
+                          return LineTooltipItem(
+                            'Absent',
+                            const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                          );
+                        }
                         return LineTooltipItem(
                           '${spot.y}',
                           const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../core/constants/app_constants.dart';
+
 import '../../domain/entities/student.dart';
 import '../providers/student_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
@@ -27,15 +27,9 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
   late TextEditingController _schoolCtrl;
   late TextEditingController _classCtrl;
   late TextEditingController _rollCtrl;
-  late TextEditingController _feeCtrl;
-  late TextEditingController _gRelationCtrl;
-
-  String _studentType = 'Normal';
-  String _status = AppConstants.statusRunning;
-
   int? _selectedBatchId;
   final DateTime _joinDate = DateTime.now();
-  late TextEditingController _discountCtrl;
+  late DateTime _createdAt;
 
   @override
   void initState() {
@@ -48,15 +42,8 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     _schoolCtrl = TextEditingController(text: s?.schoolCollege ?? '');
     _classCtrl = TextEditingController(text: s?.className ?? '');
     _rollCtrl = TextEditingController(text: s?.rollNumber?.toString() ?? '');
-    _feeCtrl = TextEditingController(text: s?.monthlyFee.toString() ?? '');
-    _gRelationCtrl = TextEditingController(text: s?.guardianRelation ?? '');
-    _discountCtrl = TextEditingController(text: '0.0');
+    _createdAt = s?.createdAt ?? DateTime.now();
     
-    if (s != null) {
-      _studentType = s.studentType;
-      _status = s.status;
-    }
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BatchProvider>().loadBatches();
     });
@@ -71,9 +58,6 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     _schoolCtrl.dispose();
     _classCtrl.dispose();
     _rollCtrl.dispose();
-    _feeCtrl.dispose();
-    _gRelationCtrl.dispose();
-    _discountCtrl.dispose();
     super.dispose();
   }
 
@@ -85,14 +69,10 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
         phone: _phoneCtrl.text.trim(),
         guardianName: _gNameCtrl.text.trim(),
         guardianPhone: _gPhoneCtrl.text.trim(),
-        guardianRelation: _gRelationCtrl.text.trim(),
         schoolCollege: _schoolCtrl.text.trim(),
         className: _classCtrl.text.trim(),
         rollNumber: int.tryParse(_rollCtrl.text.trim()),
-        studentType: _studentType,
-        monthlyFee: _studentType == 'Private' ? (double.tryParse(_feeCtrl.text.trim()) ?? 0.0) : 0.0,
-        status: _status,
-        createdAt: widget.student?.createdAt ?? DateTime.now(),
+        createdAt: _createdAt,
         updatedAt: DateTime.now(),
       );
 
@@ -113,7 +93,6 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
             studentId: newStudentId,
             batchId: _selectedBatchId!,
             joinDate: _joinDate,
-            discountAmount: double.tryParse(_discountCtrl.text.trim()) ?? 0.0,
             createdAt: DateTime.now(),
           );
           await context.read<EnrollmentProvider>().enrollStudent(enrollment);
@@ -155,56 +134,44 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _phoneCtrl,
-                decoration: const InputDecoration(labelText: 'Phone Number'),
+                decoration: const InputDecoration(labelText: 'Phone Number *'),
                 keyboardType: TextInputType.phone,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return 'Required';
+                  if (!RegExp(r'^01\d{9}$').hasMatch(val.trim())) {
+                    return 'Enter a valid 11-digit BD phone number';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _studentType,
-                      decoration: const InputDecoration(labelText: 'Student Type *'),
-                      items: const [
-                        DropdownMenuItem(value: 'Normal', child: Text('Normal (Batch)')),
-                        DropdownMenuItem(value: 'Private', child: Text('Private / Fallback')),
-                      ],
-                      onChanged: (val) => setState(() => _studentType = val!),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _status,
-                      decoration: const InputDecoration(labelText: 'Status *'),
-                      items: AppConstants.studentStatuses
-                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                          .toList(),
-                      onChanged: (val) => setState(() => _status = val!),
-                    ),
-                  ),
-                ],
-              ),
-              if (_studentType == 'Private') ...[
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _feeCtrl,
-                  decoration: const InputDecoration(labelText: 'Private/Fallback Monthly Fee *', prefixText: '৳ '),
-                  keyboardType: TextInputType.number,
-                  validator: (val) {
-                    if (_studentType == 'Private' && (val == null || val.isEmpty)) return 'Required';
-                    if (_studentType == 'Private' && double.tryParse(val!) == null) return 'Invalid number';
-                    return null;
-                  },
-                ),
-              ],
               const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Created At'),
+                subtitle: Text(_createdAt.toLocal().toString().split(' ')[0]),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _createdAt,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (d != null && mounted) {
+                    setState(() {
+                      _createdAt = DateTime(d.year, d.month, d.day);
+                    });
+                  }
+                },
+              ),
               const Divider(),
               const Text('Academic Details', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _schoolCtrl,
-                decoration: const InputDecoration(labelText: 'School/College'),
+                decoration: const InputDecoration(labelText: 'School/College *'),
+                validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               Row(
@@ -212,15 +179,21 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _classCtrl,
-                      decoration: const InputDecoration(labelText: 'Class'),
+                      decoration: const InputDecoration(labelText: 'Class *'),
+                      validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: TextFormField(
                       controller: _rollCtrl,
-                      decoration: const InputDecoration(labelText: 'Roll Number'),
+                      decoration: const InputDecoration(labelText: 'Roll Number *'),
                       keyboardType: TextInputType.number,
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) return 'Required';
+                        if (int.tryParse(val.trim()) == null) return 'Must be a valid number';
+                        return null;
+                      },
                     ),
                   ),
                 ],
@@ -231,18 +204,22 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _gNameCtrl,
-                decoration: const InputDecoration(labelText: 'Guardian Name'),
+                decoration: const InputDecoration(labelText: 'Guardian Name *'),
+                validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _gRelationCtrl,
-                decoration: const InputDecoration(labelText: 'Relation with Guardian'),
-              ),
-              const SizedBox(height: 16),
+
               TextFormField(
                 controller: _gPhoneCtrl,
-                decoration: const InputDecoration(labelText: 'Guardian Phone'),
+                decoration: const InputDecoration(labelText: 'Guardian Phone *'),
                 keyboardType: TextInputType.phone,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return 'Required';
+                  if (!RegExp(r'^01\d{9}$').hasMatch(val.trim())) {
+                    return 'Enter a valid 11-digit BD phone number';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               if (widget.student == null) ...[
@@ -264,13 +241,6 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 16),
-                if (_selectedBatchId != null)
-                  TextFormField(
-                    controller: _discountCtrl,
-                    decoration: const InputDecoration(labelText: 'Discount Amount', prefixText: '৳ '),
-                    keyboardType: TextInputType.number,
-                  ),
               ],
               const SizedBox(height: 32),
               SizedBox(

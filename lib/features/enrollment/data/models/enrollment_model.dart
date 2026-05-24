@@ -8,7 +8,6 @@ class EnrollmentModel extends Enrollment {
     required super.batchId,
     required super.joinDate,
     super.leaveDate,
-    super.discountAmount = 0.0,
     required super.createdAt,
     super.batchName,
     super.studentName,
@@ -21,7 +20,6 @@ class EnrollmentModel extends Enrollment {
       batchId: entity.batchId,
       joinDate: entity.joinDate,
       leaveDate: entity.leaveDate,
-      discountAmount: entity.discountAmount,
       createdAt: entity.createdAt,
       batchName: entity.batchName,
       studentName: entity.studentName,
@@ -35,7 +33,6 @@ class EnrollmentModel extends Enrollment {
       batchId: map['batch_id'],
       joinDate: DateUtilsHelper.parseFromDb(map['join_date']),
       leaveDate: map['leave_date'] != null ? DateUtilsHelper.parseFromDb(map['leave_date']) : null,
-      discountAmount: (map['discount_amount'] as num?)?.toDouble() ?? 0.0,
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
       batchName: map['batch_name'], // joined field
       studentName: map['student_name'], // joined field
@@ -49,7 +46,6 @@ class EnrollmentModel extends Enrollment {
       'batch_id': batchId,
       'join_date': DateUtilsHelper.formatForDb(joinDate),
       'leave_date': leaveDate != null ? DateUtilsHelper.formatForDb(leaveDate!) : null,
-      'discount_amount': discountAmount,
       'created_at': DateUtilsHelper.formatForDb(createdAt),
     };
   }

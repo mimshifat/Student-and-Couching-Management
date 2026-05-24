@@ -5,6 +5,7 @@ import 'features/batch/presentation/screens/batch_list_screen.dart';
 import 'features/exam/presentation/screens/exam_list_screen.dart';
 import 'features/fee/presentation/screens/fee_overview_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'features/home/presentation/screens/home_screen.dart';
 import 'features/notes/presentation/screens/note_list_screen.dart';
 
 import 'features/backup/presentation/screens/backup_settings_screen.dart';
@@ -16,13 +17,14 @@ class CoachingApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Coaching Management',
+      title: 'Student & Coaching Management',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
       routes: {
         '/notes': (context) => const NoteListScreen(),
         '/backup': (context) => const BackupSettingsScreen(),
+        '/batches': (context) => const BatchListScreen(),
       },
     );
   }
@@ -40,11 +42,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
+    const HomeScreen(),
     const DashboardScreen(),
     const StudentListScreen(),
     const FeeOverviewScreen(),
     const ExamListScreen(),
-    const BatchListScreen(),
   ];
 
   @override
@@ -65,11 +67,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   const Icon(Icons.school, size: 48, color: Colors.white),
                   const SizedBox(height: 16),
                   Text(
-                    'Coaching Management',
+                    'Student & Coaching Management',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
                   ),
                 ],
               ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.class_),
+              title: const Text('Batches'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/batches');
+              },
             ),
             ListTile(
               leading: const Icon(Icons.notes),
@@ -94,12 +104,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Dashboard'),
           BottomNavigationBarItem(icon: Icon(Icons.people_alt_rounded), label: 'Students'),
           BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: 'Fees'),
           BottomNavigationBarItem(icon: Icon(Icons.assignment_rounded), label: 'Exams'),
-          BottomNavigationBarItem(icon: Icon(Icons.class_rounded), label: 'Batches'),
         ],
       ),
     );

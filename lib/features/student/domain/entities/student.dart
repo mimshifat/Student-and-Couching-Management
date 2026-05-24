@@ -8,9 +8,6 @@ class Student {
   final String? schoolCollege;
   final String? className;
   final int? rollNumber;
-  final String studentType; // 'Normal' or 'Private'
-  final double monthlyFee;
-  final String status; // 'Running' or 'Previous'
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -24,9 +21,6 @@ class Student {
     this.schoolCollege,
     this.className,
     this.rollNumber,
-    required this.studentType,
-    required this.monthlyFee,
-    required this.status,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -41,9 +35,6 @@ class Student {
     String? schoolCollege,
     String? className,
     int? rollNumber,
-    String? studentType,
-    double? monthlyFee,
-    String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -57,9 +48,6 @@ class Student {
       schoolCollege: schoolCollege ?? this.schoolCollege,
       className: className ?? this.className,
       rollNumber: rollNumber ?? this.rollNumber,
-      studentType: studentType ?? this.studentType,
-      monthlyFee: monthlyFee ?? this.monthlyFee,
-      status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

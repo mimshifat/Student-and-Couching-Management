@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/fee_record.dart';
-import '../../domain/entities/payment.dart';
+
 import '../../domain/repositories/fee_repository.dart';
 import '../../../student/domain/repositories/student_repository.dart';
 
@@ -14,8 +14,7 @@ class FeeProvider with ChangeNotifier {
   List<FeeRecord> _studentFeeRecords = [];
   List<FeeRecord> get studentFeeRecords => _studentFeeRecords;
 
-  List<Payment> _studentPayments = [];
-  List<Payment> get studentPayments => _studentPayments;
+
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -50,11 +49,10 @@ class FeeProvider with ChangeNotifier {
       final student = await _studentRepository.getStudentById(studentId);
       if (student != null) {
         // Auto-generate missing cycles up to today
-        await _feeRepository.generateFeeRecords(student.id!, student.createdAt, student.monthlyFee);
+        await _feeRepository.generateFeeRecords(student.id!, student.createdAt);
       }
 
       _studentFeeRecords = await _feeRepository.getFeeRecordsForStudent(studentId);
-      _studentPayments = await _feeRepository.getPaymentsForStudent(studentId);
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -63,10 +61,10 @@ class FeeProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> makePayment(Payment payment) async {
+  Future<bool> updatePaidAmount(int feeRecordId, double paidAmount, int studentId) async {
     try {
-      await _feeRepository.makePayment(payment);
-      await loadStudentFeeData(payment.studentId);
+      await _feeRepository.updatePaidAmount(feeRecordId, paidAmount);
+      await loadStudentFeeData(studentId);
       await loadPendingFeeRecords();
       return true;
     } catch (e) {

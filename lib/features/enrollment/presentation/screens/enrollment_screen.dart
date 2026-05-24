@@ -18,12 +18,10 @@ class EnrollmentScreen extends StatefulWidget {
 class _EnrollmentScreenState extends State<EnrollmentScreen> {
   int? _selectedBatchId;
   DateTime _joinDate = DateTime.now();
-  late TextEditingController _discountCtrl;
 
   @override
   void initState() {
     super.initState();
-    _discountCtrl = TextEditingController(text: '0.0');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BatchProvider>().loadBatches();
     });
@@ -31,7 +29,6 @@ class _EnrollmentScreenState extends State<EnrollmentScreen> {
 
   @override
   void dispose() {
-    _discountCtrl.dispose();
     super.dispose();
   }
 
@@ -65,7 +62,6 @@ class _EnrollmentScreenState extends State<EnrollmentScreen> {
       studentId: widget.studentId,
       batchId: _selectedBatchId!,
       joinDate: _joinDate,
-      discountAmount: double.tryParse(_discountCtrl.text.trim()) ?? 0.0,
       createdAt: DateTime.now(),
     );
 
@@ -126,18 +122,6 @@ class _EnrollmentScreenState extends State<EnrollmentScreen> {
                 subtitle: Text(DateFormat('dd MMM yyyy').format(_joinDate)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: _pickDate,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _discountCtrl,
-                decoration: const InputDecoration(labelText: 'Discount Amount', prefixText: '৳ '),
-                keyboardType: TextInputType.number,
-                validator: (val) {
-                  if (val != null && val.isNotEmpty && double.tryParse(val) == null) {
-                    return 'Invalid number';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 32),
               SizedBox(

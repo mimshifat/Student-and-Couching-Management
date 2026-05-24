@@ -18,7 +18,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'coaching_app.db');
     return await openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -38,6 +38,68 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE students ADD COLUMN student_type TEXT NOT NULL DEFAULT \'Normal\'');
       await db.execute('ALTER TABLE students ADD COLUMN guardian_relation TEXT');
     }
+    if (oldVersion < 4) {
+      // 1. Drop payments table
+      await db.execute('DROP TABLE IF EXISTS payments');
+      
+      // 2. Recreate fee_records
+      await db.execute('''
+        CREATE TABLE fee_records_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          student_id INTEGER NOT NULL,
+          month INTEGER NOT NULL,
+          year INTEGER NOT NULL,
+          total_amount REAL NOT NULL,
+          paid_amount REAL NOT NULL DEFAULT 0.0,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute('INSERT INTO fee_records_new (id, student_id, month, year, total_amount, paid_amount, created_at, updated_at) SELECT id, student_id, month, year, total_amount, paid_amount, created_at, updated_at FROM fee_records');
+      await db.execute('DROP TABLE fee_records');
+      await db.execute('ALTER TABLE fee_records_new RENAME TO fee_records');
+
+      // 3. Recreate enrollments
+      await db.execute('''
+        CREATE TABLE enrollments_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          student_id INTEGER NOT NULL,
+          batch_id INTEGER NOT NULL,
+          join_date TEXT NOT NULL,
+          leave_date TEXT,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
+          FOREIGN KEY (batch_id) REFERENCES batches (id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute('INSERT INTO enrollments_new (id, student_id, batch_id, join_date, leave_date, created_at) SELECT id, student_id, batch_id, join_date, leave_date, created_at FROM enrollments');
+      await db.execute('DROP TABLE enrollments');
+      await db.execute('ALTER TABLE enrollments_new RENAME TO enrollments');
+
+      // 4. Recreate students
+      await db.execute('''
+        CREATE TABLE students_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          phone TEXT,
+          guardian_name TEXT,
+          guardian_phone TEXT,
+          guardian_relation TEXT,
+          school_college TEXT,
+          class_name TEXT,
+          roll_number INTEGER,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('INSERT INTO students_new (id, name, phone, guardian_name, guardian_phone, guardian_relation, school_college, class_name, roll_number, created_at, updated_at) SELECT id, name, phone, guardian_name, guardian_phone, guardian_relation, school_college, class_name, roll_number, created_at, updated_at FROM students');
+      await db.execute('DROP TABLE students');
+      await db.execute('ALTER TABLE students_new RENAME TO students');
+    }
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE notes ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -52,9 +114,6 @@ class DatabaseHelper {
         school_college TEXT,
         class_name TEXT,
         roll_number INTEGER,
-        student_type TEXT NOT NULL,
-        monthly_fee REAL NOT NULL,
-        status TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -78,7 +137,6 @@ class DatabaseHelper {
         batch_id INTEGER NOT NULL,
         join_date TEXT NOT NULL,
         leave_date TEXT,
-        discount_amount REAL NOT NULL DEFAULT 0.0,
         created_at TEXT NOT NULL,
         FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
         FOREIGN KEY (batch_id) REFERENCES batches (id) ON DELETE CASCADE
@@ -120,23 +178,8 @@ class DatabaseHelper {
         year INTEGER NOT NULL,
         total_amount REAL NOT NULL,
         paid_amount REAL NOT NULL DEFAULT 0.0,
-        due_amount REAL NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
-        FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE payments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        fee_record_id INTEGER NOT NULL,
-        student_id INTEGER NOT NULL,
-        amount REAL NOT NULL,
-        payment_date TEXT NOT NULL,
-        note TEXT,
-        created_at TEXT NOT NULL,
-        FOREIGN KEY (fee_record_id) REFERENCES fee_records (id) ON DELETE CASCADE,
         FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE
       )
     ''');
@@ -160,6 +203,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         content TEXT NOT NULL,
+        is_pinned INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )

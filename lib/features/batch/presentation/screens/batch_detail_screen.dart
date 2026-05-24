@@ -52,7 +52,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => RoutineScreen(batch: widget.batch)),
+                MaterialPageRoute(builder: (_) => RoutineScreen(initialBatch: widget.batch)),
               );
             },
           ),
@@ -109,7 +109,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                           child: const Icon(Icons.person),
                         ),
                         title: Text(e.studentName ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Discount: ৳${e.discountAmount.toStringAsFixed(0)}'),
+                        subtitle: Text('Joined: ${e.joinDate.toLocal().toString().split(' ')[0]}'),
                       ),
                     );
                   },

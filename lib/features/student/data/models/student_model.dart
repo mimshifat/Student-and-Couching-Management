@@ -12,9 +12,6 @@ class StudentModel extends Student {
     super.schoolCollege,
     super.className,
     super.rollNumber,
-    required super.studentType,
-    required super.monthlyFee,
-    required super.status,
     required super.createdAt,
     required super.updatedAt,
   });
@@ -30,9 +27,6 @@ class StudentModel extends Student {
       schoolCollege: entity.schoolCollege,
       className: entity.className,
       rollNumber: entity.rollNumber,
-      studentType: entity.studentType,
-      monthlyFee: entity.monthlyFee,
-      status: entity.status,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     );
@@ -49,9 +43,6 @@ class StudentModel extends Student {
       schoolCollege: map['school_college'],
       className: map['class_name'],
       rollNumber: map['roll_number'],
-      studentType: map['student_type'] ?? 'Normal',
-      monthlyFee: (map['monthly_fee'] as num).toDouble(),
-      status: map['status'],
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
       updatedAt: DateUtilsHelper.parseFromDb(map['updated_at']),
     );
@@ -68,9 +59,6 @@ class StudentModel extends Student {
       'school_college': schoolCollege,
       'class_name': className,
       'roll_number': rollNumber,
-      'student_type': studentType,
-      'monthly_fee': monthlyFee,
-      'status': status,
       'created_at': DateUtilsHelper.formatForDb(createdAt),
       'updated_at': DateUtilsHelper.formatForDb(updatedAt),
     };

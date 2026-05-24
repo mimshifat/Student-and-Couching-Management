@@ -9,6 +9,7 @@ class NoteModel extends Note {
     super.id,
     required super.title,
     required super.content,
+    required super.isPinned,
     required super.createdAt,
     required super.updatedAt,
   });
@@ -18,6 +19,7 @@ class NoteModel extends Note {
       id: entity.id,
       title: entity.title,
       content: entity.content,
+      isPinned: entity.isPinned,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     );
@@ -28,6 +30,7 @@ class NoteModel extends Note {
       id: map['id'],
       title: map['title'],
       content: map['content'],
+      isPinned: map['is_pinned'] == 1,
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
       updatedAt: DateUtilsHelper.parseFromDb(map['updated_at']),
     );
@@ -38,6 +41,7 @@ class NoteModel extends Note {
       'id': id,
       'title': title,
       'content': content,
+      'is_pinned': isPinned ? 1 : 0,
       'created_at': DateUtilsHelper.formatForDb(createdAt),
       'updated_at': DateUtilsHelper.formatForDb(updatedAt),
     };
@@ -71,7 +75,7 @@ class NoteRepositoryImpl implements NoteRepository {
   @override
   Future<List<Note>> getAllNotes() async {
     final db = await _dbHelper.database;
-    final maps = await db.query(_table, orderBy: 'updated_at DESC');
+    final maps = await db.query(_table, orderBy: 'is_pinned DESC, updated_at DESC');
     return List.generate(maps.length, (i) => NoteModel.fromMap(maps[i]));
   }
 }
