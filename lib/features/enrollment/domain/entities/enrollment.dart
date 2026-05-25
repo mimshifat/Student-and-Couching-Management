@@ -6,6 +6,9 @@ class Enrollment {
   final DateTime? leaveDate;
   final double? feeOverride; // Custom fee that overrides batch fee
   final String? studentClass; // Snapshot of student's class
+  final String? batchNameSnapshot;
+  final String? batchScheduleDaysSnapshot;
+  final String? batchTimeSlotSnapshot;
   final DateTime createdAt;
 
   // Transient fields for display
@@ -20,6 +23,9 @@ class Enrollment {
     this.leaveDate,
     this.feeOverride,
     this.studentClass,
+    this.batchNameSnapshot,
+    this.batchScheduleDaysSnapshot,
+    this.batchTimeSlotSnapshot,
     required this.createdAt,
     this.batchName,
     this.studentName,
@@ -33,6 +39,9 @@ class Enrollment {
     DateTime? leaveDate,
     double? feeOverride,
     String? studentClass,
+    String? batchNameSnapshot,
+    String? batchScheduleDaysSnapshot,
+    String? batchTimeSlotSnapshot,
     DateTime? createdAt,
     String? batchName,
     String? studentName,
@@ -45,6 +54,9 @@ class Enrollment {
       leaveDate: leaveDate ?? this.leaveDate,
       feeOverride: feeOverride ?? this.feeOverride,
       studentClass: studentClass ?? this.studentClass,
+      batchNameSnapshot: batchNameSnapshot ?? this.batchNameSnapshot,
+      batchScheduleDaysSnapshot: batchScheduleDaysSnapshot ?? this.batchScheduleDaysSnapshot,
+      batchTimeSlotSnapshot: batchTimeSlotSnapshot ?? this.batchTimeSlotSnapshot,
       createdAt: createdAt ?? this.createdAt,
       batchName: batchName ?? this.batchName,
       studentName: studentName ?? this.studentName,

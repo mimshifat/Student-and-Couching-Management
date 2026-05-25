@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../providers/batch_provider.dart';
 import 'batch_form_screen.dart';
 import 'batch_detail_screen.dart';
+import '../../../../core/widgets/app_drawer.dart';
 
 class BatchListScreen extends StatefulWidget {
   const BatchListScreen({super.key});
@@ -15,6 +16,8 @@ class BatchListScreen extends StatefulWidget {
 }
 
 class _BatchListScreenState extends State<BatchListScreen> {
+  static const Color primaryNavy = Color(0xFF191A4E);
+
   @override
   void initState() {
     super.initState();
@@ -26,12 +29,41 @@ class _BatchListScreenState extends State<BatchListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AppDrawer(),
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: primaryNavy,
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => Scaffold.of(context).openDrawer(),
         ),
-        title: const Text('Batches'),
+        title: const Text('Batches', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Center(
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const BatchFormScreen()),
+                  );
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.add, color: primaryNavy, size: 20),
+                ),
+              ),
+            ),
+          )
+        ],
       ),
       body: Consumer<BatchProvider>(
         builder: (context, provider, child) {
@@ -109,6 +141,25 @@ class _BatchListScreenState extends State<BatchListScreen> {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            if (batch.scheduleDays != null && batch.timeSlot != null) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      '${batch.scheduleDays} | ${batch.timeSlot}',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 12,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                             if (batch.description != null && batch.description!.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
@@ -132,15 +183,6 @@ class _BatchListScreenState extends State<BatchListScreen> {
             },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const BatchFormScreen()),
-          );
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }

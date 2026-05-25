@@ -52,9 +52,11 @@ class FeeRepositoryImpl implements FeeRepository {
     // Create a lookup for batches
     Map<int, double> batchFees = {};
     Map<int, bool> batchActive = {};
+    Map<int, Map<String, dynamic>> batchLookup = {};
     for (var b in batchesMap) {
       batchFees[b['id'] as int] = (b['monthly_fee'] as num?)?.toDouble() ?? 0.0;
       batchActive[b['id'] as int] = (b['is_active'] == null || b['is_active'] == 1);
+      batchLookup[b['id'] as int] = b;
     }
 
     // Determine the start date (earliest of student creation date or earliest join date)
@@ -99,11 +101,24 @@ class FeeRepositoryImpl implements FeeRepository {
           }
         }
 
+        List<String> batchDetails = [];
         if (activeEnrollments.isNotEmpty) {
           // Batch Student logic
           for (var e in activeEnrollments) {
             final batchId = e['batch_id'] as int;
             if (batchActive[batchId] == false) continue; // Skip inactive batches
+            
+            final batch = batchLookup[batchId];
+            if (batch != null) {
+              String bName = (e['batch_name'] as String?) ?? (batch['name'] as String?) ?? 'Unknown';
+              String bDays = (e['batch_schedule_days'] as String?) ?? (batch['schedule_days'] as String?) ?? '';
+              String bTime = (e['batch_time_slot'] as String?) ?? (batch['time_slot'] as String?) ?? '';
+              String snapshotText = bName;
+              if (bDays.isNotEmpty && bTime.isNotEmpty) {
+                 snapshotText += ' ($bDays | $bTime)';
+              }
+              batchDetails.add(snapshotText);
+            }
 
             final joinDate = DateUtilsHelper.parseFromDb(e['join_date'] as String);
             final leaveDateStr = e['leave_date'] as String?;
@@ -136,6 +151,7 @@ class FeeRepositoryImpl implements FeeRepository {
             totalAmount: totalMonthlyFee,
             paidAmount: 0.0,
             studentClass: studentClass,
+            batchDetailsSnapshot: batchDetails.join(', '),
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );

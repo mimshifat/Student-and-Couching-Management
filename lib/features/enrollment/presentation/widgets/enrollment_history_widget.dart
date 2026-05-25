@@ -6,7 +6,6 @@ import '../../../../core/widgets/common_widgets.dart';
 import '../providers/enrollment_provider.dart';
 import '../screens/enrollment_screen.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
-import '../../../batch/domain/entities/batch.dart';
 
 class EnrollmentHistoryWidget extends StatefulWidget {
   final int studentId;
@@ -62,7 +61,7 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
               final val = ctrl.text.trim();
               final double? newFee = val.isEmpty ? null : double.tryParse(val);
               await context.read<EnrollmentProvider>().updateFeeOverride(enrollmentId, widget.studentId, newFee);
-              if (mounted) Navigator.pop(ctx);
+              if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('Save'),
           ),
@@ -136,11 +135,16 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
                       if (e.studentClass != null && e.studentClass!.isNotEmpty) {
                         titleStr += ' (${e.studentClass})';
                       }
+                      
+                      String scheduleStr = '';
+                      if (e.batchScheduleDaysSnapshot != null && e.batchTimeSlotSnapshot != null) {
+                        scheduleStr = 'Schedule: ${e.batchScheduleDaysSnapshot} | ${e.batchTimeSlotSnapshot}\n';
+                      }
 
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: Text(titleStr, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text('Joined: $joinStr\nLeft: $leaveStr\n$feeText'),
+                        subtitle: Text('Joined: $joinStr\nLeft: $leaveStr\n$scheduleStr$feeText'),
                         isThreeLine: true,
                         trailing: isActive
                             ? Row(

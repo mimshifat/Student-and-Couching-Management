@@ -34,6 +34,12 @@ class BatchProvider with ChangeNotifier {
   }
 
   Future<bool> addBatch(Batch batch) async {
+    if (_hasConflict(batch)) {
+      _errorMessage = 'Conflict: A batch is already scheduled for this day and time.';
+      notifyListeners();
+      return false;
+    }
+    
     try {
       await _repository.insertBatch(batch);
       await loadBatches();
@@ -46,6 +52,12 @@ class BatchProvider with ChangeNotifier {
   }
 
   Future<bool> updateBatch(Batch batch) async {
+    if (_hasConflict(batch)) {
+      _errorMessage = 'Conflict: A batch is already scheduled for this day and time.';
+      notifyListeners();
+      return false;
+    }
+    
     try {
       await _repository.updateBatch(batch);
       await loadBatches();
@@ -67,5 +79,19 @@ class BatchProvider with ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  bool _hasConflict(Batch newBatch) {
+    if (newBatch.scheduleDays == null || newBatch.timeSlot == null) return false;
+    
+    for (var b in _batches) {
+      if (!b.isActive) continue;
+      if (b.id == newBatch.id) continue;
+      
+      if (b.scheduleDays == newBatch.scheduleDays && b.timeSlot == newBatch.timeSlot) {
+        return true;
+      }
+    }
+    return false;
   }
 }

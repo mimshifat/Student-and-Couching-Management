@@ -4,9 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../../domain/entities/fee_record.dart';
 import '../providers/fee_provider.dart';
-import '../../../batch/presentation/providers/batch_provider.dart';
-import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../../student/presentation/providers/student_provider.dart';
+import '../../../../core/widgets/custom_form_widgets.dart';
 class FeePaymentScreen extends StatefulWidget {
   final int studentId;
   final String studentName;
@@ -22,8 +21,6 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _amountCtrl;
   final TextEditingController _noteCtrl = TextEditingController();
-
-  static const Color primaryNavy = Color(0xFF191A4E);
 
   @override
   void initState() {
@@ -63,142 +60,120 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
     final student = context.read<StudentProvider>().students.firstWhere((s) => s.id == widget.studentId, orElse: () => throw Exception('Student not found'));
     final className = student.className ?? 'Unknown Class';
     
-    final enrollment = context.read<EnrollmentProvider>().enrollments.where((e) => e.studentId == widget.studentId && e.leaveDate == null).firstOrNull;
-    String batchName = 'Unknown Batch';
-    if (enrollment != null) {
-      final batch = context.read<BatchProvider>().batches.where((b) => b.id == enrollment.batchId).firstOrNull;
-      if (batch != null) batchName = batch.name;
-    }
+    String batchName = widget.feeRecord.batchDetailsSnapshot ?? 'Unknown Batch';
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: primaryNavy,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('Add Payment', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      backgroundColor: CustomFormWidgets.backgroundColor,
+      appBar: CustomFormWidgets.buildAppBar(
+        title: 'Add Payment',
+        subtitle: 'Record fee payment for student',
+        onSave: _submit,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+      body: Form(
+        key: _formKey,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildReadOnlyField('Student', '${widget.studentName} ($className)', isDropdown: true),
-            const SizedBox(height: 20),
-            _buildReadOnlyField('Batch', batchName, isDropdown: true),
-            const SizedBox(height: 20),
-            _buildReadOnlyField('Month', monthName, isCalendar: true),
-            const SizedBox(height: 24),
-            
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FA),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Total Fee (Calculated)', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    Text('৳ ${widget.feeRecord.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
-                    
-                    const SizedBox(height: 24),
-                    const Text('Paid Amount', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _amountCtrl,
-                      keyboardType: TextInputType.number,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      decoration: InputDecoration(
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomFormWidgets.buildSectionHeader('Student Details', Icons.person_outline),
+                      const SizedBox(height: 20),
+                      CustomFormWidgets.buildTextField(
+                        label: 'Student',
+                        controller: TextEditingController(text: '${widget.studentName} ($className)'),
+                        icon: Icons.person,
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomFormWidgets.buildTextField(
+                              label: 'Batch',
+                              controller: TextEditingController(text: batchName),
+                              icon: Icons.class_outlined,
+                              readOnly: true,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: CustomFormWidgets.buildTextField(
+                              label: 'Month',
+                              controller: TextEditingController(text: monthName),
+                              icon: Icons.calendar_today_outlined,
+                              readOnly: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 32),
+                      CustomFormWidgets.buildSectionHeader('Payment Details', Icons.payment_outlined),
+                      const SizedBox(height: 20),
+                      
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F9FA),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text('Total Fee (Calculated)', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 8),
+                            Text('৳ ${widget.feeRecord.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      CustomFormWidgets.buildTextField(
+                        label: 'Paid Amount *',
+                        hint: 'Enter paid amount',
+                        icon: Icons.attach_money,
                         prefixText: '৳ ',
-                        prefixStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryNavy)),
+                        controller: _amountCtrl,
+                        isNumber: true,
+                        validator: (val) {
+                          if (val == null || val.isEmpty) return 'Required';
+                          if (double.tryParse(val) == null) return 'Invalid amount';
+                          return null;
+                        },
                       ),
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'Required';
-                        if (double.tryParse(val) == null) return 'Invalid amount';
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 24),
-                    const Text('Note (Optional)', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _noteCtrl,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText: 'Write note here...',
-                        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryNavy)),
+                      const SizedBox(height: 16),
+                      CustomFormWidgets.buildTextField(
+                        label: 'Note (Optional)',
+                        hint: 'Write note here...',
+                        icon: Icons.notes_outlined,
+                        controller: _noteCtrl,
+                        maxLines: 2,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton(
-                onPressed: _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryNavy,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                child: const Text('Save Payment', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
+            CustomFormWidgets.buildBottomBar(
+              context: context,
+              onCancel: () => Navigator.pop(context),
+              onSave: _submit,
+              saveLabel: 'Save Payment',
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildReadOnlyField(String label, String value, {bool isDropdown = false, bool isCalendar = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(value, style: const TextStyle(fontSize: 15, color: Colors.black87, fontWeight: FontWeight.w500)),
-              if (isDropdown) const Icon(Icons.keyboard_arrow_down, color: Colors.black54, size: 20),
-              if (isCalendar) const Icon(Icons.calendar_today_outlined, color: Colors.black54, size: 20),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

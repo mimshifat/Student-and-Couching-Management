@@ -62,12 +62,12 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
+      builder: (ctx) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (ctx, setModalState) {
             return Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
                 left: 24, right: 24, top: 24,
               ),
               child: Form(
@@ -124,9 +124,9 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                               autoBackupEnabled: true, // Enable auto-backup as requested
                             );
                             final success = await provider.saveSettings(newSettings);
-                            if (mounted) {
+                            if (ctx.mounted) {
                               if (success) {
-                                Navigator.pop(context);
+                                Navigator.pop(ctx);
                                 _showSuccess('Telegram configured and auto backup enabled!');
                                 // Auto send backup after configuration
                                 provider.sendToTelegram();

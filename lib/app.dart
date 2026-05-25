@@ -7,6 +7,8 @@ import 'features/fee/presentation/screens/fee_overview_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/notes/presentation/screens/note_list_screen.dart';
+import 'features/routine/presentation/screens/routine_screen.dart';
+import 'core/widgets/app_drawer.dart';
 
 import 'features/backup/presentation/screens/backup_settings_screen.dart';
 import 'splash_screen.dart';
@@ -25,6 +27,7 @@ class CoachingApp extends StatelessWidget {
         '/notes': (context) => const NoteListScreen(),
         '/backup': (context) => const BackupSettingsScreen(),
         '/batches': (context) => const BatchListScreen(),
+        '/routine': (context) => const RoutineScreen(),
       },
     );
   }
@@ -52,54 +55,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const Icon(Icons.school, size: 48, color: Colors.white),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Student & Coaching Management',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.class_),
-              title: const Text('Batches'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/batches');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.notes),
-              title: const Text('My Notes'),
-              onTap: () {
-                Navigator.pop(context); // Close drawer
-                Navigator.pushNamed(context, '/notes');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.backup),
-              title: const Text('Backup Settings'),
-              onTap: () {
-                Navigator.pop(context); // Close drawer
-                Navigator.pushNamed(context, '/backup');
-              },
-            ),
-          ],
-        ),
-      ),
+      drawer: const AppDrawer(),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

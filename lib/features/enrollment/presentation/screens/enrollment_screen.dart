@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 
 import '../../domain/entities/enrollment.dart';
 import '../providers/enrollment_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
+import '../../../../core/widgets/custom_form_widgets.dart';
 
 class EnrollmentScreen extends StatefulWidget {
   final int studentId;
@@ -86,91 +86,110 @@ class _EnrollmentScreenState extends State<EnrollmentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Enroll in Batch'),
+      backgroundColor: CustomFormWidgets.backgroundColor,
+      appBar: CustomFormWidgets.buildAppBar(
+        title: 'Enroll in Batch',
+        subtitle: 'Add student to a new batch',
+        onSave: _save,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Consumer2<BatchProvider, EnrollmentProvider>(
-                builder: (context, batchProvider, enrollmentProvider, child) {
-                  if (batchProvider.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  // Find batches the student is already actively enrolled in
-                  final activeBatchIds = enrollmentProvider.activeEnrollments
-                      .where((e) => e.studentId == widget.studentId)
-                      .map((e) => e.batchId)
-                      .toSet();
-
-                  // Filter them out
-                  final availableBatches = batchProvider.batches
-                      .where((b) => !activeBatchIds.contains(b.id))
-                      .toList();
-
-                  if (batchProvider.batches.isEmpty) {
-                    return const Text('No batches available. Please create a batch first.');
-                  }
-                  
-                  if (availableBatches.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16.0),
-                      child: Text(
-                        'This student is already enrolled in all available batches.',
-                        style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+      body: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomFormWidgets.buildSectionHeader('Enrollment Details', Icons.school_outlined),
+                      const SizedBox(height: 20),
+                      Consumer2<BatchProvider, EnrollmentProvider>(
+                        builder: (context, batchProvider, enrollmentProvider, child) {
+                          if (batchProvider.isLoading) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+        
+                          // Find batches the student is already actively enrolled in
+                          final activeBatchIds = enrollmentProvider.activeEnrollments
+                              .where((e) => e.studentId == widget.studentId)
+                              .map((e) => e.batchId)
+                              .toSet();
+        
+                          // Filter them out
+                          final availableBatches = batchProvider.batches
+                              .where((b) => !activeBatchIds.contains(b.id))
+                              .toList();
+        
+                          if (batchProvider.batches.isEmpty) {
+                            return const Text('No batches available. Please create a batch first.', style: TextStyle(color: Colors.black54));
+                          }
+                          
+                          if (availableBatches.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.0),
+                              child: Text(
+                                'This student is already enrolled in all available batches.',
+                                style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                              ),
+                            );
+                          }
+        
+                          return CustomFormWidgets.buildDropdown<int>(
+                            label: 'Select Batch *',
+                            icon: Icons.class_outlined,
+                            value: _selectedBatchId,
+                            items: availableBatches.map((b) {
+                              return DropdownMenuItem<int>(
+                                value: b.id,
+                                child: Text(b.name, style: const TextStyle(fontSize: 14)),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              setState(() {
+                                _selectedBatchId = val;
+                              });
+                            },
+                          );
+                        },
                       ),
-                    );
-                  }
-
-                  return DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(labelText: 'Select Batch *'),
-                    initialValue: _selectedBatchId,
-                    items: availableBatches.map((b) {
-                      return DropdownMenuItem<int>(
-                        value: b.id,
-                        child: Text(b.name),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedBatchId = val;
-                      });
-                    },
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Join Date *'),
-                subtitle: Text(DateFormat('dd MMM yyyy').format(_joinDate)),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: _pickDate,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _customFeeCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Custom Monthly Fee (Optional)',
-                  hintText: 'e.g. 400 (Leave empty for default batch fee)',
+                      const SizedBox(height: 16),
+                      CustomFormWidgets.buildDatePicker(
+                        context: context,
+                        label: 'Join Date *',
+                        date: _joinDate,
+                        onTap: _pickDate,
+                      ),
+                      const SizedBox(height: 32),
+                      CustomFormWidgets.buildSectionHeader('Custom Settings', Icons.settings_outlined),
+                      const SizedBox(height: 20),
+                      CustomFormWidgets.buildTextField(
+                        label: 'Custom Monthly Fee (Optional)',
+                        hint: 'Leave empty for default batch fee',
+                        icon: Icons.attach_money,
+                        prefixText: '৳ ',
+                        controller: _customFeeCtrl,
+                        isNumber: true,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _save,
-                  child: const Text('Enroll'),
-                ),
-              )
-            ],
-          ),
+            ),
+            CustomFormWidgets.buildBottomBar(
+              context: context,
+              onCancel: () => Navigator.pop(context),
+              onSave: _save,
+              saveLabel: 'Enroll Student',
+            ),
+          ],
         ),
       ),
     );

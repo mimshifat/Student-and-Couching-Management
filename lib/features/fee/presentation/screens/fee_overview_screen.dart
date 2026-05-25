@@ -323,11 +323,26 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
               children: [
                 Expanded(
                   flex: 3, 
-                  child: Text(
-                    r.studentName ?? 'Unknown', 
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        r.studentName ?? 'Unknown', 
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (r.batchDetailsSnapshot != null && r.batchDetailsSnapshot!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          r.batchDetailsSnapshot!,
+                          style: const TextStyle(fontSize: 10, color: Colors.black54),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ]
+                    ],
                   )
                 ),
                 Expanded(

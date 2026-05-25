@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../providers/note_provider.dart';
 import '../../domain/entities/note.dart';
+import 'note_form_screen.dart';
 
 class NoteListScreen extends StatefulWidget {
   const NoteListScreen({super.key});
@@ -25,65 +26,9 @@ class _NoteListScreenState extends State<NoteListScreen> {
   }
 
   void _addOrEditNote(BuildContext context, [Note? note]) {
-    final titleCtrl = TextEditingController(text: note?.title);
-    final contentCtrl = TextEditingController(text: note?.content);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          left: 16, right: 16, top: 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(note == null ? 'Add Note' : 'Edit Note', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: titleCtrl,
-              decoration: const InputDecoration(labelText: 'Title'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: contentCtrl,
-              decoration: const InputDecoration(labelText: 'Content'),
-              maxLines: 5,
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryNavy,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () async {
-                  if (titleCtrl.text.trim().isEmpty || contentCtrl.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Title and Content are required')));
-                    return;
-                  }
-                  final newNote = Note(
-                    id: note?.id,
-                    title: titleCtrl.text.trim(),
-                    content: contentCtrl.text.trim(),
-                    isPinned: note?.isPinned ?? false,
-                    createdAt: note?.createdAt ?? DateTime.now(),
-                    updatedAt: DateTime.now(),
-                  );
-                  await context.read<NoteProvider>().saveNote(newNote);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-                child: const Text('Save Note', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => NoteFormScreen(note: note)),
     );
   }
 

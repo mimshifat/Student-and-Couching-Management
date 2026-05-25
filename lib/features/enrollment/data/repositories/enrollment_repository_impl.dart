@@ -17,8 +17,24 @@ class EnrollmentRepositoryImpl implements EnrollmentRepository {
     final studentMap = await db.query('students', where: 'id = ?', whereArgs: [enrollment.studentId]);
     final studentClass = studentMap.isNotEmpty ? studentMap.first['class_name'] as String? : null;
 
-    final enrollmentWithClass = enrollment.copyWith(studentClass: studentClass);
-    final model = EnrollmentModel.fromEntity(enrollmentWithClass);
+    // Fetch batch details to snapshot them
+    final batchMap = await db.query('batches', where: 'id = ?', whereArgs: [enrollment.batchId]);
+    String? batchName;
+    String? batchScheduleDays;
+    String? batchTimeSlot;
+    if (batchMap.isNotEmpty) {
+      batchName = batchMap.first['name'] as String?;
+      batchScheduleDays = batchMap.first['schedule_days'] as String?;
+      batchTimeSlot = batchMap.first['time_slot'] as String?;
+    }
+
+    final enrollmentWithSnapshots = enrollment.copyWith(
+      studentClass: studentClass,
+      batchNameSnapshot: batchName,
+      batchScheduleDaysSnapshot: batchScheduleDays,
+      batchTimeSlotSnapshot: batchTimeSlot,
+    );
+    final model = EnrollmentModel.fromEntity(enrollmentWithSnapshots);
     return await db.insert(_tableName, model.toMap(), conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
   }
 
@@ -48,7 +64,7 @@ class EnrollmentRepositoryImpl implements EnrollmentRepository {
   Future<List<Enrollment>> getActiveEnrollments(int studentId) async {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
-      SELECT e.*, b.name as batch_name 
+      SELECT e.*, COALESCE(e.batch_name, b.name) as batch_name 
       FROM $_tableName e 
       JOIN batches b ON e.batch_id = b.id 
       WHERE e.student_id = ? AND e.leave_date IS NULL
@@ -62,7 +78,7 @@ class EnrollmentRepositoryImpl implements EnrollmentRepository {
   Future<List<Enrollment>> getEnrollmentHistory(int studentId) async {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
-      SELECT e.*, b.name as batch_name 
+      SELECT e.*, COALESCE(e.batch_name, b.name) as batch_name 
       FROM $_tableName e 
       JOIN batches b ON e.batch_id = b.id 
       WHERE e.student_id = ?

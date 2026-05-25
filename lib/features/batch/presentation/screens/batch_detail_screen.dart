@@ -4,11 +4,10 @@ import 'package:provider/provider.dart';
 import '../../domain/entities/batch.dart';
 import 'batch_form_screen.dart';
 import '../../../../core/widgets/common_widgets.dart';
-import '../../../routine/presentation/screens/routine_screen.dart';
-
 import '../../../../core/theme/app_theme.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../../enrollment/domain/entities/enrollment.dart';
+import '../../../student/presentation/screens/student_form_screen.dart';
 
 class BatchDetailScreen extends StatefulWidget {
   final Batch batch;
@@ -47,15 +46,6 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => RoutineScreen(initialBatch: widget.batch)),
-              );
-            },
-          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -63,6 +53,33 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (widget.batch.scheduleDays != null && widget.batch.timeSlot != null) ...[
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Schedule', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_month, color: AppTheme.primaryColor.withValues(alpha: 0.8), size: 20),
+                        const SizedBox(width: 8),
+                        Text(widget.batch.scheduleDays!, style: const TextStyle(fontSize: 15)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, color: AppTheme.primaryColor.withValues(alpha: 0.8), size: 20),
+                        const SizedBox(width: 8),
+                        Text(widget.batch.timeSlot!, style: const TextStyle(fontSize: 15)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             if (widget.batch.description != null && widget.batch.description!.isNotEmpty)
               AppCard(
                 child: Column(
@@ -118,6 +135,22 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => StudentFormScreen(initialBatchId: widget.batch.id),
+            ),
+          ).then((_) {
+            // Reload students in case a new student was enrolled
+            _loadStudents();
+            setState(() {});
+          });
+        },
+        icon: const Icon(Icons.person_add),
+        label: const Text('Add Student'),
       ),
     );
   }

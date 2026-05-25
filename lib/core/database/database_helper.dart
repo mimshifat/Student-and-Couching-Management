@@ -18,7 +18,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'coaching_app.db');
     return await openDatabase(
       path,
-      version: 8,
+      version: 11,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -111,6 +111,20 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE fee_records ADD COLUMN student_class TEXT');
       await db.execute('ALTER TABLE enrollments ADD COLUMN student_class TEXT');
     }
+    if (oldVersion < 9) {
+      await db.execute('ALTER TABLE batches ADD COLUMN start_time TEXT');
+      await db.execute('ALTER TABLE batches ADD COLUMN end_time TEXT');
+    }
+    if (oldVersion < 10) {
+      await db.execute('ALTER TABLE batches ADD COLUMN schedule_days TEXT');
+      await db.execute('ALTER TABLE batches ADD COLUMN time_slot TEXT');
+    }
+    if (oldVersion < 11) {
+      await db.execute('ALTER TABLE enrollments ADD COLUMN batch_name TEXT');
+      await db.execute('ALTER TABLE enrollments ADD COLUMN batch_schedule_days TEXT');
+      await db.execute('ALTER TABLE enrollments ADD COLUMN batch_time_slot TEXT');
+      await db.execute('ALTER TABLE fee_records ADD COLUMN batch_details_snapshot TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -137,6 +151,10 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         description TEXT,
+        start_time TEXT,
+        end_time TEXT,
+        schedule_days TEXT,
+        time_slot TEXT,
         monthly_fee REAL NOT NULL DEFAULT 0.0,
         is_active INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL
@@ -148,10 +166,13 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         student_id INTEGER NOT NULL,
         batch_id INTEGER NOT NULL,
+        student_class TEXT,
+        batch_name TEXT,
+        batch_schedule_days TEXT,
+        batch_time_slot TEXT,
         join_date TEXT NOT NULL,
         leave_date TEXT,
         fee_override REAL,
-        student_class TEXT,
         created_at TEXT NOT NULL,
         FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
         FOREIGN KEY (batch_id) REFERENCES batches (id) ON DELETE CASCADE
@@ -189,11 +210,12 @@ class DatabaseHelper {
       CREATE TABLE fee_records (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         student_id INTEGER NOT NULL,
+        student_class TEXT,
+        batch_details_snapshot TEXT,
         month INTEGER NOT NULL,
         year INTEGER NOT NULL,
         total_amount REAL NOT NULL,
         paid_amount REAL NOT NULL DEFAULT 0.0,
-        student_class TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE

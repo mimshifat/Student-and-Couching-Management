@@ -5,11 +5,15 @@ import 'package:provider/provider.dart';
 
 import '../../domain/entities/student.dart';
 import '../providers/student_provider.dart';
+import '../../../enrollment/domain/entities/enrollment.dart';
+import '../../../enrollment/presentation/providers/enrollment_provider.dart';
+import '../../../../core/widgets/custom_form_widgets.dart';
 
 class StudentFormScreen extends StatefulWidget {
   final Student? student;
+  final int? initialBatchId;
 
-  const StudentFormScreen({super.key, this.student});
+  const StudentFormScreen({super.key, this.student, this.initialBatchId});
 
   @override
   State<StudentFormScreen> createState() => _StudentFormScreenState();
@@ -95,6 +99,16 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
       }
 
       if (success && mounted) {
+        if (widget.initialBatchId != null && widget.student == null && newStudentId != null) {
+          final enrollment = Enrollment(
+            studentId: newStudentId,
+            batchId: widget.initialBatchId!,
+            joinDate: DateTime.now(),
+            createdAt: DateTime.now(),
+          );
+          await context.read<EnrollmentProvider>().enrollStudent(enrollment);
+        }
+        if (!mounted) return;
         Navigator.pop(context);
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,24 +121,11 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF4338CA),
-        elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.student == null ? 'Add New Student' : 'Edit Student', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-            const Text('Enter student information', style: TextStyle(fontSize: 12, color: Colors.white70)),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save_outlined, color: Colors.white),
-            onPressed: _save,
-          )
-        ],
-        iconTheme: const IconThemeData(color: Colors.white),
+      backgroundColor: CustomFormWidgets.backgroundColor,
+      appBar: CustomFormWidgets.buildAppBar(
+        title: widget.student == null ? 'Add New Student' : 'Edit Student',
+        subtitle: 'Enter student information',
+        onSave: _save,
       ),
       body: Form(
         key: _formKey,
@@ -143,230 +144,129 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSectionHeader('Personal Information', Icons.person_outline),
+                      CustomFormWidgets.buildSectionHeader('Personal Information', Icons.person_outline),
                       const SizedBox(height: 20),
-                      _buildTextField('Student Name *', 'Enter student full name', Icons.person_outline, _nameCtrl),
+                      CustomFormWidgets.buildTextField(
+                        label: 'Student Name *',
+                        hint: 'Enter student full name',
+                        icon: Icons.person_outline,
+                        controller: _nameCtrl,
+                        validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                      ),
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Expanded(child: _buildTextField('Phone Number *', 'Enter phone number', Icons.phone_outlined, _phoneCtrl, keyboardType: TextInputType.phone, inputFormatters: [LengthLimitingTextInputFormatter(11)])),
+                          Expanded(
+                            child: CustomFormWidgets.buildTextField(
+                              label: 'Phone Number *',
+                              hint: 'Enter phone number',
+                              icon: Icons.phone_outlined,
+                              controller: _phoneCtrl,
+                              isNumber: true,
+                              inputFormatters: [LengthLimitingTextInputFormatter(11)],
+                              validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                            ),
+                          ),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildDatePicker('Admission Date *', _createdAt, (d) { setState(() => _createdAt = d); })),
+                          Expanded(
+                            child: CustomFormWidgets.buildDatePicker(
+                              context: context,
+                              label: 'Admission Date *',
+                              date: _createdAt,
+                              onTap: () async {
+                                final d = await showDatePicker(
+                                  context: context,
+                                  initialDate: _createdAt,
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                                );
+                                if (d != null) setState(() => _createdAt = d);
+                              },
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Expanded(child: _buildDropdownString('Class *', Icons.school_outlined, _selectedClass, _availableClasses, (val) => setState(() => _selectedClass = val))),
+                          Expanded(
+                            child: CustomFormWidgets.buildDropdown<String>(
+                              label: 'Class *',
+                              icon: Icons.school_outlined,
+                              value: _selectedClass,
+                              items: _availableClasses.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 14)))).toList(),
+                              onChanged: (val) => setState(() => _selectedClass = val),
+                              validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                            ),
+                          ),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildTextField('Roll Number *', 'Enter roll number', Icons.tag, _rollCtrl, keyboardType: TextInputType.number)),
+                          Expanded(
+                            child: CustomFormWidgets.buildTextField(
+                              label: 'Roll Number *',
+                              hint: 'Enter roll number',
+                              icon: Icons.tag,
+                              controller: _rollCtrl,
+                              isNumber: true,
+                              validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
-                      _buildTextField('School / College Name', 'Enter school or college name', Icons.account_balance_outlined, _schoolCtrl, required: false),
+                      CustomFormWidgets.buildTextField(
+                        label: 'School / College Name',
+                        hint: 'Enter school or college name',
+                        icon: Icons.account_balance_outlined,
+                        controller: _schoolCtrl,
+                      ),
                       const SizedBox(height: 32),
 
-                      _buildSectionHeader('Guardian Information', Icons.people_outline),
+                      CustomFormWidgets.buildSectionHeader('Guardian Information', Icons.people_outline),
                       const SizedBox(height: 20),
-                      _buildTextField('Guardian Name *', 'Enter guardian full name', Icons.person_outline, _gNameCtrl),
+                      CustomFormWidgets.buildTextField(
+                        label: 'Guardian Name *',
+                        hint: 'Enter guardian full name',
+                        icon: Icons.person_outline,
+                        controller: _gNameCtrl,
+                        validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                      ),
                       const SizedBox(height: 16),
-                      _buildTextField('Guardian Phone *', 'Enter guardian phone number', Icons.phone_outlined, _gPhoneCtrl, keyboardType: TextInputType.phone, inputFormatters: [LengthLimitingTextInputFormatter(11)]),
+                      CustomFormWidgets.buildTextField(
+                        label: 'Guardian Phone *',
+                        hint: 'Enter guardian phone number',
+                        icon: Icons.phone_outlined,
+                        controller: _gPhoneCtrl,
+                        isNumber: true,
+                        inputFormatters: [LengthLimitingTextInputFormatter(11)],
+                        validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                      ),
 
                       const SizedBox(height: 32),
-                      _buildSectionHeader('Additional Information', Icons.info_outline),
+                      CustomFormWidgets.buildSectionHeader('Additional Information', Icons.info_outline),
                       const SizedBox(height: 20),
-                      _buildTextField('Address', 'Enter full address', Icons.location_on_outlined, _addressCtrl, required: false),
+                      CustomFormWidgets.buildTextField(
+                        label: 'Address',
+                        hint: 'Enter full address',
+                        icon: Icons.location_on_outlined,
+                        controller: _addressCtrl,
+                      ),
                       const SizedBox(height: 16),
-                      _buildTextField('Notes', 'Any additional notes', Icons.notes_outlined, _notesCtrl, required: false),
+                      CustomFormWidgets.buildTextField(
+                        label: 'Notes',
+                        hint: 'Any additional notes',
+                        icon: Icons.notes_outlined,
+                        controller: _notesCtrl,
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
-            _buildBottomBar(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, IconData icon) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEEF2FF),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: const Color(0xFF4338CA), size: 20),
-        ),
-        const SizedBox(width: 12),
-        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4338CA))),
-        const SizedBox(width: 16),
-        Expanded(child: Divider(color: Colors.indigo.withValues(alpha: 0.1), thickness: 1)),
-      ],
-    );
-  }
-
-  Widget _buildTextField(String label, String hint, IconData icon, TextEditingController controller, {TextInputType keyboardType = TextInputType.text, bool required = true, List<TextInputFormatter>? inputFormatters}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF4338CA))),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          inputFormatters: inputFormatters,
-          style: const TextStyle(fontSize: 14, color: Colors.black87),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-            prefixIcon: Icon(icon, color: Colors.grey.shade500, size: 20),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 16),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4338CA))),
-            errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red)),
-            focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red)),
-          ),
-          validator: required ? (val) {
-            if (val == null || val.trim().isEmpty) return 'Required';
-            if (label.contains('Phone')) {
-              if (!RegExp(r'^01\d{9}$').hasMatch(val.trim())) return 'Invalid BD phone';
-            }
-            if (label.contains('Roll Number')) {
-              if (int.tryParse(val.trim()) == null) return 'Must be a valid number';
-            }
-            return null;
-          } : null,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDatePicker(String label, DateTime date, Function(DateTime) onDateSelected) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF4338CA))),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: () async {
-            final d = await showDatePicker(
+            CustomFormWidgets.buildBottomBar(
               context: context,
-              initialDate: date,
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: const ColorScheme.light(
-                      primary: Color(0xFF4338CA),
-                      onPrimary: Colors.white,
-                      onSurface: Colors.black,
-                    ),
-                  ),
-                  child: child!,
-                );
-              },
-            );
-            if (d != null) onDateSelected(d);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.calendar_today_outlined, color: Colors.grey.shade500, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    date.toLocal().toString().split(' ')[0],
-                    style: const TextStyle(fontSize: 14, color: Colors.black87),
-                  ),
-                ),
-                Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade500, size: 20),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdownString(String label, IconData icon, String? value, List<String> items, Function(String?) onChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF4338CA))),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: value,
-          icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade500),
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: Colors.grey.shade500, size: 20),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4338CA))),
-            errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red)),
-          ),
-          items: items.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 14)))).toList(),
-          onChanged: onChanged,
-          validator: (val) => val == null || val.isEmpty ? 'Required' : null,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, size: 18),
-                label: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF4338CA),
-                  side: const BorderSide(color: Color(0xFFE0E7FF), width: 1.5),
-                  backgroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _save,
-                icon: const Icon(Icons.save_outlined, size: 18),
-                label: Text(widget.student == null ? 'Save Student' : 'Update Student', style: const TextStyle(fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: const Color(0xFF4338CA),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-              ),
+              onCancel: () => Navigator.pop(context),
+              onSave: _save,
+              saveLabel: widget.student == null ? 'Save Student' : 'Update Student',
             ),
           ],
         ),

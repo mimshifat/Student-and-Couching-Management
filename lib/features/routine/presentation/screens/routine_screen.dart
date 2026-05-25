@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/routine_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../batch/domain/entities/batch.dart';
+import 'routine_form_screen.dart';
 
 class RoutineScreen extends StatefulWidget {
   final Batch? initialBatch;
@@ -107,6 +108,16 @@ class _RoutineScreenState extends State<RoutineScreen> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF4338CA),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const RoutineFormScreen()),
+          );
+        },
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
