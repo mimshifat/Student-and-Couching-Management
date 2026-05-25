@@ -5,6 +5,7 @@ class FeeRecord {
   final int year;
   final double totalAmount;
   final double paidAmount;
+  final bool isSettled;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? studentClass;
@@ -21,6 +22,7 @@ class FeeRecord {
     required this.year,
     required this.totalAmount,
     this.paidAmount = 0.0,
+    this.isSettled = false,
     this.studentClass,
     this.batchId,
     this.batchDetailsSnapshot,
@@ -36,6 +38,7 @@ class FeeRecord {
     int? year,
     double? totalAmount,
     double? paidAmount,
+    bool? isSettled,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? studentClass,
@@ -50,6 +53,7 @@ class FeeRecord {
       year: year ?? this.year,
       totalAmount: totalAmount ?? this.totalAmount,
       paidAmount: paidAmount ?? this.paidAmount,
+      isSettled: isSettled ?? this.isSettled,
       studentClass: studentClass ?? this.studentClass,
       batchId: batchId ?? this.batchId,
       batchDetailsSnapshot: batchDetailsSnapshot ?? this.batchDetailsSnapshot,

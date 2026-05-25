@@ -123,14 +123,14 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
 
             if (_initialUnpaidIds == null) {
               _initialUnpaidIds = feeProvider.pendingFeeRecords
-                  .where((r) => r.paidAmount < r.totalAmount)
+                  .where((r) => r.paidAmount < r.totalAmount && !r.isSettled)
                   .map((r) => r.id!)
                   .toSet();
             }
 
             // Filter records
             final filteredRecords = feeProvider.pendingFeeRecords.where((r) {
-              bool isPaid = r.paidAmount >= r.totalAmount;
+              bool isPaid = r.paidAmount >= r.totalAmount || r.isSettled;
               if (isPaid && !_initialUnpaidIds!.contains(r.id)) {
                 return false;
               }
@@ -335,7 +335,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
         Color statusBgColor;
         Color statusTextColor;
         
-        if (paid >= total) {
+        if (paid >= total || r.isSettled) {
           statusText = 'Paid';
           statusBgColor = const Color(0xFFE8F8EE); // Light green
           statusTextColor = const Color(0xFF2B9348);
@@ -352,7 +352,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
         String monthName = (r.month >= 1 && r.month <= 12) ? _shortMonths[r.month - 1] : '';
 
         return InkWell(
-          onTap: (paid >= total) ? null : () {
+          onTap: (paid >= total || r.isSettled) ? null : () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => FeePaymentScreen(
@@ -405,7 +405,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                 Expanded(
                   flex: 2, 
                   child: Center(
-                    child: (paid >= total)
+                    child: (paid >= total || r.isSettled)
                       ? IconButton(
                           icon: const Icon(Icons.message, color: Color(0xFF2B9348)),
                           onPressed: () async {

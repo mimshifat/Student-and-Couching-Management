@@ -103,8 +103,8 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
             final filteredRecords = allRecords.where((r) {
               if (_selectedYear != null && r.year != _selectedYear) return false;
               final isPaid = r.paidAmount >= r.totalAmount;
-              if (_selectedTab == 0 && isPaid) return false; // Due Tab
-              if (_selectedTab == 1 && !isPaid) return false; // Paid Tab
+              if (_selectedTab == 0 && (isPaid || r.isSettled)) return false; // Due Tab
+              if (_selectedTab == 1 && !isPaid && !r.isSettled) return false; // Paid Tab
               return true;
             }).toList();
 
@@ -184,7 +184,7 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                       separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFEEEEEE)),
                       itemBuilder: (context, index) {
                         final record = filteredRecords[index];
-                  final isPaid = record.paidAmount >= record.totalAmount;
+                  final isPaid = record.paidAmount >= record.totalAmount || record.isSettled;
 
                   // Format month (e.g. "April")
                   final String monthName = DateFormat('MMMM').format(DateTime(record.year, record.month));

@@ -179,7 +179,7 @@ class FeeRepositoryImpl implements FeeRepository {
   }
 
   @override
-  Future<void> updatePaidAmount(int feeRecordId, double paidAmount) async {
+  Future<void> updatePaidAmount(int feeRecordId, double paidAmount, {bool isSettled = false}) async {
     final db = await _dbHelper.database;
     final nowStr = DateUtilsHelper.formatForDb(DateTime.now());
 
@@ -187,6 +187,7 @@ class FeeRepositoryImpl implements FeeRepository {
       _feeTable,
       {
         'paid_amount': paidAmount,
+        'is_settled': isSettled ? 1 : 0,
         'updated_at': nowStr,
       },
       where: 'id = ?',

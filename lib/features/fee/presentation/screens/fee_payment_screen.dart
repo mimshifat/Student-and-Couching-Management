@@ -21,11 +21,13 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _amountCtrl;
   final TextEditingController _noteCtrl = TextEditingController();
+  late bool _isSettled;
 
   @override
   void initState() {
     super.initState();
     _amountCtrl = TextEditingController(text: widget.feeRecord.paidAmount > 0 ? widget.feeRecord.paidAmount.toStringAsFixed(0) : '');
+    _isSettled = widget.feeRecord.isSettled;
   }
 
   @override
@@ -41,7 +43,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
       if (amount <= 0) return;
 
       final provider = context.read<FeeProvider>();
-      final success = await provider.updatePaidAmount(widget.feeRecord.id!, amount, widget.studentId);
+      final success = await provider.updatePaidAmount(widget.feeRecord.id!, amount, widget.studentId, isSettled: _isSettled);
       
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Recorded successfully.')));
@@ -93,28 +95,22 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                         controller: TextEditingController(text: '${widget.studentName} ($className)'),
                         icon: Icons.person,
                         readOnly: true,
+                        maxLines: 2,
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomFormWidgets.buildTextField(
-                              label: 'Batch',
-                              controller: TextEditingController(text: batchName),
-                              icon: Icons.class_outlined,
-                              readOnly: true,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: CustomFormWidgets.buildTextField(
-                              label: 'Month',
-                              controller: TextEditingController(text: monthName),
-                              icon: Icons.calendar_today_outlined,
-                              readOnly: true,
-                            ),
-                          ),
-                        ],
+                      CustomFormWidgets.buildTextField(
+                        label: 'Batch',
+                        controller: TextEditingController(text: batchName),
+                        icon: Icons.class_outlined,
+                        readOnly: true,
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 16),
+                      CustomFormWidgets.buildTextField(
+                        label: 'Month',
+                        controller: TextEditingController(text: monthName),
+                        icon: Icons.calendar_today_outlined,
+                        readOnly: true,
                       ),
                       
                       const SizedBox(height: 32),
@@ -123,17 +119,18 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                       
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF8F9FA),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.grey.shade200),
                         ),
-                        child: Column(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             const Text('Total Fee (Calculated)', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 8),
-                            Text('৳ ${widget.feeRecord.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+                            Text('৳ ${widget.feeRecord.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
                           ],
                         ),
                       ),
@@ -158,6 +155,28 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                         icon: Icons.notes_outlined,
                         controller: _noteCtrl,
                         maxLines: 2,
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(12),
+                          color: _isSettled ? const Color(0xFFE8F8EE) : Colors.white,
+                        ),
+                        child: CheckboxListTile(
+                          title: const Text('Mark as Paid', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          subtitle: const Text(
+                            'Check this if the student has settled this month\'s fee, even if the paid amount is less than the total fee.',
+                            style: TextStyle(fontSize: 11, color: Colors.black54),
+                          ),
+                          value: _isSettled,
+                          activeColor: const Color(0xFF2B9348),
+                          onChanged: (val) {
+                            setState(() => _isSettled = val ?? false);
+                          },
+                          controlAffinity: ListTileControlAffinity.leading,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        ),
                       ),
                     ],
                   ),

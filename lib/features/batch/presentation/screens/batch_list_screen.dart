@@ -154,7 +154,6 @@ class _BatchListScreenState extends State<BatchListScreen> {
                                         color: Colors.grey.shade600,
                                         fontSize: 12,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
@@ -164,8 +163,6 @@ class _BatchListScreenState extends State<BatchListScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 batch.description!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: 14,
