@@ -23,7 +23,7 @@ class StudentDetailScreen extends StatelessWidget {
     final studentIdStr = 'STU${student.id?.toString().padLeft(4, '0') ?? '0000'}';
 
     return DefaultTabController(
-      length: 4,
+      length: 3,
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
         appBar: AppBar(
@@ -71,7 +71,6 @@ class StudentDetailScreen extends StatelessWidget {
                   _wrapTabContent(EnrollmentHistoryWidget(studentId: student.id!)),
                   _wrapTabContent(StudentFeeHistoryWidget(studentId: student.id!)),
                   _wrapTabContent(StudentPerformanceWidget(studentId: student.id!)),
-                  _wrapTabContent(const Center(child: Text('Exams module in development', style: TextStyle(color: Colors.grey)))),
                 ],
               ),
             ),
@@ -233,12 +232,11 @@ class StudentDetailScreen extends StatelessWidget {
       labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
       unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
       isScrollable: true,
-      tabAlignment: TabAlignment.start,
+      tabAlignment: TabAlignment.center,
       tabs: [
-        Tab(text: 'Enrollment'),
+        Tab(text: 'Enrollments'),
         Tab(text: 'Payments'),
         Tab(text: 'Progress'),
-        Tab(text: 'Exam'),
       ],
     );
   }

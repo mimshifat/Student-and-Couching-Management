@@ -18,7 +18,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'coaching_app.db');
     return await openDatabase(
       path,
-      version: 11,
+      version: 12,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -125,6 +125,9 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE enrollments ADD COLUMN batch_time_slot TEXT');
       await db.execute('ALTER TABLE fee_records ADD COLUMN batch_details_snapshot TEXT');
     }
+    if (oldVersion < 12) {
+      await db.execute('ALTER TABLE fee_records ADD COLUMN batch_id INTEGER REFERENCES batches(id) ON DELETE SET NULL');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -211,6 +214,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         student_id INTEGER NOT NULL,
         student_class TEXT,
+        batch_id INTEGER,
         batch_details_snapshot TEXT,
         month INTEGER NOT NULL,
         year INTEGER NOT NULL,

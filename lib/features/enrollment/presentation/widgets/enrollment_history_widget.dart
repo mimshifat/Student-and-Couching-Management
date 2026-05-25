@@ -80,8 +80,8 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Enrollment History',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                'Enrollments',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
               ),
               TextButton.icon(
                 icon: const Icon(Icons.add),
@@ -110,60 +110,120 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
 
               return Consumer<BatchProvider>(
                 builder: (context, batchProvider, _) {
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: provider.historyEnrollments.length,
-                    itemBuilder: (context, index) {
-                      final e = provider.historyEnrollments[index];
-                      final isActive = e.leaveDate == null;
-                      final joinStr = DateFormat('dd MMM yyyy').format(e.joinDate);
-                      final leaveStr = e.leaveDate != null ? DateFormat('dd MMM yyyy').format(e.leaveDate!) : 'Present';
-                      
-                      double defaultFee = 0;
-                      try {
-                        final batch = batchProvider.batches.firstWhere((b) => b.id == e.batchId);
-                        defaultFee = batch.monthlyFee;
-                      } catch (_) {}
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAFAFA),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: provider.historyEnrollments.length,
+                      separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                      itemBuilder: (context, index) {
+                        final e = provider.historyEnrollments[index];
+                        final isActive = e.leaveDate == null;
+                        final joinStr = DateFormat('dd MMM yyyy').format(e.joinDate);
+                        
+                        String titleStr = e.batchName ?? 'Unknown Batch';
+                        if (e.studentClass != null && e.studentClass!.isNotEmpty) {
+                          titleStr += ' (${e.studentClass})';
+                        }
+                        
+                        String scheduleStr = '';
+                        if (e.batchScheduleDaysSnapshot != null && e.batchScheduleDaysSnapshot!.isNotEmpty && e.batchTimeSlotSnapshot != null) {
+                          scheduleStr = '${e.batchScheduleDaysSnapshot} ${e.batchTimeSlotSnapshot}';
+                        }
 
-                      String feeText = 'Fee: $defaultFee ৳';
-                      if (e.feeOverride != null && e.feeOverride! >= 0) {
-                        feeText = 'Regular Fee: $defaultFee ৳ | Custom Fee: ${e.feeOverride} ৳';
-                      }
-
-                      String titleStr = e.batchName ?? 'Unknown Batch';
-                      if (e.studentClass != null && e.studentClass!.isNotEmpty) {
-                        titleStr += ' (${e.studentClass})';
-                      }
-                      
-                      String scheduleStr = '';
-                      if (e.batchScheduleDaysSnapshot != null && e.batchTimeSlotSnapshot != null) {
-                        scheduleStr = 'Schedule: ${e.batchScheduleDaysSnapshot} | ${e.batchTimeSlotSnapshot}\n';
-                      }
-
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(titleStr, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text('Joined: $joinStr\nLeft: $leaveStr\n$scheduleStr$feeText'),
-                        isThreeLine: true,
-                        trailing: isActive
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
+                        return Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEEF0FF),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.class_outlined, color: Color(0xFF3B41C5), size: 22),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      titleStr,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      scheduleStr.isNotEmpty ? 'Join: $joinStr • $scheduleStr' : 'Join: $joinStr',
+                                      style: const TextStyle(color: Colors.black54, fontSize: 13),
+                                    ),
+                                    if (e.feeOverride != null && e.feeOverride! >= 0) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Custom Fee: ${e.feeOverride} ৳',
+                                        style: const TextStyle(color: Colors.black54, fontSize: 12),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                                    onPressed: () => _editFee(e.id!, e.feeOverride),
-                                    tooltip: 'Edit Custom Fee',
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: isActive ? const Color(0xFFE8F8EE) : const Color(0xFFF5F5F5),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      isActive ? 'Active' : 'Past',
+                                      style: TextStyle(
+                                        color: isActive ? const Color(0xFF2B9348) : Colors.black54,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
                                   ),
-                                  OutlinedButton(
-                                    onPressed: () => _leaveBatch(e.id!),
-                                    child: const Text('Leave'),
-                                  ),
+                                  if (isActive) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        InkWell(
+                                          onTap: () => _editFee(e.id!, e.feeOverride),
+                                          child: const Padding(
+                                            padding: EdgeInsets.all(4.0),
+                                            child: Icon(Icons.edit, size: 16, color: Colors.blue),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        InkWell(
+                                          onTap: () => _leaveBatch(e.id!),
+                                          child: const Padding(
+                                            padding: EdgeInsets.all(4.0),
+                                            child: Icon(Icons.exit_to_app, size: 16, color: Colors.red),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ],
-                              )
-                            : const Text('Past', style: TextStyle(color: Colors.grey)),
-                      );
-                    },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   );
                 }
               );

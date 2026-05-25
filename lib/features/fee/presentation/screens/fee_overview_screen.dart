@@ -111,10 +111,15 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
             if (r.month != _selectedMonth) return false;
             if (r.year != _selectedYear) return false;
             
-            // Batch filter logic - if selectedBatchId is not null, check if student is enrolled in that batch
+            // Batch filter logic
             if (_selectedBatchId != null) {
-              bool inBatch = enrollments.any((e) => e.studentId == r.studentId && e.batchId == _selectedBatchId);
-              if (!inBatch) return false;
+              if (r.batchId != null) {
+                if (r.batchId != _selectedBatchId) return false;
+              } else {
+                // Legacy fallback
+                bool inBatch = enrollments.any((e) => e.studentId == r.studentId && e.batchId == _selectedBatchId);
+                if (!inBatch) return false;
+              }
             }
             return true;
           }).toList();

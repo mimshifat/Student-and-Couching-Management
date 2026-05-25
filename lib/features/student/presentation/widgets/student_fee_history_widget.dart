@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
@@ -60,40 +61,102 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                 );
               }
 
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: records.length,
-                itemBuilder: (context, index) {
-                  final record = records[index];
-                  final isPaid = record.paidAmount >= record.totalAmount;
+              return Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAFAFA),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: records.length,
+                  separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                  itemBuilder: (context, index) {
+                    final record = records[index];
+                    final isPaid = record.paidAmount >= record.totalAmount;
 
-                  String monthYearStr = '${record.month} ${record.year}';
-                  if (record.studentClass != null && record.studentClass!.isNotEmpty) {
-                    monthYearStr += ' (${record.studentClass})';
-                  }
+                    // Format month (e.g. "April")
+                    final String monthName = DateFormat('MMMM').format(DateTime(record.year, record.month));
+                    final String yearMonthStr = '$monthName ${record.year}';
 
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(monthYearStr, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('Total: ৳${record.totalAmount.toStringAsFixed(0)} | Paid: ৳${record.paidAmount.toStringAsFixed(0)}'),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isPaid ? Colors.green.withValues(alpha: 0.1) : AppTheme.errorColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                    // Parse batchDetailsSnapshot
+                    String batchName = 'General Fee';
+                    if (record.batchDetailsSnapshot != null && record.batchDetailsSnapshot!.isNotEmpty) {
+                      batchName = record.batchDetailsSnapshot!;
+                      if (batchName.contains('(')) {
+                        batchName = batchName.split('(').first.trim();
+                      }
+                    } else if (record.studentClass != null && record.studentClass!.isNotEmpty) {
+                      batchName = 'Class ${record.studentClass}';
+                    }
+                    
+                    String scheduleStr = '';
+                    if (record.batchDetailsSnapshot != null && record.batchDetailsSnapshot!.contains('(')) {
+                      int start = record.batchDetailsSnapshot!.indexOf('(') + 1;
+                      int end = record.batchDetailsSnapshot!.indexOf(')');
+                      if (end > start) {
+                        scheduleStr = record.batchDetailsSnapshot!.substring(start, end);
+                      }
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.receipt_long_outlined, color: Color(0xFF2E7D32), size: 22),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  batchName,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  scheduleStr.isNotEmpty ? '$yearMonthStr • $scheduleStr' : yearMonthStr,
+                                  style: const TextStyle(color: Colors.black54, fontSize: 13),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Total: ৳${record.totalAmount.toStringAsFixed(0)} | Paid: ৳${record.paidAmount.toStringAsFixed(0)}',
+                                  style: const TextStyle(color: Colors.black54, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPaid ? const Color(0xFFE8F8EE) : const Color(0xFFFFEBEE),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              isPaid ? 'Paid' : 'Due: ৳${(record.totalAmount - record.paidAmount).toStringAsFixed(0)}',
+                              style: TextStyle(
+                                color: isPaid ? const Color(0xFF2B9348) : const Color(0xFFC62828),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        isPaid ? 'PAID' : 'DUE: ৳${(record.totalAmount - record.paidAmount).toStringAsFixed(0)}',
-                        style: TextStyle(
-                          color: isPaid ? Colors.green : AppTheme.errorColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               );
             },
           ),
