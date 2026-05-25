@@ -142,7 +142,6 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                       CustomFormWidgets.buildTextField(
                         label: 'Paid Amount *',
                         hint: 'Enter paid amount',
-                        icon: Icons.attach_money,
                         prefixText: '৳ ',
                         controller: _amountCtrl,
                         isNumber: true,

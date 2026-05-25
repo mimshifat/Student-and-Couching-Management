@@ -147,7 +147,6 @@ class _BatchFormScreenState extends State<BatchFormScreen> {
                       CustomFormWidgets.buildTextField(
                         label: 'Monthly Fee *',
                         hint: 'Enter monthly fee',
-                        icon: Icons.attach_money,
                         prefixText: '৳ ',
                         controller: _feeCtrl,
                         isNumber: true,

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/fee_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
+import '../../../student/presentation/providers/student_provider.dart';
 import 'fee_payment_screen.dart';
 
 class FeeOverviewScreen extends StatefulWidget {
@@ -15,11 +17,22 @@ class FeeOverviewScreen extends StatefulWidget {
 class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  int _selectedMonth = DateTime.now().month;
+  int? _selectedMonth; // null means 'All Months'
   int _selectedYear = DateTime.now().year;
   int? _selectedBatchId;
+  Set<int>? _initialUnpaidIds;
 
   static const Color primaryNavy = Color(0xFF191A4E);
+
+  static const List<String> _months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  static const List<String> _shortMonths = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
 
   @override
   void initState() {
@@ -28,6 +41,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
       context.read<FeeProvider>().loadPendingFeeRecords();
       context.read<BatchProvider>().loadBatches();
       context.read<EnrollmentProvider>().loadEnrollments();
+      context.read<StudentProvider>().loadStudents();
     });
   }
 
@@ -38,7 +52,6 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
   }
 
   void _showFilterSheet() {
-    // Basic filter sheet for additional options if needed
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -94,21 +107,38 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
           ),
         ],
       ),
-      body: Consumer3<FeeProvider, BatchProvider, EnrollmentProvider>(
-        builder: (context, feeProvider, batchProvider, enrollmentProvider, child) {
-          if (feeProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: RefreshIndicator(
+        onRefresh: () async {
+          _initialUnpaidIds = null;
+          await context.read<FeeProvider>().loadPendingFeeRecords();
+        },
+        child: Consumer3<FeeProvider, BatchProvider, EnrollmentProvider>(
+          builder: (context, feeProvider, batchProvider, enrollmentProvider, child) {
+            if (feeProvider.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final batches = batchProvider.batches;
-          final enrollments = enrollmentProvider.enrollments;
+            final batches = batchProvider.batches;
+            final enrollments = enrollmentProvider.enrollments;
 
-          // Filter records
-          final filteredRecords = feeProvider.pendingFeeRecords.where((r) {
-            if (_searchQuery.isNotEmpty && r.studentName != null) {
+            if (_initialUnpaidIds == null) {
+              _initialUnpaidIds = feeProvider.pendingFeeRecords
+                  .where((r) => r.paidAmount < r.totalAmount)
+                  .map((r) => r.id!)
+                  .toSet();
+            }
+
+            // Filter records
+            final filteredRecords = feeProvider.pendingFeeRecords.where((r) {
+              bool isPaid = r.paidAmount >= r.totalAmount;
+              if (isPaid && !_initialUnpaidIds!.contains(r.id)) {
+                return false;
+              }
+
+              if (_searchQuery.isNotEmpty && r.studentName != null) {
               if (!r.studentName!.toLowerCase().contains(_searchQuery)) return false;
             }
-            if (r.month != _selectedMonth) return false;
+            if (_selectedMonth != null && r.month != _selectedMonth) return false;
             if (r.year != _selectedYear) return false;
             
             // Batch filter logic
@@ -123,6 +153,13 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
             }
             return true;
           }).toList();
+
+          // Sort records: studentName first, then month (April -> May -> June)
+          filteredRecords.sort((a, b) {
+            int nameCompare = (a.studentName ?? '').compareTo(b.studentName ?? '');
+            if (nameCompare != 0) return nameCompare;
+            return a.month.compareTo(b.month);
+          });
 
           double totalFee = filteredRecords.fold(0.0, (sum, r) => sum + r.totalAmount);
           double totalPaid = filteredRecords.fold(0.0, (sum, r) => sum + r.paidAmount);
@@ -145,11 +182,6 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
   }
 
   Widget _buildTopFilters(List<dynamic> batches) {
-    final List<String> months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Row(
@@ -163,19 +195,25 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                 border: Border.all(color: Colors.grey.shade200),
               ),
               child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
+                child: DropdownButton<int?>(
                   value: _selectedMonth,
                   isExpanded: true,
                   icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
                   style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
-                  items: List.generate(12, (index) {
-                    return DropdownMenuItem(
-                      value: index + 1,
-                      child: Text('${months[index]} $_selectedYear', overflow: TextOverflow.ellipsis),
-                    );
-                  }),
+                  items: [
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text('All Months $_selectedYear', overflow: TextOverflow.ellipsis),
+                    ),
+                    ...List.generate(12, (index) {
+                      return DropdownMenuItem(
+                        value: index + 1,
+                        child: Text('${_months[index]} $_selectedYear', overflow: TextOverflow.ellipsis),
+                      );
+                    }),
+                  ],
                   onChanged: (val) {
-                    if (val != null) setState(() => _selectedMonth = val);
+                    setState(() => _selectedMonth = val);
                   },
                 ),
               ),
@@ -271,8 +309,8 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
       child: Row(
         children: const [
           Expanded(flex: 3, child: Text('Student', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87))),
+          Expanded(flex: 2, child: Text('Month', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87), textAlign: TextAlign.center)),
           Expanded(flex: 2, child: Text('Fee', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87), textAlign: TextAlign.center)),
-          Expanded(flex: 2, child: Text('Paid', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87), textAlign: TextAlign.center)),
           Expanded(flex: 2, child: Text('Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87), textAlign: TextAlign.center)),
         ],
       ),
@@ -311,8 +349,10 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
           statusTextColor = const Color(0xFFC62828);
         }
 
+        String monthName = (r.month >= 1 && r.month <= 12) ? _shortMonths[r.month - 1] : '';
+
         return InkWell(
-          onTap: () {
+          onTap: (paid >= total) ? null : () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => FeePaymentScreen(
@@ -335,19 +375,23 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                       Text(
                         r.studentName ?? 'Unknown', 
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       if (r.batchDetailsSnapshot != null && r.batchDetailsSnapshot!.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
                           r.batchDetailsSnapshot!,
                           style: const TextStyle(fontSize: 10, color: Colors.black54),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ]
                     ],
+                  )
+                ),
+                Expanded(
+                  flex: 2, 
+                  child: Text(
+                    monthName, 
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.black87),
+                    textAlign: TextAlign.center,
                   )
                 ),
                 Expanded(
@@ -360,26 +404,44 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                 ),
                 Expanded(
                   flex: 2, 
-                  child: Text(
-                    '৳ ${paid.toStringAsFixed(0)}', 
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black87),
-                    textAlign: TextAlign.center,
-                  )
-                ),
-                Expanded(
-                  flex: 2, 
                   child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusBgColor,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        statusText,
-                        style: TextStyle(color: statusTextColor, fontWeight: FontWeight.bold, fontSize: 11),
-                      ),
-                    ),
+                    child: (paid >= total)
+                      ? IconButton(
+                          icon: const Icon(Icons.message, color: Color(0xFF2B9348)),
+                          onPressed: () async {
+                            final students = context.read<StudentProvider>().students;
+                            final studentList = students.where((s) => s.id == r.studentId);
+                            if (studentList.isNotEmpty) {
+                              final student = studentList.first;
+                              if (student.phone != null && student.phone!.isNotEmpty) {
+                                final message = 'Dear ${student.name}, your fee payment of ৳${total.toStringAsFixed(0)} for $monthName ${r.year} has been received. Thank you!';
+                                final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri);
+                                } else {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open messaging app.')));
+                                  }
+                                }
+                              } else {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student has no phone number.')));
+                                }
+                              }
+                            }
+                          },
+                        )
+                      : Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: statusBgColor,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            statusText,
+                            style: TextStyle(color: statusTextColor, fontWeight: FontWeight.bold, fontSize: 11),
+                          ),
+                        ),
                   )
                 ),
               ],
@@ -468,3 +530,4 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
     );
   }
 }
+

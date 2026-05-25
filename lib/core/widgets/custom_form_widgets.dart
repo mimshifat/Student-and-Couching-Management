@@ -50,7 +50,7 @@ class CustomFormWidgets {
     required String label,
     String? hint,
     required TextEditingController controller,
-    required IconData icon,
+    IconData? icon,
     bool isNumber = false,
     int maxLines = 1,
     String? Function(String?)? validator,
@@ -75,12 +75,15 @@ class CustomFormWidgets {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-            prefixIcon: Padding(
+            prefixIcon: icon != null ? Padding(
               padding: const EdgeInsets.only(left: 12, right: 8),
               child: Icon(icon, color: Colors.grey.shade500, size: 20),
+            ) : Padding(
+              padding: const EdgeInsets.only(left: 12, right: 8),
+              child: Text(prefixText ?? '', style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
             ),
             prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-            prefixText: prefixText,
+            prefixText: icon != null ? prefixText : null, // If we showed text as icon, don't show prefixText
             prefixStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
             filled: true,
             fillColor: readOnly ? Colors.grey.shade50 : Colors.white,

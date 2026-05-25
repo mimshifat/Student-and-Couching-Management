@@ -173,7 +173,6 @@ class _EnrollmentScreenState extends State<EnrollmentScreen> {
                       CustomFormWidgets.buildTextField(
                         label: 'Custom Monthly Fee (Optional)',
                         hint: 'Leave empty for default batch fee',
-                        icon: Icons.attach_money,
                         prefixText: '৳ ',
                         controller: _customFeeCtrl,
                         isNumber: true,

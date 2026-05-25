@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../fee/presentation/providers/fee_provider.dart';
 import '../../../fee/presentation/screens/fee_payment_screen.dart';
 import '../providers/student_provider.dart';
@@ -293,6 +294,43 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                                       Icon(Icons.payment, size: 14, color: Colors.blue),
                                       SizedBox(width: 4),
                                       Text('Pay', style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ] else ...[
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: () async {
+                                  final student = context.read<StudentProvider>().students.firstWhere((s) => s.id == widget.studentId);
+                                  if (student.phone != null && student.phone!.isNotEmpty) {
+                                    final message = 'Dear ${student.name}, your fee payment of ৳${record.totalAmount.toStringAsFixed(0)} for $monthName ${record.year} has been received. Thank you!';
+                                    final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri);
+                                    } else {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open messaging app.')));
+                                      }
+                                    }
+                                  } else {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student has no phone number.')));
+                                    }
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE8F8EE),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.message, size: 14, color: Color(0xFF2B9348)),
+                                      SizedBox(width: 4),
+                                      Text('Message', style: TextStyle(color: Color(0xFF2B9348), fontSize: 12, fontWeight: FontWeight.bold)),
                                     ],
                                   ),
                                 ),
