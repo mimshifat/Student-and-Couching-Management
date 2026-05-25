@@ -8,6 +8,8 @@ class EnrollmentModel extends Enrollment {
     required super.batchId,
     required super.joinDate,
     super.leaveDate,
+    super.feeOverride,
+    super.studentClass,
     required super.createdAt,
     super.batchName,
     super.studentName,
@@ -20,6 +22,8 @@ class EnrollmentModel extends Enrollment {
       batchId: entity.batchId,
       joinDate: entity.joinDate,
       leaveDate: entity.leaveDate,
+      feeOverride: entity.feeOverride,
+      studentClass: entity.studentClass,
       createdAt: entity.createdAt,
       batchName: entity.batchName,
       studentName: entity.studentName,
@@ -33,6 +37,8 @@ class EnrollmentModel extends Enrollment {
       batchId: map['batch_id'],
       joinDate: DateUtilsHelper.parseFromDb(map['join_date']),
       leaveDate: map['leave_date'] != null ? DateUtilsHelper.parseFromDb(map['leave_date']) : null,
+      feeOverride: map['fee_override'] != null ? (map['fee_override'] as num).toDouble() : null,
+      studentClass: map['student_class'],
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
       batchName: map['batch_name'], // joined field
       studentName: map['student_name'], // joined field
@@ -46,6 +52,8 @@ class EnrollmentModel extends Enrollment {
       'batch_id': batchId,
       'join_date': DateUtilsHelper.formatForDb(joinDate),
       'leave_date': leaveDate != null ? DateUtilsHelper.formatForDb(leaveDate!) : null,
+      'fee_override': feeOverride,
+      'student_class': studentClass,
       'created_at': DateUtilsHelper.formatForDb(createdAt),
     };
   }

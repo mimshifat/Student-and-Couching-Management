@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/student_provider.dart';
 import '../../../fee/presentation/providers/fee_provider.dart';
 import 'student_form_screen.dart';
@@ -362,9 +363,19 @@ class _StudentListScreenState extends State<StudentListScreen> {
                         style: const TextStyle(fontSize: 12, color: Colors.black54),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        student.phone ?? 'No phone',
-                        style: const TextStyle(fontSize: 12, color: Colors.black54),
+                      GestureDetector(
+                        onTap: () async {
+                          if (student.phone != null && student.phone!.isNotEmpty) {
+                            final Uri launchUri = Uri(scheme: 'tel', path: student.phone!);
+                            if (await canLaunchUrl(launchUri)) {
+                              await launchUrl(launchUri);
+                            }
+                          }
+                        },
+                        child: Text(
+                          student.phone ?? 'No phone',
+                          style: const TextStyle(fontSize: 12, color: Colors.black54),
+                        ),
                       ),
                     ],
                   ),

@@ -98,6 +98,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       letterSpacing: 1.2,
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'mdshifat.official.05@gmail.com',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),

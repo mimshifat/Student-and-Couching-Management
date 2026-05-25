@@ -68,9 +68,14 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                   final record = records[index];
                   final isPaid = record.paidAmount >= record.totalAmount;
 
+                  String monthYearStr = '${record.month} ${record.year}';
+                  if (record.studentClass != null && record.studentClass!.isNotEmpty) {
+                    monthYearStr += ' (${record.studentClass})';
+                  }
+
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text('${record.month} ${record.year}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text(monthYearStr, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('Total: ৳${record.totalAmount.toStringAsFixed(0)} | Paid: ৳${record.paidAmount.toStringAsFixed(0)}'),
                     trailing: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

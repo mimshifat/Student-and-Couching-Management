@@ -44,6 +44,9 @@ class FeeRepositoryImpl implements FeeRepository {
 
     // Fetch all enrollments for this student
     final enrollmentsMap = await db.query('enrollments', where: 'student_id = ?', whereArgs: [studentId]);
+    final studentMap = await db.query('students', where: 'id = ?', whereArgs: [studentId]);
+    final studentClass = studentMap.isNotEmpty ? studentMap.first['class_name'] as String? : null;
+
     final batchesMap = await db.query('batches');
     
     // Create a lookup for batches
@@ -106,8 +109,11 @@ class FeeRepositoryImpl implements FeeRepository {
             final leaveDateStr = e['leave_date'] as String?;
             final leaveDate = leaveDateStr != null ? DateUtilsHelper.parseFromDb(leaveDateStr) : null;
             
+            final feeOverrideObj = e['fee_override'];
+            double? feeOverride = feeOverrideObj != null ? (feeOverrideObj as num).toDouble() : null;
+
             double batchFee = batchFees[batchId] ?? 0.0;
-            double finalBatchFee = batchFee;
+            double finalBatchFee = feeOverride ?? batchFee;
             if (finalBatchFee < 0) finalBatchFee = 0;
 
             DateTime effectiveStart = joinDate.isAfter(firstDayOfMonth) ? joinDate : firstDayOfMonth;
@@ -129,6 +135,7 @@ class FeeRepositoryImpl implements FeeRepository {
             year: year,
             totalAmount: totalMonthlyFee,
             paidAmount: 0.0,
+            studentClass: studentClass,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );

@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../providers/enrollment_provider.dart';
 import '../screens/enrollment_screen.dart';
+import '../../../batch/presentation/providers/batch_provider.dart';
+import '../../../batch/domain/entities/batch.dart';
 
 class EnrollmentHistoryWidget extends StatefulWidget {
   final int studentId;
@@ -21,6 +23,7 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<EnrollmentProvider>().loadStudentEnrollments(widget.studentId);
+      context.read<BatchProvider>().loadBatches();
     });
   }
 
@@ -36,6 +39,36 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
     if (picked != null && mounted) {
       await context.read<EnrollmentProvider>().leaveBatch(enrollmentId, widget.studentId, picked);
     }
+  }
+
+  void _editFee(int enrollmentId, double? currentFee) {
+    final ctrl = TextEditingController(text: currentFee?.toString() ?? '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Custom Fee'),
+        content: TextFormField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'New Monthly Fee',
+            hintText: 'Leave empty for default',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final val = ctrl.text.trim();
+              final double? newFee = val.isEmpty ? null : double.tryParse(val);
+              await context.read<EnrollmentProvider>().updateFeeOverride(enrollmentId, widget.studentId, newFee);
+              if (mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -76,28 +109,59 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
                 return const Text('No enrollment records found.', style: TextStyle(color: Colors.grey));
               }
 
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: provider.historyEnrollments.length,
-                itemBuilder: (context, index) {
-                  final e = provider.historyEnrollments[index];
-                  final isActive = e.leaveDate == null;
-                  final joinStr = DateFormat('dd MMM yyyy').format(e.joinDate);
-                  final leaveStr = e.leaveDate != null ? DateFormat('dd MMM yyyy').format(e.leaveDate!) : 'Present';
+              return Consumer<BatchProvider>(
+                builder: (context, batchProvider, _) {
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: provider.historyEnrollments.length,
+                    itemBuilder: (context, index) {
+                      final e = provider.historyEnrollments[index];
+                      final isActive = e.leaveDate == null;
+                      final joinStr = DateFormat('dd MMM yyyy').format(e.joinDate);
+                      final leaveStr = e.leaveDate != null ? DateFormat('dd MMM yyyy').format(e.leaveDate!) : 'Present';
+                      
+                      double defaultFee = 0;
+                      try {
+                        final batch = batchProvider.batches.firstWhere((b) => b.id == e.batchId);
+                        defaultFee = batch.monthlyFee;
+                      } catch (_) {}
 
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(e.batchName ?? 'Unknown Batch', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('Joined: $joinStr\nLeft: $leaveStr'),
-                    trailing: isActive
-                        ? OutlinedButton(
-                            onPressed: () => _leaveBatch(e.id!),
-                            child: const Text('Leave'),
-                          )
-                        : const Text('Past', style: TextStyle(color: Colors.grey)),
+                      String feeText = 'Fee: $defaultFee ৳';
+                      if (e.feeOverride != null && e.feeOverride! >= 0) {
+                        feeText = 'Regular Fee: $defaultFee ৳ | Custom Fee: ${e.feeOverride} ৳';
+                      }
+
+                      String titleStr = e.batchName ?? 'Unknown Batch';
+                      if (e.studentClass != null && e.studentClass!.isNotEmpty) {
+                        titleStr += ' (${e.studentClass})';
+                      }
+
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(titleStr, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: Text('Joined: $joinStr\nLeft: $leaveStr\n$feeText'),
+                        isThreeLine: true,
+                        trailing: isActive
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                    onPressed: () => _editFee(e.id!, e.feeOverride),
+                                    tooltip: 'Edit Custom Fee',
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () => _leaveBatch(e.id!),
+                                    child: const Text('Leave'),
+                                  ),
+                                ],
+                              )
+                            : const Text('Past', style: TextStyle(color: Colors.grey)),
+                      );
+                    },
                   );
-                },
+                }
               );
             },
           ),

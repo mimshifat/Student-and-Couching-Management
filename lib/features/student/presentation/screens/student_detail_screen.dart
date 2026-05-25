@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/entities/student.dart';
 import 'student_form_screen.dart';
@@ -195,6 +196,7 @@ class StudentDetailScreen extends StatelessWidget {
   }
 
   Widget _buildDetailRow(IconData icon, String label, String value) {
+    bool isPhone = label.toLowerCase().contains('phone') && value != '-';
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -205,7 +207,18 @@ class StudentDetailScreen extends StatelessWidget {
           child: Text(label, style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500)),
         ),
         Expanded(
-          child: Text(value, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+          child: GestureDetector(
+            onTap: isPhone ? () async {
+              final Uri launchUri = Uri(scheme: 'tel', path: value);
+              if (await canLaunchUrl(launchUri)) {
+                await launchUrl(launchUri);
+              }
+            } : null,
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+          ),
         ),
       ],
     );

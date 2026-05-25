@@ -18,7 +18,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'coaching_app.db');
     return await openDatabase(
       path,
-      version: 5,
+      version: 8,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -100,6 +100,17 @@ class DatabaseHelper {
     if (oldVersion < 5) {
       await db.execute('ALTER TABLE notes ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0');
     }
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE students ADD COLUMN address TEXT');
+      await db.execute('ALTER TABLE students ADD COLUMN notes TEXT');
+    }
+    if (oldVersion < 7) {
+      await db.execute('ALTER TABLE enrollments ADD COLUMN fee_override REAL');
+    }
+    if (oldVersion < 8) {
+      await db.execute('ALTER TABLE fee_records ADD COLUMN student_class TEXT');
+      await db.execute('ALTER TABLE enrollments ADD COLUMN student_class TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -114,6 +125,8 @@ class DatabaseHelper {
         school_college TEXT,
         class_name TEXT,
         roll_number INTEGER,
+        address TEXT,
+        notes TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -137,6 +150,8 @@ class DatabaseHelper {
         batch_id INTEGER NOT NULL,
         join_date TEXT NOT NULL,
         leave_date TEXT,
+        fee_override REAL,
+        student_class TEXT,
         created_at TEXT NOT NULL,
         FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
         FOREIGN KEY (batch_id) REFERENCES batches (id) ON DELETE CASCADE
@@ -178,6 +193,7 @@ class DatabaseHelper {
         year INTEGER NOT NULL,
         total_amount REAL NOT NULL,
         paid_amount REAL NOT NULL DEFAULT 0.0,
+        student_class TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE

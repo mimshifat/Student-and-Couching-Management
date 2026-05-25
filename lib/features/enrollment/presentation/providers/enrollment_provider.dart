@@ -53,8 +53,16 @@ class EnrollmentProvider with ChangeNotifier {
 
   Future<bool> enrollStudent(Enrollment enrollment) async {
     try {
+      final activeForStudent = await _repository.getActiveEnrollments(enrollment.studentId);
+      if (activeForStudent.any((e) => e.batchId == enrollment.batchId)) {
+        _errorMessage = 'Student is already enrolled in this batch.';
+        notifyListeners();
+        return false;
+      }
+
       await _repository.enrollStudent(enrollment);
       await loadStudentEnrollments(enrollment.studentId);
+      await loadEnrollments();
       return true;
     } catch (e) {
       _errorMessage = e.toString();
@@ -67,6 +75,20 @@ class EnrollmentProvider with ChangeNotifier {
     try {
       await _repository.deactivateEnrollment(enrollmentId, leaveDate);
       await loadStudentEnrollments(studentId);
+      await loadEnrollments();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateFeeOverride(int enrollmentId, int studentId, double? feeOverride) async {
+    try {
+      await _repository.updateFeeOverride(enrollmentId, feeOverride);
+      await loadStudentEnrollments(studentId);
+      await loadEnrollments();
       return true;
     } catch (e) {
       _errorMessage = e.toString();

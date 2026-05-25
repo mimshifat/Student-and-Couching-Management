@@ -18,6 +18,7 @@ class EnrollmentScreen extends StatefulWidget {
 class _EnrollmentScreenState extends State<EnrollmentScreen> {
   int? _selectedBatchId;
   DateTime _joinDate = DateTime.now();
+  final TextEditingController _customFeeCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -29,6 +30,7 @@ class _EnrollmentScreenState extends State<EnrollmentScreen> {
 
   @override
   void dispose() {
+    _customFeeCtrl.dispose();
     super.dispose();
   }
 
@@ -58,10 +60,14 @@ class _EnrollmentScreenState extends State<EnrollmentScreen> {
 
     if (!_formKey.currentState!.validate()) return;
 
+    final feeText = _customFeeCtrl.text.trim();
+    final double? feeOverride = feeText.isNotEmpty ? double.tryParse(feeText) : null;
+
     final enrollment = Enrollment(
       studentId: widget.studentId,
       batchId: _selectedBatchId!,
       joinDate: _joinDate,
+      feeOverride: feeOverride,
       createdAt: DateTime.now(),
     );
 
@@ -90,18 +96,41 @@ class _EnrollmentScreenState extends State<EnrollmentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Consumer<BatchProvider>(
-                builder: (context, batchProvider, child) {
+              Consumer2<BatchProvider, EnrollmentProvider>(
+                builder: (context, batchProvider, enrollmentProvider, child) {
                   if (batchProvider.isLoading) {
                     return const Center(child: CircularProgressIndicator());
                   }
+
+                  // Find batches the student is already actively enrolled in
+                  final activeBatchIds = enrollmentProvider.activeEnrollments
+                      .where((e) => e.studentId == widget.studentId)
+                      .map((e) => e.batchId)
+                      .toSet();
+
+                  // Filter them out
+                  final availableBatches = batchProvider.batches
+                      .where((b) => !activeBatchIds.contains(b.id))
+                      .toList();
+
                   if (batchProvider.batches.isEmpty) {
                     return const Text('No batches available. Please create a batch first.');
                   }
+                  
+                  if (availableBatches.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      child: Text(
+                        'This student is already enrolled in all available batches.',
+                        style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                      ),
+                    );
+                  }
+
                   return DropdownButtonFormField<int>(
                     decoration: const InputDecoration(labelText: 'Select Batch *'),
                     initialValue: _selectedBatchId,
-                    items: batchProvider.batches.map((b) {
+                    items: availableBatches.map((b) {
                       return DropdownMenuItem<int>(
                         value: b.id,
                         child: Text(b.name),
@@ -122,6 +151,15 @@ class _EnrollmentScreenState extends State<EnrollmentScreen> {
                 subtitle: Text(DateFormat('dd MMM yyyy').format(_joinDate)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: _pickDate,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _customFeeCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Custom Monthly Fee (Optional)',
+                  hintText: 'e.g. 400 (Leave empty for default batch fee)',
+                ),
               ),
               const SizedBox(height: 32),
               SizedBox(

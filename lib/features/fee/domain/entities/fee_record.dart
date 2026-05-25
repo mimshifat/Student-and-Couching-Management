@@ -7,6 +7,7 @@ class FeeRecord {
   final double paidAmount;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? studentClass;
 
   // Transient
   final String? studentName;
@@ -18,6 +19,7 @@ class FeeRecord {
     required this.year,
     required this.totalAmount,
     this.paidAmount = 0.0,
+    this.studentClass,
     required this.createdAt,
     required this.updatedAt,
     this.studentName,
@@ -32,6 +34,7 @@ class FeeRecord {
     double? paidAmount,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? studentClass,
     String? studentName,
   }) {
     return FeeRecord(
@@ -41,6 +44,7 @@ class FeeRecord {
       year: year ?? this.year,
       totalAmount: totalAmount ?? this.totalAmount,
       paidAmount: paidAmount ?? this.paidAmount,
+      studentClass: studentClass ?? this.studentClass,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       studentName: studentName ?? this.studentName,

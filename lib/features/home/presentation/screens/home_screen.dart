@@ -22,6 +22,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int? _selectedBatchId;
+
+  String _getGreeting() {
+    final now = DateTime.now().toUtc().add(const Duration(hours: 6));
+    final hour = now.hour;
+    if (hour >= 5 && hour < 12) {
+      return 'Good Morning';
+    } else if (hour >= 12 && hour < 17) {
+      return 'Good Afternoon';
+    } else if (hour >= 17 && hour < 21) {
+      return 'Good Evening';
+    } else {
+      return 'Good Night';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -49,11 +65,11 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 20),
               _buildQuoteBanner(),
               const SizedBox(height: 24),
-              _buildSectionTitle('Quick Actions', onEdit: () {}),
+              _buildSectionTitle('Quick Actions'),
               const SizedBox(height: 16),
               _buildQuickActionsGrid(context),
               const SizedBox(height: 24),
-              _buildSectionTitle('Quick Overview', onViewAll: () {}),
+              _buildSectionTitle('Quick Overview'),
               const SizedBox(height: 16),
               _buildQuickOverviewRow(),
               const SizedBox(height: 24),
@@ -91,9 +107,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Good Morning, Teacher! 👋',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                Text(
+                  '${_getGreeting()}, Teacher! 👋',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -106,40 +122,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        Stack(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))
-                ],
-              ),
-              child: const Icon(Icons.notifications_outlined, color: Colors.black87),
-            ),
-            Positioned(
-              right: 0,
-              top: 0,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE53935),
-                  shape: BoxShape.circle,
-                ),
-                child: const Text('3', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
 
   Widget _buildDateAndBatchRow() {
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc().add(const Duration(hours: 6));
     final dayName = DateFormat('EEEE').format(now);
     final dateStr = DateFormat('dd MMMM yyyy').format(now);
 
@@ -182,33 +170,51 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3E5F5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.group_outlined, color: Color(0xFF8E24AA), size: 18),
+          child: Consumer<BatchProvider>(
+            builder: (context, batchProvider, _) {
+              final batches = batchProvider.batches;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))
+                  ],
                 ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text('All Batches', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3E5F5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.group_outlined, color: Color(0xFF8E24AA), size: 18),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int?>(
+                          value: _selectedBatchId,
+                          isExpanded: true,
+                          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black87, size: 20),
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87),
+                          items: [
+                            const DropdownMenuItem(value: null, child: Text('All Batches', overflow: TextOverflow.ellipsis)),
+                            ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, overflow: TextOverflow.ellipsis))),
+                          ],
+                          onChanged: (val) {
+                            setState(() => _selectedBatchId = val);
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const Icon(Icons.keyboard_arrow_down, color: Colors.black87, size: 20),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ],
@@ -376,23 +382,44 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildQuickOverviewRow() {
     return Consumer3<StudentProvider, BatchProvider, ExamProvider>(
       builder: (context, studentProvider, batchProvider, examProvider, _) {
-        final totalStudents = studentProvider.students.length;
+        final enrollments = context.read<EnrollmentProvider>().enrollments;
+        
+        // Filter students by selected batch
+        var students = studentProvider.students;
+        if (_selectedBatchId != null) {
+          final batchStudentIds = enrollments
+              .where((e) => e.batchId == _selectedBatchId)
+              .map((e) => e.studentId)
+              .toSet();
+          students = students.where((s) => batchStudentIds.contains(s.id)).toList();
+        }
+
+        final totalStudents = students.length;
         
         // Active Students Logic
-        final enrollments = context.read<EnrollmentProvider>().enrollments;
         int activeStudents = 0;
-        for (var s in studentProvider.students) {
+        for (var s in students) {
           final sEnrollments = enrollments.where((e) => e.studentId == s.id);
-          if (sEnrollments.any((e) => e.leaveDate == null)) {
-            activeStudents++;
+          if (_selectedBatchId != null) {
+            if (sEnrollments.any((e) => e.batchId == _selectedBatchId && e.leaveDate == null)) {
+              activeStudents++;
+            }
+          } else {
+            if (sEnrollments.any((e) => e.leaveDate == null)) {
+              activeStudents++;
+            }
           }
         }
 
-        final totalBatches = batchProvider.batches.length;
+        final totalBatches = _selectedBatchId == null ? batchProvider.batches.length : 1;
         
         // Upcoming exams logic
-        final today = DateTime.now();
-        final upcomingExams = examProvider.exams.where((e) => e.examDate.isAfter(today) || (e.examDate.year == today.year && e.examDate.month == today.month && e.examDate.day == today.day)).length;
+        final today = DateTime.now().toUtc().add(const Duration(hours: 6));
+        var exams = examProvider.exams;
+        if (_selectedBatchId != null) {
+          exams = exams.where((e) => e.batchId == _selectedBatchId).toList();
+        }
+        final upcomingExams = exams.where((e) => e.examDate.isAfter(today) || (e.examDate.year == today.year && e.examDate.month == today.month && e.examDate.day == today.day)).length;
 
         return Row(
           children: [

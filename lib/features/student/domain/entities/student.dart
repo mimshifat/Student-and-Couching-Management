@@ -8,6 +8,8 @@ class Student {
   final String? schoolCollege;
   final String? className;
   final int? rollNumber;
+  final String? address;
+  final String? notes;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,6 +23,8 @@ class Student {
     this.schoolCollege,
     this.className,
     this.rollNumber,
+    this.address,
+    this.notes,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -35,6 +39,8 @@ class Student {
     String? schoolCollege,
     String? className,
     int? rollNumber,
+    String? address,
+    String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -48,6 +54,8 @@ class Student {
       schoolCollege: schoolCollege ?? this.schoolCollege,
       className: className ?? this.className,
       rollNumber: rollNumber ?? this.rollNumber,
+      address: address ?? this.address,
+      notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

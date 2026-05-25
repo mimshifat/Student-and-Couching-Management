@@ -12,7 +12,13 @@ class EnrollmentRepositoryImpl implements EnrollmentRepository {
   @override
   Future<int> enrollStudent(Enrollment enrollment) async {
     final db = await _dbHelper.database;
-    final model = EnrollmentModel.fromEntity(enrollment);
+    
+    // Fetch student's current class to snapshot it
+    final studentMap = await db.query('students', where: 'id = ?', whereArgs: [enrollment.studentId]);
+    final studentClass = studentMap.isNotEmpty ? studentMap.first['class_name'] as String? : null;
+
+    final enrollmentWithClass = enrollment.copyWith(studentClass: studentClass);
+    final model = EnrollmentModel.fromEntity(enrollmentWithClass);
     return await db.insert(_tableName, model.toMap(), conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
   }
 
@@ -22,6 +28,17 @@ class EnrollmentRepositoryImpl implements EnrollmentRepository {
     return await db.update(
       _tableName,
       {'leave_date': DateUtilsHelper.formatForDb(leaveDate)},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  @override
+  Future<int> updateFeeOverride(int id, double? feeOverride) async {
+    final db = await _dbHelper.database;
+    return await db.update(
+      _tableName,
+      {'fee_override': feeOverride},
       where: 'id = ?',
       whereArgs: [id],
     );
