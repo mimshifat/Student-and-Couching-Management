@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-
-import '../../../../core/widgets/common_widgets.dart';
 import '../providers/enrollment_provider.dart';
 import '../screens/enrollment_screen.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
@@ -17,6 +15,8 @@ class EnrollmentHistoryWidget extends StatefulWidget {
 }
 
 class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
+  int _selectedTab = 0; // 0 for Active, 1 for Closed
+
   @override
   void initState() {
     super.initState();
@@ -70,167 +70,230 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
     );
   }
 
+  Widget _buildTabButton(String title, int index) {
+    final isSelected = _selectedTab == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTab = index;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(13),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.black87 : Colors.black54,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Enrollments',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
-              ),
-              TextButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Enroll'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EnrollmentScreen(studentId: widget.studentId),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Enrollments',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Enroll'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EnrollmentScreen(studentId: widget.studentId),
+                  ),
+                );
+              },
+            )
+          ],
+        ),
+        const SizedBox(height: 8),
+        Consumer<EnrollmentProvider>(
+          builder: (context, provider, child) {
+            if (provider.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (provider.historyEnrollments.isEmpty) {
+              return const Text('No enrollment records found.', style: TextStyle(color: Colors.grey));
+            }
+
+            final filteredEnrollments = provider.historyEnrollments.where((e) {
+              final isActive = e.leaveDate == null;
+              if (_selectedTab == 0 && !isActive) return false;
+              if (_selectedTab == 1 && isActive) return false;
+              return true;
+            }).toList();
+
+            return Consumer<BatchProvider>(
+              builder: (context, batchProvider, _) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildTabButton('Active', 0),
+                          _buildTabButton('Closed', 1),
+                        ],
+                      ),
                     ),
-                  );
-                },
-              )
-            ],
-          ),
-          const SizedBox(height: 8),
-          Consumer<EnrollmentProvider>(
-            builder: (context, provider, child) {
-              if (provider.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
+                    const SizedBox(height: 16),
+                    if (filteredEnrollments.isEmpty)
+                      const Text('No records found for selected filter.', style: TextStyle(color: Colors.grey))
+                    else
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFAFAFA),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filteredEnrollments.length,
+                          separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                          itemBuilder: (context, index) {
+                            final e = filteredEnrollments[index];
+                      final isActive = e.leaveDate == null;
+                      final joinStr = DateFormat('dd MMM yyyy').format(e.joinDate);
+                      
+                      String titleStr = e.batchName ?? 'Unknown Batch';
+                      if (e.studentClass != null && e.studentClass!.isNotEmpty) {
+                        titleStr += ' (${e.studentClass})';
+                      }
+                      
+                      String scheduleStr = '';
+                      if (e.batchScheduleDaysSnapshot != null && e.batchScheduleDaysSnapshot!.isNotEmpty && e.batchTimeSlotSnapshot != null) {
+                        scheduleStr = '${e.batchScheduleDaysSnapshot} ${e.batchTimeSlotSnapshot}';
+                      }
 
-              if (provider.historyEnrollments.isEmpty) {
-                return const Text('No enrollment records found.', style: TextStyle(color: Colors.grey));
-              }
-
-              return Consumer<BatchProvider>(
-                builder: (context, batchProvider, _) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFAFAFA),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: provider.historyEnrollments.length,
-                      separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFEEEEEE)),
-                      itemBuilder: (context, index) {
-                        final e = provider.historyEnrollments[index];
-                        final isActive = e.leaveDate == null;
-                        final joinStr = DateFormat('dd MMM yyyy').format(e.joinDate);
-                        
-                        String titleStr = e.batchName ?? 'Unknown Batch';
-                        if (e.studentClass != null && e.studentClass!.isNotEmpty) {
-                          titleStr += ' (${e.studentClass})';
-                        }
-                        
-                        String scheduleStr = '';
-                        if (e.batchScheduleDaysSnapshot != null && e.batchScheduleDaysSnapshot!.isNotEmpty && e.batchTimeSlotSnapshot != null) {
-                          scheduleStr = '${e.batchScheduleDaysSnapshot} ${e.batchTimeSlotSnapshot}';
-                        }
-
-                        return Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEEF0FF),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(Icons.class_outlined, color: Color(0xFF3B41C5), size: 22),
+                      return Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF0FF),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      titleStr,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
-                                    ),
+                              child: const Icon(Icons.class_outlined, color: Color(0xFF3B41C5), size: 22),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    titleStr,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    scheduleStr.isNotEmpty ? 'Join: $joinStr • $scheduleStr' : 'Join: $joinStr',
+                                    style: const TextStyle(color: Colors.black54, fontSize: 13),
+                                  ),
+                                  if (e.feeOverride != null && e.feeOverride! >= 0) ...[
                                     const SizedBox(height: 4),
                                     Text(
-                                      scheduleStr.isNotEmpty ? 'Join: $joinStr • $scheduleStr' : 'Join: $joinStr',
-                                      style: const TextStyle(color: Colors.black54, fontSize: 13),
-                                    ),
-                                    if (e.feeOverride != null && e.feeOverride! >= 0) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Custom Fee: ${e.feeOverride} ৳',
-                                        style: const TextStyle(color: Colors.black54, fontSize: 12),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: isActive ? const Color(0xFFE8F8EE) : const Color(0xFFF5F5F5),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      isActive ? 'Active' : 'Past',
-                                      style: TextStyle(
-                                        color: isActive ? const Color(0xFF2B9348) : Colors.black54,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                  if (isActive) ...[
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        InkWell(
-                                          onTap: () => _editFee(e.id!, e.feeOverride),
-                                          child: const Padding(
-                                            padding: EdgeInsets.all(4.0),
-                                            child: Icon(Icons.edit, size: 16, color: Colors.blue),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        InkWell(
-                                          onTap: () => _leaveBatch(e.id!),
-                                          child: const Padding(
-                                            padding: EdgeInsets.all(4.0),
-                                            child: Icon(Icons.exit_to_app, size: 16, color: Colors.red),
-                                          ),
-                                        ),
-                                      ],
+                                      'Custom Fee: ${e.feeOverride} ৳',
+                                      style: const TextStyle(color: Colors.black54, fontSize: 12),
                                     ),
                                   ],
                                 ],
                               ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                }
-              );
-            },
-          ),
-        ],
-      ),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isActive ? const Color(0xFFE8F8EE) : const Color(0xFFF5F5F5),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    isActive ? 'Active' : 'Past',
+                                    style: TextStyle(
+                                      color: isActive ? const Color(0xFF2B9348) : Colors.black54,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                if (isActive) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      InkWell(
+                                        onTap: () => _editFee(e.id!, e.feeOverride),
+                                        child: const Padding(
+                                          padding: EdgeInsets.all(4.0),
+                                          child: Icon(Icons.edit, size: 16, color: Colors.blue),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      InkWell(
+                                        onTap: () => _leaveBatch(e.id!),
+                                        child: const Padding(
+                                          padding: EdgeInsets.all(4.0),
+                                          child: Icon(Icons.exit_to_app, size: 16, color: Colors.red),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          }
+        );
+          },
+        ),
+      ],
     );
   }
 }
