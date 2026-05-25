@@ -36,11 +36,11 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.class_),
-            title: const Text('Batches'),
+            leading: const Icon(Icons.assignment),
+            title: const Text('Exams'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/batches');
+              Navigator.pushNamed(context, '/exams');
             },
           ),
           ListTile(

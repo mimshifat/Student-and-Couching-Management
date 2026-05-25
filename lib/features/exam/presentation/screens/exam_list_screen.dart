@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/exam_provider.dart';
+import '../../../batch/presentation/providers/batch_provider.dart';
 import 'exam_form_screen.dart';
 import 'result_entry_screen.dart';
 
@@ -16,15 +17,21 @@ class ExamListScreen extends StatefulWidget {
 class _ExamListScreenState extends State<ExamListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  int _selectedSegment = 0; // 0 for All Exams, 1 for My Exams
+  
+  final int _currentYear = DateTime.now().year;
+  late int _selectedYear;
+  int? _selectedMonth; // null means 'All Months'
+  int? _selectedBatchId; // null means 'All Batches'
 
   static const Color primaryNavy = Color(0xFF191A4E);
 
   @override
   void initState() {
     super.initState();
+    _selectedYear = _currentYear;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ExamProvider>().loadAllExams();
+      context.read<BatchProvider>().loadBatches();
     });
   }
 
@@ -71,17 +78,33 @@ class _ExamListScreenState extends State<ExamListScreen> {
           }
 
           final exams = provider.exams.where((e) {
+            // Search filter
             if (_searchQuery.isNotEmpty && !e.title.toLowerCase().contains(_searchQuery)) {
+              return false;
+            }
+            // Year filter
+            if (e.examDate.year != _selectedYear) {
+              return false;
+            }
+            // Month filter
+            if (_selectedMonth != null && e.examDate.month != _selectedMonth) {
+              return false;
+            }
+            // Batch filter
+            if (_selectedBatchId != null && e.batchId != _selectedBatchId) {
               return false;
             }
             return true;
           }).toList();
+          
+          // Sort exams by date descending
+          exams.sort((a, b) => b.examDate.compareTo(a.examDate));
 
           return Column(
             children: [
               _buildSearchBar(),
-              _buildSegmentedControl(),
-              const SizedBox(height: 16),
+              _buildFiltersRow(),
+              const SizedBox(height: 8),
               if (exams.isEmpty)
                 const Expanded(
                   child: Center(
@@ -132,72 +155,99 @@ class _ExamListScreenState extends State<ExamListScreen> {
     );
   }
 
-  Widget _buildSegmentedControl() {
+  Widget _buildFiltersRow() {
+    final List<String> months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    // Generate last 5 years up to next year
+    final List<int> years = List.generate(7, (index) => _currentYear - 5 + index).reversed.toList();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF0F2F8),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedSegment = 0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                flex: 1,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    color: _selectedSegment == 0 ? Colors.white : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: _selectedSegment == 0
-                        ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                        : null,
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade300),
                   ),
-                  child: Center(
-                    child: Text(
-                      'All Exams',
-                      style: TextStyle(
-                        color: _selectedSegment == 0 ? const Color(0xFF3B41C5) : Colors.black54,
-                        fontWeight: _selectedSegment == 0 ? FontWeight.bold : FontWeight.w600,
-                        fontSize: 13,
-                      ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      isExpanded: true,
+                      value: _selectedYear,
+                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                      items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList(),
+                      onChanged: (val) => setState(() => _selectedYear = val!),
                     ),
                   ),
                 ),
               ),
-            ),
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedSegment = 1),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 1,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    color: _selectedSegment == 1 ? Colors.white : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: _selectedSegment == 1
-                        ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                        : null,
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade300),
                   ),
-                  child: Center(
-                    child: Text(
-                      'My Exams',
-                      style: TextStyle(
-                        color: _selectedSegment == 1 ? const Color(0xFF3B41C5) : Colors.black54,
-                        fontWeight: _selectedSegment == 1 ? FontWeight.bold : FontWeight.w600,
-                        fontSize: 13,
-                      ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int?>(
+                      isExpanded: true,
+                      value: _selectedMonth,
+                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('All Months')),
+                        ...List.generate(12, (index) => DropdownMenuItem(value: index + 1, child: Text(months[index]))),
+                      ],
+                      onChanged: (val) => setState(() => _selectedMonth = val),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Consumer<BatchProvider>(
+            builder: (context, batchProvider, _) {
+              final batches = batchProvider.batches;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int?>(
+                    isExpanded: true,
+                    value: _selectedBatchId,
+                    style: const TextStyle(fontSize: 13, color: Colors.black87),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('All Batches')),
+                      ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, overflow: TextOverflow.ellipsis))),
+                    ],
+                    onChanged: (val) => setState(() => _selectedBatchId = val),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
+
+
 
   Widget _buildExamCard(dynamic exam, ExamProvider provider) {
     // Determine status based on date
@@ -215,9 +265,6 @@ class _ExamListScreenState extends State<ExamListScreen> {
           context,
           MaterialPageRoute(builder: (_) => ResultEntryScreen(exam: exam)),
         );
-      },
-      onLongPress: () {
-        // Options like edit/delete could go here or in a bottom sheet
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -257,7 +304,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Batch: ${exam.batchName ?? 'Unknown'}',
+                    'Batch: ${exam.batchName ?? 'Unknown'} • ${exam.examType}',
                     style: const TextStyle(color: Colors.black54, fontSize: 13),
                   ),
                   const SizedBox(height: 4),
@@ -268,16 +315,36 @@ class _ExamListScreenState extends State<ExamListScreen> {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusBgColor,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                statusText,
-                style: TextStyle(color: statusTextColor, fontWeight: FontWeight.bold, fontSize: 11),
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusBgColor,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(color: statusTextColor, fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ExamFormScreen(exam: exam)),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    child: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF5A52B8)),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

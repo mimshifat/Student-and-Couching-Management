@@ -27,6 +27,7 @@ class CoachingApp extends StatelessWidget {
         '/notes': (context) => const NoteListScreen(),
         '/backup': (context) => const BackupSettingsScreen(),
         '/batches': (context) => const BatchListScreen(),
+        '/exams': (context) => const ExamListScreen(),
         '/routine': (context) => const RoutineScreen(),
       },
     );
@@ -49,7 +50,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const DashboardScreen(),
     const StudentListScreen(),
     const FeeOverviewScreen(),
-    const ExamListScreen(),
+    const BatchListScreen(),
   ];
 
   @override
@@ -66,7 +67,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Dashboard'),
           BottomNavigationBarItem(icon: Icon(Icons.people_alt_rounded), label: 'Students'),
           BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: 'Fees'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_rounded), label: 'Exams'),
+          BottomNavigationBarItem(icon: Icon(Icons.class_rounded), label: 'Batches'),
         ],
       ),
     );
