@@ -63,7 +63,7 @@ class CustomFormWidgets {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primaryColor)),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         TextFormField(
           controller: controller,
           keyboardType: isNumber ? TextInputType.number : TextInputType.text,
@@ -75,12 +75,16 @@ class CustomFormWidgets {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-            prefixIcon: Icon(icon, color: Colors.grey.shade500, size: 20),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.only(left: 12, right: 8),
+              child: Icon(icon, color: Colors.grey.shade500, size: 20),
+            ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
             prefixText: prefixText,
             prefixStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
             filled: true,
             fillColor: readOnly ? Colors.grey.shade50 : Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
             enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor)),
@@ -102,12 +106,12 @@ class CustomFormWidgets {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primaryColor)),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -116,13 +120,16 @@ class CustomFormWidgets {
             child: Row(
               children: [
                 Icon(Icons.calendar_today_outlined, color: Colors.grey.shade500, size: 20),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     date.toLocal().toString().split(' ')[0],
                     style: const TextStyle(fontSize: 14, color: Colors.black87),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 4),
                 Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade500, size: 20),
               ],
             ),
@@ -142,7 +149,7 @@ class CustomFormWidgets {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primaryColor)),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         InkWell(
           onTap: () async {
             final picked = await showTimePicker(
@@ -153,7 +160,7 @@ class CustomFormWidgets {
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -162,11 +169,13 @@ class CustomFormWidgets {
             child: Row(
               children: [
                 Icon(Icons.access_time, color: Colors.grey.shade500, size: 20),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     time == null ? 'Select Time' : time.format(context),
                     style: TextStyle(fontSize: 14, color: time == null ? Colors.grey.shade500 : Colors.black87),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -189,15 +198,24 @@ class CustomFormWidgets {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primaryColor)),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         DropdownButtonFormField<T>(
           initialValue: value,
           icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade500),
+          isExpanded: true,
+          dropdownColor: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          menuMaxHeight: 300,
+          elevation: 4,
           decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: Colors.grey.shade500, size: 20),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.only(left: 12, right: 8),
+              child: Icon(icon, color: Colors.grey.shade500, size: 20),
+            ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
             enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor)),

@@ -145,7 +145,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CustomFormWidgets.buildSectionHeader('Personal Information', Icons.person_outline),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       CustomFormWidgets.buildTextField(
                         label: 'Student Name *',
                         hint: 'Enter student full name',
@@ -153,7 +153,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                         controller: _nameCtrl,
                         validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
@@ -167,7 +167,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                               validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: CustomFormWidgets.buildDatePicker(
                               context: context,
@@ -186,7 +186,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
@@ -199,7 +199,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                               validator: (val) => val == null || val.isEmpty ? 'Required' : null,
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: CustomFormWidgets.buildTextField(
                               label: 'Roll Number *',
@@ -212,17 +212,17 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       CustomFormWidgets.buildTextField(
                         label: 'School / College Name',
                         hint: 'Enter school or college name',
                         icon: Icons.account_balance_outlined,
                         controller: _schoolCtrl,
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24),
 
                       CustomFormWidgets.buildSectionHeader('Guardian Information', Icons.people_outline),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       CustomFormWidgets.buildTextField(
                         label: 'Guardian Name *',
                         hint: 'Enter guardian full name',
@@ -230,7 +230,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                         controller: _gNameCtrl,
                         validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       CustomFormWidgets.buildTextField(
                         label: 'Guardian Phone *',
                         hint: 'Enter guardian phone number',
@@ -241,16 +241,16 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                         validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24),
                       CustomFormWidgets.buildSectionHeader('Additional Information', Icons.info_outline),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       CustomFormWidgets.buildTextField(
                         label: 'Address',
                         hint: 'Enter full address',
                         icon: Icons.location_on_outlined,
                         controller: _addressCtrl,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       CustomFormWidgets.buildTextField(
                         label: 'Notes',
                         hint: 'Any additional notes',
