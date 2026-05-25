@@ -121,12 +121,10 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
             final batches = batchProvider.batches;
             final enrollments = enrollmentProvider.enrollments;
 
-            if (_initialUnpaidIds == null) {
-              _initialUnpaidIds = feeProvider.pendingFeeRecords
-                  .where((r) => r.paidAmount < r.totalAmount && !r.isSettled)
-                  .map((r) => r.id!)
-                  .toSet();
-            }
+            _initialUnpaidIds ??= feeProvider.pendingFeeRecords
+                .where((r) => r.paidAmount < r.totalAmount && !r.isSettled)
+                .map((r) => r.id!)
+                .toSet();
 
             // Filter records
             final filteredRecords = feeProvider.pendingFeeRecords.where((r) {
@@ -177,6 +175,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
             ],
           );
         },
+      ),
       ),
     );
   }

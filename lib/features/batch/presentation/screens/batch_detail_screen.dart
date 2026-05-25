@@ -3,11 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../domain/entities/batch.dart';
 import 'batch_form_screen.dart';
-import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../../enrollment/domain/entities/enrollment.dart';
-import '../../../student/presentation/screens/student_form_screen.dart';
+import '../../../enrollment/presentation/screens/batch_student_enrollment_screen.dart';
 
 class BatchDetailScreen extends StatefulWidget {
   final Batch batch;
@@ -34,124 +33,267 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
         title: Text(widget.batch.name),
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: const Icon(Icons.edit_outlined),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => BatchFormScreen(batch: widget.batch)),
-              );
+              ).then((_) {
+                setState(() {}); // refresh batch details if changed
+              });
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.batch.scheduleDays != null && widget.batch.timeSlot != null) ...[
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Schedule', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_month, color: AppTheme.primaryColor.withValues(alpha: 0.8), size: 20),
-                        const SizedBox(width: 8),
-                        Text(widget.batch.scheduleDays!, style: const TextStyle(fontSize: 15)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.access_time, color: AppTheme.primaryColor.withValues(alpha: 0.8), size: 20),
-                        const SizedBox(width: 8),
-                        Text(widget.batch.timeSlot!, style: const TextStyle(fontSize: 15)),
-                      ],
-                    ),
-                  ],
-                ),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: _buildHeaderInfo(),
+          ),
+          const SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                'Enrolled Students', 
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87),
               ),
-              const SizedBox(height: 16),
-            ],
-            if (widget.batch.description != null && widget.batch.description!.isNotEmpty)
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 8),
-                    Text(widget.batch.description!),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 16),
-            const Text('Enrolled Students', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 8),
-            FutureBuilder<List<Enrollment>>(
-              future: _studentsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-                
-                final students = snapshot.data ?? [];
-                if (students.isEmpty) {
-                  return const AppCard(child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text('No active students in this batch.'),
-                  ));
-                }
-
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: students.length,
-                  itemBuilder: (context, index) {
-                    final e = students[index];
-                    return AppCard(
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                          foregroundColor: AppTheme.primaryColor,
-                          child: const Icon(Icons.person),
-                        ),
-                        title: Text(e.studentName ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Joined: ${e.joinDate.toLocal().toString().split(' ')[0]}'),
-                      ),
-                    );
-                  },
-                );
-              },
             ),
-          ],
-        ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: _buildStudentList(),
+          ),
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 80), // Padding for FAB
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => StudentFormScreen(initialBatchId: widget.batch.id),
+              builder: (_) => BatchStudentEnrollmentScreen(batch: widget.batch),
             ),
           ).then((_) {
-            // Reload students in case a new student was enrolled
             _loadStudents();
             setState(() {});
           });
         },
-        icon: const Icon(Icons.person_add),
-        label: const Text('Add Student'),
+        icon: const Icon(Icons.person_add_alt_1),
+        label: const Text('Add Student', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
+    );
+  }
+
+  Widget _buildHeaderInfo() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.class_outlined, color: AppTheme.primaryColor, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.batch.name,
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Batch Fee: ৳${widget.batch.monthlyFee.toStringAsFixed(0)}',
+                      style: const TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (widget.batch.scheduleDays != null || widget.batch.timeSlot != null) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Divider(),
+            ),
+            if (widget.batch.scheduleDays != null && widget.batch.scheduleDays!.isNotEmpty)
+              _buildInfoRow(Icons.calendar_month_outlined, 'Schedule', widget.batch.scheduleDays!),
+            if (widget.batch.timeSlot != null && widget.batch.timeSlot!.isNotEmpty)
+              _buildInfoRow(Icons.access_time_outlined, 'Time', widget.batch.timeSlot!),
+          ],
+          if (widget.batch.description != null && widget.batch.description!.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Divider(),
+            ),
+            const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
+            const SizedBox(height: 8),
+            Text(widget.batch.description!, style: const TextStyle(color: Colors.black54, fontSize: 14)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: AppTheme.primaryColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                Text(value, style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStudentList() {
+    return FutureBuilder<List<Enrollment>>(
+      future: _studentsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+        if (snapshot.hasError) {
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)),
+              ),
+            ),
+          );
+        }
+        
+        final students = snapshot.data ?? [];
+        if (students.isEmpty) {
+          return SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              margin: const EdgeInsets.only(top: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: const Column(
+                children: [
+                  Icon(Icons.people_outline, size: 48, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'No students enrolled yet',
+                    style: TextStyle(fontSize: 16, color: Colors.black54, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Click the add button below to enroll students into this batch.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.black38),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final e = students[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                  border: Border.all(color: Colors.grey.shade100),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: CircleAvatar(
+                    backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    foregroundColor: AppTheme.primaryColor,
+                    radius: 24,
+                    child: Text(
+                      (e.studentName != null && e.studentName!.isNotEmpty) ? e.studentName![0].toUpperCase() : '?',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                  ),
+                  title: Text(
+                    e.studentName ?? 'Unknown Student',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  subtitle: Text(
+                    'Joined: ${e.joinDate.toLocal().toString().split(' ')[0]}',
+                    style: const TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                  onTap: () {
+                    // Navigate to student details if needed
+                  },
+                ),
+              );
+            },
+            childCount: students.length,
+          ),
+        );
+      },
     );
   }
 }
