@@ -43,7 +43,8 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
       if (amount <= 0) return;
 
       final provider = context.read<FeeProvider>();
-      final success = await provider.updatePaidAmount(widget.feeRecord.id!, amount, widget.studentId, isSettled: _isSettled);
+      final note = _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim();
+      final success = await provider.updatePaidAmount(widget.feeRecord.id!, amount, widget.studentId, isSettled: _isSettled, note: note);
       
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Recorded successfully.')));

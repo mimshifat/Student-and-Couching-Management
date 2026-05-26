@@ -230,13 +230,37 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                                   style: const TextStyle(color: Colors.black54, fontSize: 13),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  'Total: ৳${record.totalAmount.toStringAsFixed(0)} | Paid: ৳${record.paidAmount.toStringAsFixed(0)}',
-                                  style: const TextStyle(color: Colors.black54, fontSize: 12),
-                                ),
-                              ],
+                                  Text(
+                                    'Total: ৳${record.totalAmount.toStringAsFixed(0)} | Paid: ৳${record.paidAmount.toStringAsFixed(0)}',
+                                    style: const TextStyle(color: Colors.black54, fontSize: 12),
+                                  ),
+                                  if (record.note != null && record.note!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.amber.shade50,
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: Colors.amber.shade200),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.notes, size: 12, color: Colors.amber.shade800),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              record.note!,
+                                              style: TextStyle(color: Colors.amber.shade800, fontSize: 11, fontStyle: FontStyle.italic),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
-                          ),
                           const SizedBox(width: 12),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,

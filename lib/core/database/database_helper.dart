@@ -18,7 +18,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'coaching_app.db');
     return await openDatabase(
       path,
-      version: 14,
+      version: 15,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -134,6 +134,9 @@ class DatabaseHelper {
     if (oldVersion < 14) {
       await db.execute('ALTER TABLE exams ADD COLUMN exam_type TEXT NOT NULL DEFAULT \'Monthly\'');
     }
+    if (oldVersion < 15) {
+      await db.execute('ALTER TABLE fee_records ADD COLUMN note TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -228,6 +231,7 @@ class DatabaseHelper {
         total_amount REAL NOT NULL,
         paid_amount REAL NOT NULL DEFAULT 0.0,
         is_settled INTEGER NOT NULL DEFAULT 0,
+        note TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE

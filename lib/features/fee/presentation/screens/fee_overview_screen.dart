@@ -126,42 +126,53 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                 .map((r) => r.id!)
                 .toSet();
 
-            // Filter records
-            final filteredRecords = feeProvider.pendingFeeRecords.where((r) {
+            final allMatchingRecords = feeProvider.pendingFeeRecords.where((r) {
+              if (_searchQuery.isNotEmpty && r.studentName != null) {
+                if (!r.studentName!.toLowerCase().contains(_searchQuery)) return false;
+              }
+              if (_selectedMonth != null && r.month != _selectedMonth) return false;
+              if (r.year != _selectedYear) return false;
+              
+              // Batch filter logic
+              if (_selectedBatchId != null) {
+                if (r.batchId != null) {
+                  if (r.batchId != _selectedBatchId) return false;
+                } else {
+                  // Legacy fallback
+                  bool inBatch = enrollments.any((e) => e.studentId == r.studentId && e.batchId == _selectedBatchId);
+                  if (!inBatch) return false;
+                }
+              }
+              return true;
+            }).toList();
+
+            // Filter records for display (hiding previously paid items)
+            final filteredRecords = allMatchingRecords.where((r) {
               bool isPaid = r.paidAmount >= r.totalAmount || r.isSettled;
               if (isPaid && !_initialUnpaidIds!.contains(r.id)) {
                 return false;
               }
+              return true;
+            }).toList();
 
-              if (_searchQuery.isNotEmpty && r.studentName != null) {
-              if (!r.studentName!.toLowerCase().contains(_searchQuery)) return false;
-            }
-            if (_selectedMonth != null && r.month != _selectedMonth) return false;
-            if (r.year != _selectedYear) return false;
+            // Sort records: studentName first, then month (April -> May -> June)
+            filteredRecords.sort((a, b) {
+              int nameCompare = (a.studentName ?? '').compareTo(b.studentName ?? '');
+              if (nameCompare != 0) return nameCompare;
+              return a.month.compareTo(b.month);
+            });
+
+            // Calculate summary based on ALL matching records, so users can see their total payments
+            double totalFee = allMatchingRecords.fold(0.0, (sum, r) => sum + r.totalAmount);
+            double totalPaid = allMatchingRecords.fold(0.0, (sum, r) => sum + r.paidAmount);
             
-            // Batch filter logic
-            if (_selectedBatchId != null) {
-              if (r.batchId != null) {
-                if (r.batchId != _selectedBatchId) return false;
-              } else {
-                // Legacy fallback
-                bool inBatch = enrollments.any((e) => e.studentId == r.studentId && e.batchId == _selectedBatchId);
-                if (!inBatch) return false;
+            // For items that are settled, the remaining difference should be 0 even if paidAmount < totalAmount
+            double difference = allMatchingRecords.fold(0.0, (sum, r) {
+              if (r.isSettled || r.paidAmount >= r.totalAmount) {
+                return sum; // No remaining difference for this item
               }
-            }
-            return true;
-          }).toList();
-
-          // Sort records: studentName first, then month (April -> May -> June)
-          filteredRecords.sort((a, b) {
-            int nameCompare = (a.studentName ?? '').compareTo(b.studentName ?? '');
-            if (nameCompare != 0) return nameCompare;
-            return a.month.compareTo(b.month);
-          });
-
-          double totalFee = filteredRecords.fold(0.0, (sum, r) => sum + r.totalAmount);
-          double totalPaid = filteredRecords.fold(0.0, (sum, r) => sum + r.paidAmount);
-          double difference = totalFee - totalPaid;
+              return sum + (r.totalAmount - r.paidAmount);
+            });
 
           return Column(
             children: [
@@ -252,45 +263,24 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FA),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-                decoration: const InputDecoration(
-                  hintText: 'Search by student name',
-                  hintStyle: TextStyle(color: Colors.black38, fontSize: 14),
-                  prefixIcon: Icon(Icons.search, color: Colors.black38),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ),
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+          decoration: const InputDecoration(
+            hintText: 'Search by student name',
+            hintStyle: TextStyle(color: Colors.black38, fontSize: 14),
+            prefixIcon: Icon(Icons.search, color: Colors.black38),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(vertical: 14),
           ),
-          const SizedBox(width: 12),
-          InkWell(
-            onTap: _showFilterSheet,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              height: 48,
-              width: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FA),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: const Icon(Icons.filter_alt_outlined, color: Colors.black54),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -395,11 +385,24 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                 ),
                 Expanded(
                   flex: 2, 
-                  child: Text(
-                    '৳ ${total.toStringAsFixed(0)}', 
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black87),
-                    textAlign: TextAlign.center,
-                  )
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '৳ ${total.toStringAsFixed(0)}', 
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black87),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (paid > 0) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Paid: ৳ ${paid.toStringAsFixed(0)}',
+                          style: const TextStyle(fontSize: 10, color: Color(0xFF2B9348), fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ]
+                    ],
+                  ),
                 ),
                 Expanded(
                   flex: 2, 

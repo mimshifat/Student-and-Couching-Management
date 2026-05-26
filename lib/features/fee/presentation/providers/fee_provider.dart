@@ -61,9 +61,9 @@ class FeeProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> updatePaidAmount(int feeRecordId, double paidAmount, int studentId, {bool isSettled = false}) async {
+  Future<bool> updatePaidAmount(int feeRecordId, double paidAmount, int studentId, {bool isSettled = false, String? note}) async {
     try {
-      await _feeRepository.updatePaidAmount(feeRecordId, paidAmount, isSettled: isSettled);
+      await _feeRepository.updatePaidAmount(feeRecordId, paidAmount, isSettled: isSettled, note: note);
       await loadStudentFeeData(studentId);
       await loadPendingFeeRecords();
       return true;
