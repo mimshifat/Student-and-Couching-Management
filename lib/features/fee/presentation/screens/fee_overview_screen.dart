@@ -67,19 +67,33 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
               const SizedBox(height: 24),
               const Text('Year Selection', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                decoration: const InputDecoration(border: OutlineInputBorder()),
-                initialValue: _selectedYear,
-                items: List.generate(5, (index) {
-                  int y = DateTime.now().year - 2 + index;
-                  return DropdownMenuItem(value: y, child: Text('$y'));
-                }),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() => _selectedYear = val);
-                    Navigator.pop(context);
-                  }
-                },
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: _selectedYear,
+                    isExpanded: true,
+                    isDense: true,
+                    menuMaxHeight: 300,
+                    icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
+                    style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500, fontSize: 14),
+                    items: List.generate(5, (index) {
+                      int y = DateTime.now().year - 2 + index;
+                      return DropdownMenuItem(value: y, child: Text('$y'));
+                    }),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() => _selectedYear = val);
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                ),
               ),
             ],
           ),
@@ -210,6 +224,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                 child: DropdownButton<int?>(
                   value: _selectedMonth,
                   isExpanded: true,
+                  menuMaxHeight: 300,
                   icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
                   style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
                   items: [
@@ -244,6 +259,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                 child: DropdownButton<int?>(
                   value: _selectedBatchId,
                   isExpanded: true,
+                  menuMaxHeight: 300,
                   icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
                   style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
                   items: [

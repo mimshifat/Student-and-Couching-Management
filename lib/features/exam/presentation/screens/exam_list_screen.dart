@@ -184,6 +184,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<int>(
                       isExpanded: true,
+                      menuMaxHeight: 300,
                       value: _selectedYear,
                       style: const TextStyle(fontSize: 13, color: Colors.black87),
                       items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList(),
@@ -205,6 +206,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<int?>(
                       isExpanded: true,
+                      menuMaxHeight: 300,
                       value: _selectedMonth,
                       style: const TextStyle(fontSize: 13, color: Colors.black87),
                       items: [
@@ -232,6 +234,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<int?>(
                     isExpanded: true,
+                    menuMaxHeight: 300,
                     value: _selectedBatchId,
                     style: const TextStyle(fontSize: 13, color: Colors.black87),
                     items: [

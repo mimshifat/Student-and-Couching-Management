@@ -5,6 +5,8 @@ import '../../domain/entities/enrollment.dart';
 import '../providers/enrollment_provider.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/widgets/custom_form_widgets.dart';
+import '../../../../core/widgets/searchable_dropdown.dart';
+import '../../../student/domain/entities/student.dart';
 import '../../../batch/domain/entities/batch.dart';
 
 class BatchStudentEnrollmentScreen extends StatefulWidget {
@@ -143,16 +145,15 @@ class _BatchStudentEnrollmentScreenState extends State<BatchStudentEnrollmentScr
                             );
                           }
 
-                          return CustomFormWidgets.buildDropdown<int>(
+                          return SearchableDropdown<Student, int>(
                             label: 'Select Student *',
                             icon: Icons.person_outline,
                             value: _selectedStudentId,
-                            items: availableStudents.map((s) {
-                              return DropdownMenuItem<int>(
-                                value: s.id,
-                                child: Text('${s.name} (${s.phone ?? ''})', style: const TextStyle(fontSize: 14)),
-                              );
-                            }).toList(),
+                            items: availableStudents,
+                            itemLabel: (s) => '${s.name} (${s.phone ?? ''})',
+                            itemSearchString: (s) => '${s.name} ${s.phone ?? ''}',
+                            itemValue: (s) => s.id!,
+                            hint: 'Select Student',
                             onChanged: (val) {
                               setState(() {
                                 _selectedStudentId = val;

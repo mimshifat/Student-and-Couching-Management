@@ -149,7 +149,7 @@ class _EnrollmentScreenState extends State<EnrollmentScreen> {
                             items: availableBatches.map((b) {
                               return DropdownMenuItem<int>(
                                 value: b.id,
-                                child: Text(b.name, style: const TextStyle(fontSize: 14)),
+                                child: Text(b.name, style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis),
                               );
                             }).toList(),
                             onChanged: (val) {

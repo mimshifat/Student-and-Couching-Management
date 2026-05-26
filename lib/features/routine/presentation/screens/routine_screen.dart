@@ -71,6 +71,30 @@ class _RoutineScreenState extends State<RoutineScreen> {
           onPressed: () => Scaffold.of(context).openDrawer(),
         ),
         title: const Text('Routine', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Center(
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RoutineFormScreen()),
+                  );
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.add, color: primaryNavy, size: 20),
+                ),
+              ),
+            ),
+          )
+        ],
       ),
       body: Column(
         children: [
@@ -111,16 +135,6 @@ class _RoutineScreenState extends State<RoutineScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF4338CA),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const RoutineFormScreen()),
-          );
-        },
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 
@@ -145,6 +159,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     child: DropdownButton<Batch>(
                       value: _selectedBatch,
                       isExpanded: true,
+                      menuMaxHeight: 300,
                       icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
                       style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500),
                       items: batchProvider.batches.map((b) {
@@ -174,6 +189,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                 child: DropdownButton<String>(
                   value: _selectedPeriod,
                   isExpanded: true,
+                  menuMaxHeight: 300,
                   icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
                   style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500),
                   items: _periods.map((p) {

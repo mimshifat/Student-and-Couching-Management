@@ -201,6 +201,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: DropdownButton<int?>(
                           value: _selectedBatchId,
                           isExpanded: true,
+                          isDense: true,
+                          menuMaxHeight: 300,
                           icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black87, size: 20),
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87),
                           items: [

@@ -58,36 +58,64 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
                   const Text('Class', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<String?>(
-                    decoration: const InputDecoration(border: OutlineInputBorder()),
-                    initialValue: _filterClass,
-                    hint: const Text('All Classes'),
-                    items: [
-                      const DropdownMenuItem<String?>(value: null, child: Text('All Classes')),
-                      ...classes.map((c) => DropdownMenuItem(value: c, child: Text(c))),
-                    ],
-                    onChanged: (val) {
-                      setSheetState(() => _filterClass = val);
-                      setState(() => _filterClass = val);
-                    },
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String?>(
+                        value: _filterClass,
+                        isExpanded: true,
+                        isDense: true,
+                        menuMaxHeight: 300,
+                        icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
+                        style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500, fontSize: 14),
+                        hint: const Text('All Classes'),
+                        items: [
+                          const DropdownMenuItem<String?>(value: null, child: Text('All Classes')),
+                          ...classes.map((c) => DropdownMenuItem(value: c, child: Text(c))),
+                        ],
+                        onChanged: (val) {
+                          setSheetState(() => _filterClass = val);
+                          setState(() => _filterClass = val);
+                        },
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   const Text('Batch', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Consumer<BatchProvider>(
                     builder: (context, batchProvider, child) {
-                      return DropdownButtonFormField<int?>(
-                        decoration: const InputDecoration(border: OutlineInputBorder()),
-                        initialValue: _filterBatchId,
-                        hint: const Text('All Batches'),
-                        items: [
-                          const DropdownMenuItem<int?>(value: null, child: Text('All Batches')),
-                          ...batchProvider.batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name))),
-                        ],
-                        onChanged: (val) {
-                          setSheetState(() => _filterBatchId = val);
-                          setState(() => _filterBatchId = val);
-                        },
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<int?>(
+                            value: _filterBatchId,
+                            isExpanded: true,
+                            isDense: true,
+                            menuMaxHeight: 300,
+                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
+                            style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500, fontSize: 14),
+                            hint: const Text('All Batches'),
+                            items: [
+                              const DropdownMenuItem<int?>(value: null, child: Text('All Batches')),
+                              ...batchProvider.batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name))),
+                            ],
+                            onChanged: (val) {
+                              setSheetState(() => _filterBatchId = val);
+                              setState(() => _filterBatchId = val);
+                            },
+                          ),
+                        ),
                       );
                     },
                   ),

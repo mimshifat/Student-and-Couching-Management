@@ -133,6 +133,7 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                           child: DropdownButton<int?>(
                             value: _selectedYear,
                             hint: const Text('All Years'),
+                            menuMaxHeight: 300,
                             icon: const Icon(Icons.keyboard_arrow_down, size: 20),
                             items: [
                               const DropdownMenuItem<int?>(
