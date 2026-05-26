@@ -184,41 +184,13 @@ class _RoutineScreenState extends State<RoutineScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            height: 48,
-            width: 48,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black87),
-              onPressed: () {
-                // Navigate to next period if needed
-              },
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildRoutineTable(RoutineProvider provider) {
-    // 1. Determine unique time slots based on the current routines
-    // E.g. "7:00 - 8:00", "8:00 - 9:00"
-    final Set<String> timeSlotSet = {};
-    for (var r in provider.routines) {
-      timeSlotSet.add('${r.startTime} - ${r.endTime}');
-    }
-    
-    // Sort time slots alphabetically for simplicity
-    final timeSlots = timeSlotSet.toList()..sort();
-    
-    // 2. Define days
     final days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    // Map standard 'Sunday' to 'Sun' to match routine data if needed.
-    // Our DB has 'Sunday', 'Monday', etc.
     final fullDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     return Container(
@@ -241,7 +213,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
               decoration: const BoxDecoration(color: Color(0xFFF8F9FA)),
               children: [
                 _buildTableCell('Day', isHeader: true),
-                ...timeSlots.map((ts) => _buildTableCell(ts, isHeader: true)),
+                _buildTableCell('Subject', isHeader: true),
               ],
             ),
             // Data Rows
@@ -249,17 +221,13 @@ class _RoutineScreenState extends State<RoutineScreen> {
               final shortDay = days[i];
               final fullDay = fullDays[i];
 
+              final routinesForDay = provider.routines.where((r) => r.dayOfWeek == fullDay).toList();
+              final subjects = routinesForDay.map((r) => r.subject).join(', ');
+
               return TableRow(
                 children: [
-                  _buildTableCell(shortDay, isHeader: true), // Day cell
-                  ...timeSlots.map((ts) {
-                    // Find subject for this day and time slot
-                    final routine = provider.routines.cast<dynamic>().firstWhere(
-                      (r) => r.dayOfWeek == fullDay && '${r.startTime} - ${r.endTime}' == ts,
-                      orElse: () => null,
-                    );
-                    return _buildTableCell(routine?.subject ?? '-');
-                  }),
+                  _buildTableCell(shortDay, isHeader: true),
+                  _buildTableCell(subjects.isEmpty ? '-' : subjects),
                 ],
               );
             }),
