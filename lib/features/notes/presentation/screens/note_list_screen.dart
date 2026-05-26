@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../providers/note_provider.dart';
 import '../../domain/entities/note.dart';
 import 'note_form_screen.dart';
+import '../../../../core/widgets/app_drawer.dart';
 
 class NoteListScreen extends StatefulWidget {
   const NoteListScreen({super.key});
@@ -36,6 +37,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      drawer: const AppDrawer(),
       appBar: AppBar(
         backgroundColor: primaryNavy,
         elevation: 0,

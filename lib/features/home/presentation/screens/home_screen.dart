@@ -13,6 +13,7 @@ import '../../../fee/presentation/screens/fee_overview_screen.dart';
 import '../../../exam/presentation/screens/exam_list_screen.dart';
 import '../../../routine/presentation/screens/routine_screen.dart';
 import '../../../notes/presentation/screens/note_list_screen.dart';
+import '../../../../core/widgets/app_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -53,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      drawer: const AppDrawer(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),

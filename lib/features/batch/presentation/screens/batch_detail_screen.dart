@@ -7,6 +7,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../../enrollment/domain/entities/enrollment.dart';
 import '../../../enrollment/presentation/screens/batch_student_enrollment_screen.dart';
+import '../../../student/presentation/providers/student_provider.dart';
+import '../../../student/presentation/screens/student_detail_screen.dart';
 
 class BatchDetailScreen extends StatefulWidget {
   final Batch batch;
@@ -18,6 +20,7 @@ class BatchDetailScreen extends StatefulWidget {
 }
 
 class _BatchDetailScreenState extends State<BatchDetailScreen> {
+  static const Color primaryNavy = Color(0xFF191A4E);
   late Future<List<Enrollment>> _studentsFuture;
 
   @override
@@ -36,8 +39,9 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
         title: Text(widget.batch.name),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: primaryNavy,
         foregroundColor: Colors.white,
+        centerTitle: true,
         elevation: 0,
         actions: [
           IconButton(
@@ -77,7 +81,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: primaryNavy,
         foregroundColor: Colors.white,
         onPressed: () {
           Navigator.push(
@@ -98,8 +102,8 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
 
   Widget _buildHeaderInfo() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -146,7 +150,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
           ),
           if (widget.batch.scheduleDays != null || widget.batch.timeSlot != null) ...[
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
+              padding: EdgeInsets.symmetric(vertical: 8),
               child: Divider(),
             ),
             if (widget.batch.scheduleDays != null && widget.batch.scheduleDays!.isNotEmpty)
@@ -156,7 +160,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
           ],
           if (widget.batch.description != null && widget.batch.description!.isNotEmpty) ...[
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
+              padding: EdgeInsets.symmetric(vertical: 8),
               child: Divider(),
             ),
             const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
@@ -250,6 +254,9 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
           delegate: SliverChildBuilderDelegate(
             (context, index) {
               final e = students[index];
+              final studentProvider = context.read<StudentProvider>();
+              final student = studentProvider.students.where((s) => s.id == e.studentId).firstOrNull;
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
@@ -279,13 +286,37 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                     e.studentName ?? 'Unknown Student',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  subtitle: Text(
-                    'Joined: ${e.joinDate.toLocal().toString().split(' ')[0]}',
-                    style: const TextStyle(color: Colors.black54, fontSize: 13),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      if (student != null)
+                        Text(
+                          'Class: ${student.className ?? 'N/A'} • Roll: ${student.rollNumber ?? 'N/A'}',
+                          style: const TextStyle(fontSize: 12, color: Colors.black54),
+                        ),
+                      if (student != null && student.phone != null && student.phone!.isNotEmpty)
+                        Text(
+                          student.phone!,
+                          style: const TextStyle(fontSize: 12, color: Colors.black54),
+                        ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Joined: ${e.joinDate.toLocal().toString().split(' ')[0]}',
+                        style: const TextStyle(color: Colors.black54, fontSize: 12),
+                      ),
+                    ],
                   ),
                   trailing: const Icon(Icons.chevron_right, color: Colors.grey),
                   onTap: () {
-                    // Navigate to student details if needed
+                    if (student != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => StudentDetailScreen(student: student),
+                        ),
+                      );
+                    }
                   },
                 ),
               );

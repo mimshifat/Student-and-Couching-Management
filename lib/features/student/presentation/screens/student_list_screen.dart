@@ -8,6 +8,7 @@ import 'student_detail_screen.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../domain/entities/student.dart';
+import '../../../../core/widgets/app_drawer.dart';
 
 class StudentListScreen extends StatefulWidget {
   const StudentListScreen({super.key});
@@ -137,6 +138,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      drawer: const AppDrawer(),
       appBar: AppBar(
         backgroundColor: primaryNavy,
         elevation: 0,

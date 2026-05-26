@@ -7,6 +7,7 @@ import '../../../student/presentation/providers/student_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../fee/presentation/providers/fee_provider.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
+import '../../../../core/widgets/app_drawer.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -37,6 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
+      drawer: const AppDrawer(),
       appBar: AppBar(
         backgroundColor: primaryNavy,
         elevation: 0,

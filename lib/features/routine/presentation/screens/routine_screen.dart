@@ -5,6 +5,7 @@ import '../providers/routine_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../batch/domain/entities/batch.dart';
 import 'routine_form_screen.dart';
+import '../../../../core/widgets/app_drawer.dart';
 
 class RoutineScreen extends StatefulWidget {
   final Batch? initialBatch;
@@ -60,6 +61,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      drawer: const AppDrawer(),
       appBar: AppBar(
         backgroundColor: primaryNavy,
         elevation: 0,

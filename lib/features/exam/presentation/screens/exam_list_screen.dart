@@ -6,6 +6,7 @@ import '../providers/exam_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import 'exam_form_screen.dart';
 import 'result_entry_screen.dart';
+import '../../../../core/widgets/app_drawer.dart';
 
 class ExamListScreen extends StatefulWidget {
   const ExamListScreen({super.key});
@@ -45,6 +46,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      drawer: const AppDrawer(),
       appBar: AppBar(
         backgroundColor: primaryNavy,
         elevation: 0,

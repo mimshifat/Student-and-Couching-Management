@@ -6,6 +6,7 @@ import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import 'fee_payment_screen.dart';
+import '../../../../core/widgets/app_drawer.dart';
 
 class FeeOverviewScreen extends StatefulWidget {
   const FeeOverviewScreen({super.key});
@@ -91,6 +92,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      drawer: const AppDrawer(),
       appBar: AppBar(
         backgroundColor: primaryNavy,
         elevation: 0,
