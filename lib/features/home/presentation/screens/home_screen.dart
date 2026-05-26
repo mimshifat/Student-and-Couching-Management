@@ -98,9 +98,13 @@ class _HomeScreenState extends State<HomeScreen> {
               BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))
             ],
           ),
-          child: InkWell(
-            onTap: () => Scaffold.of(context).openDrawer(),
-            child: const Icon(Icons.menu, color: Colors.black87),
+          child: Builder(
+            builder: (context) {
+              return InkWell(
+                onTap: () => Scaffold.of(context).openDrawer(),
+                child: const Icon(Icons.menu, color: Colors.black87),
+              );
+            },
           ),
         ),
         Expanded(

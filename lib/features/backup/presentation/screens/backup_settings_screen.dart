@@ -92,7 +92,10 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                         ),
                       ),
                       validator: (val) {
-                        if (val != null && val.isNotEmpty && !val.contains(':')) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'Bot token is required';
+                        }
+                        if (!val.contains(':')) {
                           return 'Invalid format. Token must contain ":"';
                         }
                         return null;
@@ -105,6 +108,12 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                         labelText: 'Chat ID *',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'Chat ID is required';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 24),
                     SizedBox(
@@ -126,10 +135,15 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                             final success = await provider.saveSettings(newSettings);
                             if (ctx.mounted) {
                               if (success) {
-                                Navigator.pop(ctx);
-                                _showSuccess('Telegram configured and auto backup enabled!');
-                                // Auto send backup after configuration
-                                provider.sendToTelegram();
+                                final error = await provider.sendToTelegram();
+                                if (ctx.mounted) {
+                                  if (error == null) {
+                                    Navigator.pop(ctx);
+                                    _showSuccess('Telegram configured and backup sent successfully!');
+                                  } else {
+                                    _showError('Failed to send backup: $error');
+                                  }
+                                }
                               } else {
                                 _showError(provider.errorMessage ?? 'Failed to save settings.');
                               }

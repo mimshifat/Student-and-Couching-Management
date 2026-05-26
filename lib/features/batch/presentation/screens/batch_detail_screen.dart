@@ -292,7 +292,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                       const SizedBox(height: 4),
                       if (student != null)
                         Text(
-                          'Class: ${student.className ?? 'N/A'} • Roll: ${student.rollNumber ?? 'N/A'}',
+                          '${(student.className?.toLowerCase().startsWith('class') ?? false) ? student.className : 'Class: ${student.className ?? 'N/A'}'} • Roll: ${student.rollNumber ?? 'N/A'}',
                           style: const TextStyle(fontSize: 12, color: Colors.black54),
                         ),
                       if (student != null && student.phone != null && student.phone!.isNotEmpty)

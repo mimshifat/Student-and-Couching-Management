@@ -26,7 +26,7 @@ class PdfExportHelper {
               pw.Text('Academic Information', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
               pw.Divider(),
               pw.Text('School/College: ${student.schoolCollege ?? "N/A"}'),
-              pw.Text('Class: ${student.className ?? "N/A"}'),
+              pw.Text((student.className?.toLowerCase().startsWith('class') ?? false) ? student.className! : 'Class: ${student.className ?? "N/A"}'),
               pw.Text('Roll Number: ${student.rollNumber ?? "N/A"}'),
               pw.SizedBox(height: 24),
               pw.Text('Fee History', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),

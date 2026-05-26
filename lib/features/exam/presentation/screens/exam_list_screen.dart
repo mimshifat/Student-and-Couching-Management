@@ -51,9 +51,13 @@ class _ExamListScreenState extends State<ExamListScreen> {
         backgroundColor: primaryNavy,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            );
+          },
         ),
         title: const Text('Exams', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [

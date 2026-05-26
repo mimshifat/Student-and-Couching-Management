@@ -63,7 +63,11 @@ class BackupProvider with ChangeNotifier {
       if (await dbFile.exists()) {
         // ignore: deprecated_member_use
         final result = await Share.shareXFiles([XFile(dbFile.path)], text: 'Coaching App Database Backup');
-        return result.status == ShareResultStatus.success || result.status == ShareResultStatus.dismissed;
+        if (result.status == ShareResultStatus.dismissed) {
+          _errorMessage = 'Backup cancelled.';
+          return false;
+        }
+        return result.status == ShareResultStatus.success || result.status == ShareResultStatus.unavailable;
       }
       _errorMessage = 'Database file not found.';
       return false;

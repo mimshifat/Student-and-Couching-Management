@@ -171,9 +171,13 @@ class _StudentListScreenState extends State<StudentListScreen> {
         backgroundColor: primaryNavy,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            );
+          },
         ),
         title: const Text('Students', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
@@ -389,7 +393,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Class: ${student.className ?? 'N/A'} • Roll: ${student.rollNumber ?? 'N/A'}',
+                        '${(student.className?.toLowerCase().startsWith('class') ?? false) ? student.className : 'Class: ${student.className ?? 'N/A'}'} • Roll: ${student.rollNumber ?? 'N/A'}',
                         style: const TextStyle(fontSize: 12, color: Colors.black54),
                       ),
                       const SizedBox(height: 2),

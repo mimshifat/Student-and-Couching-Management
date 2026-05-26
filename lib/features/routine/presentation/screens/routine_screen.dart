@@ -66,9 +66,13 @@ class _RoutineScreenState extends State<RoutineScreen> {
         backgroundColor: primaryNavy,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            );
+          },
         ),
         title: const Text('Routine', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
