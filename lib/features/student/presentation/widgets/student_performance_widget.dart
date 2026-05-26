@@ -62,84 +62,86 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          alignment: WrapAlignment.end,
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            Container(
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int?>(
-                  value: _selectedMonth,
-                  hint: const Text('All Months'),
-                  icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('All Months'),
-                    ),
-                    ...List.generate(12, (index) {
-                      return DropdownMenuItem<int?>(
-                        value: index + 1,
-                        child: Text(months[index]),
-                      );
-                    })
-                  ],
-                  onChanged: (val) {
-                    setState(() {
-                      _selectedMonth = val;
-                    });
-                  },
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int?>(
+                    value: _selectedMonth,
+                    hint: const Text('All Months'),
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('All Months'),
+                      ),
+                      ...List.generate(12, (index) {
+                        return DropdownMenuItem<int?>(
+                          value: index + 1,
+                          child: Text(months[index]),
+                        );
+                      })
+                    ],
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedMonth = val;
+                      });
+                    },
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int?>(
-                  value: _selectedYear,
-                  hint: const Text('All Years'),
-                  icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('All Years'),
-                    ),
-                    ...availableYears.map((year) => DropdownMenuItem<int?>(
-                      value: year,
-                      child: Text(year.toString()),
-                    ))
-                  ],
-                  onChanged: (val) {
-                    setState(() {
-                      _selectedYear = val;
-                    });
-                  },
+              const SizedBox(width: 8),
+              Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int?>(
+                    value: _selectedYear,
+                    hint: const Text('All Years'),
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('All Years'),
+                      ),
+                      ...availableYears.map((year) => DropdownMenuItem<int?>(
+                        value: year,
+                        child: Text(year.toString()),
+                      ))
+                    ],
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedYear = val;
+                      });
+                    },
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        PerformanceChart(results: filteredResults),
-      ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          PerformanceChart(results: filteredResults),
+        ],
+      ),
     );
   }
 }

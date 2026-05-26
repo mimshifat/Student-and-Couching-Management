@@ -72,33 +72,36 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
 
   Widget _buildTabButton(String title, int index) {
     final isSelected = _selectedTab == index;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedTab = index;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(13),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : null,
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.black87 : Colors.black54,
-            fontSize: 13,
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedTab = index;
+          });
+        },
+        child: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(13),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : null,
+          ),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? Colors.black87 : Colors.black54,
+              fontSize: 13,
+            ),
           ),
         ),
       ),
@@ -107,9 +110,10 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -155,13 +159,13 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
+                      width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.grey.shade200,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       padding: const EdgeInsets.all(4),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
                           _buildTabButton('Active', 0),
                           _buildTabButton('Closed', 1),
@@ -294,6 +298,7 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
           },
         ),
       ],
+    ),
     );
   }
 }

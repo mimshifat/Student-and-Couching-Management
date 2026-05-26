@@ -57,6 +57,7 @@ class PerformanceChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 30,
+                      interval: results.length > 6 ? (results.length / 6).ceilToDouble() : 1,
                       getTitlesWidget: (value, meta) {
                         int index = value.toInt();
                         if (index >= 0 && index < results.length) {
