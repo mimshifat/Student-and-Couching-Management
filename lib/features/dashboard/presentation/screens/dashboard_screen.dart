@@ -6,6 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../fee/presentation/providers/fee_provider.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../../../core/widgets/app_drawer.dart';
 
@@ -99,12 +100,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int?>(
+                  child: DropdownButton2<int?>(
                     value: _selectedYear,
                     isExpanded: true,
-                    isDense: true,
-                    menuMaxHeight: 300,
-                    icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF2E7D32)),
+                    iconStyleData: const IconStyleData(
+                      icon: Icon(Icons.keyboard_arrow_down, color: Color(0xFF2E7D32)),
+                    ),
+                    dropdownStyleData: DropdownStyleData(
+                      maxHeight: 300,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
+                      ),
+                      offset: const Offset(0, -8),
+                    ),
+                    menuItemStyleData: const MenuItemStyleData(
+                      height: 40,
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                    ),
                     style: const TextStyle(color: Color(0xFF1B5E20), fontWeight: FontWeight.w600, fontSize: 13),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('All Years', overflow: TextOverflow.ellipsis)),
@@ -133,12 +146,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int?>(
+                  child: DropdownButton2<int?>(
                     value: _selectedMonth,
                     isExpanded: true,
-                    isDense: true,
-                    menuMaxHeight: 300,
-                    icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF2E7D32)),
+                    iconStyleData: const IconStyleData(
+                      icon: Icon(Icons.keyboard_arrow_down, color: Color(0xFF2E7D32)),
+                    ),
+                    dropdownStyleData: DropdownStyleData(
+                      maxHeight: 300,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
+                      ),
+                      offset: const Offset(0, -8),
+                    ),
+                    menuItemStyleData: const MenuItemStyleData(
+                      height: 40,
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                    ),
                     style: const TextStyle(color: Color(0xFF1B5E20), fontWeight: FontWeight.w600, fontSize: 13),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('All Months', overflow: TextOverflow.ellipsis)),
@@ -167,12 +192,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int?>(
+                  child: DropdownButton2<int?>(
                     value: _selectedBatchId,
                     isExpanded: true,
-                    isDense: true,
-                    menuMaxHeight: 300,
-                    icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF455A64)),
+                    iconStyleData: const IconStyleData(
+                      icon: Icon(Icons.keyboard_arrow_down, color: Color(0xFF455A64)),
+                    ),
+                    dropdownStyleData: DropdownStyleData(
+                      maxHeight: 300,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white,
+                      ),
+                      offset: const Offset(0, -8),
+                    ),
+                    menuItemStyleData: const MenuItemStyleData(
+                      height: 40,
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                    ),
                     style: const TextStyle(color: Color(0xFF37474F), fontWeight: FontWeight.w600, fontSize: 13),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('All Batches', overflow: TextOverflow.ellipsis)),

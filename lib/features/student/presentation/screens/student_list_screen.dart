@@ -9,6 +9,7 @@ import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../domain/entities/student.dart';
 import '../../../../core/widgets/app_drawer.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class StudentListScreen extends StatefulWidget {
   const StudentListScreen({super.key});
@@ -66,12 +67,24 @@ class _StudentListScreenState extends State<StudentListScreen> {
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String?>(
+                      child: DropdownButton2<String?>(
                         value: _filterClass,
                         isExpanded: true,
-                        isDense: true,
-                        menuMaxHeight: 300,
-                        icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
+                        iconStyleData: const IconStyleData(
+                          icon: Icon(Icons.keyboard_arrow_down, color: Colors.black54),
+                        ),
+                        dropdownStyleData: DropdownStyleData(
+                          maxHeight: 300,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.white,
+                          ),
+                          offset: const Offset(0, -8),
+                        ),
+                        menuItemStyleData: const MenuItemStyleData(
+                          height: 40,
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                        ),
                         style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500, fontSize: 14),
                         hint: const Text('All Classes'),
                         items: [
@@ -98,12 +111,24 @@ class _StudentListScreenState extends State<StudentListScreen> {
                           border: Border.all(color: Colors.grey.shade300),
                         ),
                         child: DropdownButtonHideUnderline(
-                          child: DropdownButton<int?>(
+                          child: DropdownButton2<int?>(
                             value: _filterBatchId,
                             isExpanded: true,
-                            isDense: true,
-                            menuMaxHeight: 300,
-                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
+                            iconStyleData: const IconStyleData(
+                              icon: Icon(Icons.keyboard_arrow_down, color: Colors.black54),
+                            ),
+                            dropdownStyleData: DropdownStyleData(
+                              maxHeight: 300,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.white,
+                              ),
+                              offset: const Offset(0, -8),
+                            ),
+                            menuItemStyleData: const MenuItemStyleData(
+                              height: 40,
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                            ),
                             style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500, fontSize: 14),
                             hint: const Text('All Batches'),
                             items: [

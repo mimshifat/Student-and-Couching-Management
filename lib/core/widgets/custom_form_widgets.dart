@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class CustomFormWidgets {
   static const Color primaryColor = Color(0xFF4338CA);
@@ -206,14 +207,25 @@ class CustomFormWidgets {
       children: [
         Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primaryColor)),
         const SizedBox(height: 4),
-        DropdownButtonFormField<T>(
-          initialValue: value,
-          icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade500),
+        DropdownButtonFormField2<T>(
+          value: value,
           isExpanded: true,
-          dropdownColor: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          menuMaxHeight: 300,
-          elevation: 4,
+          iconStyleData: IconStyleData(
+            icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade500),
+          ),
+          dropdownStyleData: DropdownStyleData(
+            maxHeight: 300,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+            ),
+            elevation: 4,
+            offset: const Offset(0, -8),
+          ),
+          menuItemStyleData: const MenuItemStyleData(
+            height: 48,
+            padding: EdgeInsets.symmetric(horizontal: 16),
+          ),
           decoration: InputDecoration(
             prefixIcon: Padding(
               padding: const EdgeInsets.only(left: 12, right: 8),

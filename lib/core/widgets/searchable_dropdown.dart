@@ -114,7 +114,7 @@ class _SearchModal<T> extends StatefulWidget {
     required this.itemLabel,
     required this.itemSearchString,
     required this.onSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<_SearchModal<T>> createState() => _SearchModalState<T>();

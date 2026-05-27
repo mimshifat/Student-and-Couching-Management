@@ -187,12 +187,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
             double totalPaid = allMatchingRecords.fold(0.0, (sum, r) => sum + r.paidAmount);
             
             // For items that are settled, the remaining difference should be 0 even if paidAmount < totalAmount
-            double difference = allMatchingRecords.fold(0.0, (sum, r) {
-              if (r.isSettled || r.paidAmount >= r.totalAmount) {
-                return sum; // No remaining difference for this item
-              }
-              return sum + (r.totalAmount - r.paidAmount);
-            });
+            double difference = totalFee - totalPaid;
 
           return Column(
             children: [

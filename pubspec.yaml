@@ -50,6 +50,7 @@ dependencies:
   url_launcher: ^6.3.2
   pdf: ^3.12.0
   printing: ^5.14.3
+  dropdown_button2: 2.3.9
 
 dev_dependencies:
   flutter_test:
