@@ -136,15 +136,34 @@ class StudentDetailScreen extends StatelessWidget {
     );
   }
 
+  String _getStudentStatus(Iterable<dynamic> enrollments) {
+    if (enrollments.isEmpty) {
+      return 'New';
+    } else if (enrollments.any((e) => e.leaveDate == null || e.leaveDate!.isAfter(DateTime.now()))) {
+      return 'Running';
+    } else {
+      return 'Previous';
+    }
+  }
+
   Widget _buildStatusBadge(BuildContext context) {
     return Consumer<EnrollmentProvider>(
       builder: (context, provider, child) {
         final enrollments = provider.enrollments.where((e) => e.studentId == student.id);
-        final isRunning = enrollments.any((e) => e.leaveDate == null);
+        final status = _getStudentStatus(enrollments);
 
-        final text = isRunning ? 'Running' : 'Previous';
-        final bgColor = isRunning ? const Color(0xFFE8F8EE) : const Color(0xFFF3E5F5);
-        final textColor = isRunning ? const Color(0xFF2B9348) : const Color(0xFF7B1FA2);
+        Color bgColor;
+        Color textColor;
+        if (status == 'New') {
+          bgColor = const Color(0xFFE3F2FD);
+          textColor = const Color(0xFF1565C0);
+        } else if (status == 'Running') {
+          bgColor = const Color(0xFFE8F8EE);
+          textColor = const Color(0xFF2B9348);
+        } else {
+          bgColor = const Color(0xFFF3E5F5);
+          textColor = const Color(0xFF7B1FA2);
+        }
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -153,7 +172,7 @@ class StudentDetailScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
-            text,
+            status,
             style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12),
           ),
         );
@@ -188,8 +207,8 @@ class StudentDetailScreen extends StatelessWidget {
     return Consumer<EnrollmentProvider>(
       builder: (context, provider, child) {
         final enrollments = provider.enrollments.where((e) => e.studentId == student.id);
-        final isRunning = enrollments.any((e) => e.leaveDate == null);
-        return _buildDetailRow(Icons.verified_user_outlined, 'Status', isRunning ? 'Running' : 'Previous');
+        final status = _getStudentStatus(enrollments);
+        return _buildDetailRow(Icons.verified_user_outlined, 'Status', status);
       },
     );
   }

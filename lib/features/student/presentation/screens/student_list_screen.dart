@@ -182,9 +182,15 @@ class _StudentListScreenState extends State<StudentListScreen> {
     return '${parts[0].substring(0, 1)}${parts[1].substring(0, 1)}'.toUpperCase();
   }
 
-  bool _isStudentRunning(Student student, List<dynamic> enrollments) {
-    // A student is "Running" if they have an enrollment without a leave date or leave date is in the future
-    return enrollments.any((e) => e.studentId == student.id && (e.leaveDate == null || e.leaveDate!.isAfter(DateTime.now())));
+  String _getStudentStatus(Student student, List<dynamic> enrollments) {
+    final studentEnrollments = enrollments.where((e) => e.studentId == student.id).toList();
+    if (studentEnrollments.isEmpty) {
+      return 'New';
+    } else if (studentEnrollments.any((e) => e.leaveDate == null || e.leaveDate!.isAfter(DateTime.now()))) {
+      return 'Running';
+    } else {
+      return 'Previous';
+    }
   }
 
   @override
@@ -244,25 +250,26 @@ class _StudentListScreenState extends State<StudentListScreen> {
           }).toList();
 
           // Categorize for chips
-          final runningStudents = filteredByClassBatch.where((s) => _isStudentRunning(s, enrollments)).toList();
-          final previousStudents = filteredByClassBatch.where((s) => !_isStudentRunning(s, enrollments)).toList();
+          final newStudents = filteredByClassBatch.where((s) => _getStudentStatus(s, enrollments) == 'New').toList();
+          final runningStudents = filteredByClassBatch.where((s) => _getStudentStatus(s, enrollments) == 'Running').toList();
+          final previousStudents = filteredByClassBatch.where((s) => _getStudentStatus(s, enrollments) == 'Previous').toList();
           
           int allCount = filteredByClassBatch.length;
+          int newCount = newStudents.length;
           int runningCount = runningStudents.length;
           int previousCount = previousStudents.length;
-          int inactiveCount = 0; // Keeping inactive as 0 or empty for now unless distinct logic exists
 
           // Apply status filter
           List<Student> displayStudents;
           switch (_statusFilter) {
+            case 'New':
+              displayStudents = newStudents;
+              break;
             case 'Running':
               displayStudents = runningStudents;
               break;
             case 'Previous':
               displayStudents = previousStudents;
-              break;
-            case 'Inactive':
-              displayStudents = []; // Or specific inactive logic
               break;
             case 'All':
             default:
@@ -272,7 +279,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
           return Column(
             children: [
               _buildSearchBarRow(classes),
-              _buildFilterChipsRow(allCount, runningCount, previousCount, inactiveCount),
+              _buildFilterChipsRow(allCount, newCount, runningCount, previousCount),
               Expanded(
                 child: studentProvider.isLoading 
                     ? const Center(child: CircularProgressIndicator())
@@ -331,7 +338,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
     );
   }
 
-  Widget _buildFilterChipsRow(int allCount, int runningCount, int previousCount, int inactiveCount) {
+  Widget _buildFilterChipsRow(int allCount, int newCount, int runningCount, int previousCount) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -339,11 +346,11 @@ class _StudentListScreenState extends State<StudentListScreen> {
         children: [
           _buildChip('All', count: allCount),
           const SizedBox(width: 8),
+          _buildChip('New', count: newCount),
+          const SizedBox(width: 8),
           _buildChip('Running', count: runningCount),
           const SizedBox(width: 8),
           _buildChip('Previous', count: previousCount),
-          const SizedBox(width: 8),
-          _buildChip('Inactive'),
         ],
       ),
     );
@@ -384,7 +391,20 @@ class _StudentListScreenState extends State<StudentListScreen> {
       separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF0F0F0)),
       itemBuilder: (context, index) {
         final student = students[index];
-        final isRunning = _isStudentRunning(student, enrollments);
+        final status = _getStudentStatus(student, enrollments);
+        
+        Color bgColor;
+        Color textColor;
+        if (status == 'New') {
+          bgColor = const Color(0xFFE3F2FD);
+          textColor = const Color(0xFF1565C0);
+        } else if (status == 'Running') {
+          bgColor = const Color(0xFFE8F8EE);
+          textColor = const Color(0xFF2B9348);
+        } else {
+          bgColor = const Color(0xFFF3E5F5);
+          textColor = const Color(0xFF7B1FA2);
+        }
         
         return InkWell(
           onTap: () {
@@ -442,13 +462,13 @@ class _StudentListScreenState extends State<StudentListScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isRunning ? const Color(0xFFE8F8EE) : const Color(0xFFEEF0FE),
+                    color: bgColor,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    isRunning ? 'Running' : 'Previous',
+                    status,
                     style: TextStyle(
-                      color: isRunning ? const Color(0xFF2B9348) : const Color(0xFF5E60CE),
+                      color: textColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 11,
                     ),
