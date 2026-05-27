@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 import '../providers/routine_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
@@ -21,10 +22,16 @@ class _RoutineScreenState extends State<RoutineScreen> {
   Batch? _selectedBatch;
   String _selectedPeriod = 'This Week';
   final List<String> _periods = ['This Week', 'Next Week', 'This Month'];
+  
+  bool _isBatchWise = true;
+  String _selectedDay = 'Sunday';
+  final List<String> _fullDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  final List<String> _shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   @override
   void initState() {
     super.initState();
+    _selectedDay = DateFormat('EEEE').format(DateTime.now());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
     });
@@ -55,6 +62,26 @@ class _RoutineScreenState extends State<RoutineScreen> {
       });
       context.read<RoutineProvider>().loadRoutinesByBatch(newBatch.id!);
     }
+  }
+
+  void _toggleView(bool isBatchWise) {
+    setState(() {
+      _isBatchWise = isBatchWise;
+    });
+    if (_isBatchWise) {
+      if (_selectedBatch != null) {
+        context.read<RoutineProvider>().loadRoutinesByBatch(_selectedBatch!.id!);
+      }
+    } else {
+      context.read<RoutineProvider>().loadRoutinesByDay(_selectedDay);
+    }
+  }
+
+  void _selectDay(String day) {
+    setState(() {
+      _selectedDay = day;
+    });
+    context.read<RoutineProvider>().loadRoutinesByDay(day);
   }
 
   @override
@@ -102,7 +129,8 @@ class _RoutineScreenState extends State<RoutineScreen> {
       ),
       body: Column(
         children: [
-          _buildFilterBar(),
+          _buildViewToggle(),
+          if (_isBatchWise) _buildFilterBar() else _buildDaySelector(),
           Expanded(
             child: Consumer<RoutineProvider>(
               builder: (context, provider, child) {
@@ -110,12 +138,17 @@ class _RoutineScreenState extends State<RoutineScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (_selectedBatch == null) {
+                if (_isBatchWise && _selectedBatch == null) {
                   return const Center(child: Text('Please create a batch first.', style: TextStyle(color: Colors.black54)));
                 }
 
                 if (provider.routines.isEmpty) {
-                  return const Center(child: Text('No routines scheduled for this batch.', style: TextStyle(color: Colors.black54)));
+                  return Center(
+                    child: Text(
+                      _isBatchWise ? 'No routines scheduled for this batch.' : 'No routines scheduled for $_selectedDay.',
+                      style: const TextStyle(color: Colors.black54),
+                    ),
+                  );
                 }
 
                 return SingleChildScrollView(
@@ -124,7 +157,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildRoutineTable(provider),
+                        if (_isBatchWise) _buildRoutineTable(provider) else _buildDayWiseList(provider),
                         const SizedBox(height: 24),
                         const Text(
                           '* Routine can be changed anytime',
@@ -206,6 +239,156 @@ class _RoutineScreenState extends State<RoutineScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildViewToggle() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _toggleView(true),
+                child: Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _isBatchWise ? Colors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    boxShadow: _isBatchWise ? [BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 4, offset: const Offset(0, 2))] : null,
+                  ),
+                  child: Text('Batch Wise', style: TextStyle(fontWeight: _isBatchWise ? FontWeight.bold : FontWeight.normal, color: _isBatchWise ? Colors.black87 : Colors.black54, fontSize: 13)),
+                ),
+              ),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _toggleView(false),
+                child: Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: !_isBatchWise ? Colors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    boxShadow: !_isBatchWise ? [BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 4, offset: const Offset(0, 2))] : null,
+                  ),
+                  child: Text('Day Wise', style: TextStyle(fontWeight: !_isBatchWise ? FontWeight.bold : FontWeight.normal, color: !_isBatchWise ? Colors.black87 : Colors.black54, fontSize: 13)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDaySelector() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: List.generate(_shortDays.length, (index) {
+            final shortDay = _shortDays[index];
+            final fullDay = _fullDays[index];
+            final isSelected = _selectedDay == fullDay;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: ChoiceChip(
+                label: Text(shortDay),
+                selected: isSelected,
+                selectedColor: primaryNavy,
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black87,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+                backgroundColor: Colors.grey.shade100,
+                onSelected: (selected) {
+                  if (selected) _selectDay(fullDay);
+                },
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDayWiseList(RoutineProvider provider) {
+    final batchProvider = context.read<BatchProvider>();
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: provider.routines.length,
+      separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFEEEEEE)),
+      itemBuilder: (context, index) {
+        final r = provider.routines[index];
+        final batch = batchProvider.batches.firstWhere(
+          (b) => b.id == r.batchId, 
+          orElse: () => Batch(name: 'Unknown Batch', createdAt: DateTime.now())
+        );
+        
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF0FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.class_outlined, color: primaryNavy, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      batch.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      r.subject,
+                      style: const TextStyle(color: Colors.black87, fontSize: 14),
+                    ),
+                    if (r.teacherName != null && r.teacherName!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Teacher: ${r.teacherName}',
+                        style: const TextStyle(color: Colors.black54, fontSize: 13),
+                      ),
+                    ]
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${r.startTime} - ${r.endTime}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: primaryNavy),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

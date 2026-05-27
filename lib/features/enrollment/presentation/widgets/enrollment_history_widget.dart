@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../providers/enrollment_provider.dart';
 import '../screens/enrollment_screen.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
-
+import '../../../fee/presentation/providers/fee_provider.dart';
 class EnrollmentHistoryWidget extends StatefulWidget {
   final int studentId;
 
@@ -37,6 +37,10 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
 
     if (picked != null && mounted) {
       await context.read<EnrollmentProvider>().leaveBatch(enrollmentId, widget.studentId, picked);
+      if (mounted) {
+        context.read<FeeProvider>().loadStudentFeeData(widget.studentId);
+        context.read<FeeProvider>().loadPendingFeeRecords();
+      }
     }
   }
 
@@ -61,7 +65,11 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
               final val = ctrl.text.trim();
               final double? newFee = val.isEmpty ? null : double.tryParse(val);
               await context.read<EnrollmentProvider>().updateFeeOverride(enrollmentId, widget.studentId, newFee);
-              if (ctx.mounted) Navigator.pop(ctx);
+              if (ctx.mounted) {
+                ctx.read<FeeProvider>().loadStudentFeeData(widget.studentId);
+                ctx.read<FeeProvider>().loadPendingFeeRecords();
+                Navigator.pop(ctx);
+              }
             },
             child: const Text('Save'),
           ),

@@ -93,83 +93,134 @@ class FeeRepositoryImpl implements FeeRepository {
       DateTime firstDayOfMonth = DateTime(year, month, 1);
       DateTime lastDayOfMonth = DateTime(year, month, daysInMonth);
 
-      // Find active enrollments for this month
-      List<Map<String, dynamic>> activeEnrollments = [];
+      // Get all existing batch-specific fee records for this month
+      final existingRecords = await db.query(
+        _feeTable,
+        where: 'student_id = ? AND month = ? AND year = ? AND batch_id IS NOT NULL',
+        whereArgs: [studentId, month, year],
+      );
+      
+      Map<int, Map<String, dynamic>> existingRecordsByBatch = {};
+      for (var r in existingRecords) {
+        existingRecordsByBatch[r['batch_id'] as int] = r;
+      }
+
       for (var e in enrollmentsMap) {
+        final batchId = e['batch_id'] as int;
+        
         final joinDate = DateUtilsHelper.parseFromDb(e['join_date'] as String);
         final leaveDateStr = e['leave_date'] as String?;
         final leaveDate = leaveDateStr != null ? DateUtilsHelper.parseFromDb(leaveDateStr) : null;
 
-        if (joinDate.isBefore(lastDayOfMonth.add(const Duration(days: 1))) &&
-            (leaveDate == null || leaveDate.isAfter(firstDayOfMonth.subtract(const Duration(days: 1))))) {
-          activeEnrollments.add(e);
+        double batchMonthlyFee = 0.0;
+        String snapshotText = 'Unknown';
+        bool isPartialMonth = false;
+        
+        bool isActiveThisMonth = joinDate.isBefore(lastDayOfMonth.add(const Duration(days: 1))) &&
+            (leaveDate == null || leaveDate.isAfter(firstDayOfMonth.subtract(const Duration(days: 1))));
+
+        if (isActiveThisMonth && batchActive[batchId] != false) {
+          final batch = batchLookup[batchId];
+          if (batch != null) {
+            String bName = (e['batch_name'] as String?) ?? (batch['name'] as String?) ?? 'Unknown';
+            String bDays = (e['batch_schedule_days'] as String?) ?? (batch['schedule_days'] as String?) ?? '';
+            String bTime = (e['batch_time_slot'] as String?) ?? (batch['time_slot'] as String?) ?? '';
+            snapshotText = bName;
+            if (bDays.isNotEmpty && bTime.isNotEmpty) {
+               snapshotText += ' ($bDays | $bTime)';
+            }
+          }
+          
+          final feeOverrideObj = e['fee_override'];
+          double? feeOverride = feeOverrideObj != null ? (feeOverrideObj as num).toDouble() : null;
+
+          double batchFee = batchFees[batchId] ?? 0.0;
+          double finalBatchFee = feeOverride ?? batchFee;
+          if (finalBatchFee < 0) finalBatchFee = 0;
+
+          DateTime effectiveStart = joinDate.isAfter(firstDayOfMonth) ? joinDate : firstDayOfMonth;
+          DateTime effectiveEnd = (leaveDate != null && leaveDate.isBefore(lastDayOfMonth)) ? leaveDate : lastDayOfMonth;
+          
+          int activeDays = effectiveEnd.difference(effectiveStart).inDays + 1;
+          if (activeDays > daysInMonth) activeDays = daysInMonth;
+          if (activeDays < daysInMonth) isPartialMonth = true;
+          if (activeDays > 0) {
+            batchMonthlyFee = (finalBatchFee / daysInMonth) * activeDays;
+          }
+        }
+
+        final existingRecord = existingRecordsByBatch[batchId];
+
+        if (existingRecord == null) {
+          if (batchMonthlyFee > 0) {
+            final feeRecord = FeeRecordModel(
+              studentId: studentId,
+              month: month,
+              year: year,
+              totalAmount: batchMonthlyFee,
+              paidAmount: 0.0,
+              studentClass: studentClass,
+              batchId: batchId,
+              batchDetailsSnapshot: snapshotText,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+            await db.insert(_feeTable, feeRecord.toMap(), conflictAlgorithm: sqflite.ConflictAlgorithm.ignore);
+          }
+        } else {
+          final id = existingRecord['id'] as int;
+          final paidAmount = (existingRecord['paid_amount'] as num).toDouble();
+          final currentTotalAmount = (existingRecord['total_amount'] as num).toDouble();
+
+          if (batchMonthlyFee == 0) {
+            if (paidAmount == 0) {
+              await db.delete(_feeTable, where: 'id = ?', whereArgs: [id]);
+            } else if (currentTotalAmount != 0) {
+              await db.update(
+                _feeTable,
+                {
+                  'total_amount': 0.0,
+                  'updated_at': DateUtilsHelper.formatForDb(DateTime.now()),
+                },
+                where: 'id = ?',
+                whereArgs: [id],
+              );
+            }
+          } else if (batchMonthlyFee != currentTotalAmount) {
+            bool isPastMonth = year < now.year || (year == now.year && month < now.month);
+            
+            if (!isPastMonth || isPartialMonth) {
+              await db.update(
+                _feeTable,
+                {
+                  'total_amount': batchMonthlyFee,
+                  'updated_at': DateUtilsHelper.formatForDb(DateTime.now()),
+                },
+                where: 'id = ?',
+                whereArgs: [id],
+              );
+            }
+          }
+          
+          existingRecordsByBatch.remove(batchId);
         }
       }
 
-      if (activeEnrollments.isNotEmpty) {
-        for (var e in activeEnrollments) {
-          final batchId = e['batch_id'] as int;
-          if (batchActive[batchId] == false) continue; // Skip inactive batches
-          
-          // Check if batch-specific fee record already exists
-          final existingRecord = await db.query(
+      for (var entry in existingRecordsByBatch.entries) {
+        final id = entry.value['id'] as int;
+        final paidAmount = (entry.value['paid_amount'] as num).toDouble();
+        if (paidAmount == 0) {
+          await db.delete(_feeTable, where: 'id = ?', whereArgs: [id]);
+        } else {
+          await db.update(
             _feeTable,
-            where: 'student_id = ? AND month = ? AND year = ? AND batch_id = ?',
-            whereArgs: [studentId, month, year, batchId],
+            {
+              'total_amount': 0.0,
+              'updated_at': DateUtilsHelper.formatForDb(DateTime.now()),
+            },
+            where: 'id = ?',
+            whereArgs: [id],
           );
-
-          if (existingRecord.isEmpty) {
-            // Calculate fee for this specific batch
-            double batchMonthlyFee = 0.0;
-            String snapshotText = 'Unknown';
-            
-            final batch = batchLookup[batchId];
-            if (batch != null) {
-              String bName = (e['batch_name'] as String?) ?? (batch['name'] as String?) ?? 'Unknown';
-              String bDays = (e['batch_schedule_days'] as String?) ?? (batch['schedule_days'] as String?) ?? '';
-              String bTime = (e['batch_time_slot'] as String?) ?? (batch['time_slot'] as String?) ?? '';
-              snapshotText = bName;
-              if (bDays.isNotEmpty && bTime.isNotEmpty) {
-                 snapshotText += ' ($bDays | $bTime)';
-              }
-            }
-
-            final joinDate = DateUtilsHelper.parseFromDb(e['join_date'] as String);
-            final leaveDateStr = e['leave_date'] as String?;
-            final leaveDate = leaveDateStr != null ? DateUtilsHelper.parseFromDb(leaveDateStr) : null;
-            
-            final feeOverrideObj = e['fee_override'];
-            double? feeOverride = feeOverrideObj != null ? (feeOverrideObj as num).toDouble() : null;
-
-            double batchFee = batchFees[batchId] ?? 0.0;
-            double finalBatchFee = feeOverride ?? batchFee;
-            if (finalBatchFee < 0) finalBatchFee = 0;
-
-            DateTime effectiveStart = joinDate.isAfter(firstDayOfMonth) ? joinDate : firstDayOfMonth;
-            DateTime effectiveEnd = (leaveDate != null && leaveDate.isBefore(lastDayOfMonth)) ? leaveDate : lastDayOfMonth;
-            
-            int activeDays = effectiveEnd.difference(effectiveStart).inDays + 1;
-            if (activeDays > daysInMonth) activeDays = daysInMonth;
-            if (activeDays > 0) {
-              batchMonthlyFee = (finalBatchFee / daysInMonth) * activeDays;
-            }
-
-            if (batchMonthlyFee > 0) {
-              final feeRecord = FeeRecordModel(
-                studentId: studentId,
-                month: month,
-                year: year,
-                totalAmount: batchMonthlyFee,
-                paidAmount: 0.0,
-                studentClass: studentClass,
-                batchId: batchId,
-                batchDetailsSnapshot: snapshotText,
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
-              );
-              await db.insert(_feeTable, feeRecord.toMap(), conflictAlgorithm: sqflite.ConflictAlgorithm.ignore);
-            }
-          }
         }
       }
 
