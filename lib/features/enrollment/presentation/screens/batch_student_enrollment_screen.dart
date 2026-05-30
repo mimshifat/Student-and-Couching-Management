@@ -121,8 +121,8 @@ class _BatchStudentEnrollmentScreenState extends State<BatchStudentEnrollmentScr
                           }
                           
                           // Find students already in this batch
-                          final activeStudentIdsInBatch = enrollmentProvider.activeEnrollments
-                              .where((e) => e.batchId == widget.batch.id)
+                          final activeStudentIdsInBatch = enrollmentProvider.enrollments
+                              .where((e) => e.batchId == widget.batch.id && e.leaveDate == null)
                               .map((e) => e.studentId)
                               .toSet();
                               

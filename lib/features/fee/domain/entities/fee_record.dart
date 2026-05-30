@@ -12,6 +12,7 @@ class FeeRecord {
   final int? batchId;
   final String? batchDetailsSnapshot;
   final String? note;
+  final DateTime? paymentDate;
 
   // Transient
   final String? studentName;
@@ -28,6 +29,7 @@ class FeeRecord {
     this.batchId,
     this.batchDetailsSnapshot,
     this.note,
+    this.paymentDate,
     required this.createdAt,
     required this.updatedAt,
     this.studentName,
@@ -47,6 +49,7 @@ class FeeRecord {
     int? batchId,
     String? batchDetailsSnapshot,
     String? note,
+    DateTime? paymentDate,
     String? studentName,
   }) {
     return FeeRecord(
@@ -61,6 +64,7 @@ class FeeRecord {
       batchId: batchId ?? this.batchId,
       batchDetailsSnapshot: batchDetailsSnapshot ?? this.batchDetailsSnapshot,
       note: note ?? this.note,
+      paymentDate: paymentDate ?? this.paymentDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       studentName: studentName ?? this.studentName,

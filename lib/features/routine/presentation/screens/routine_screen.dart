@@ -383,6 +383,47 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     '${r.startTime} - ${r.endTime}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: primaryNavy),
                   ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => RoutineFormScreen(routine: r)));
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.all(4.0),
+                          child: Icon(Icons.edit, size: 16, color: Colors.blue),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Delete Routine'),
+                              content: const Text('Are you sure you want to delete this routine?'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                              ],
+                            ),
+                          );
+                          if (confirm == true && context.mounted) {
+                            await context.read<RoutineProvider>().deleteRoutine(r.id!, r.batchId);
+                            if (context.mounted) {
+                              context.read<RoutineProvider>().loadRoutinesByDay(_selectedDay);
+                            }
+                          }
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.all(4.0),
+                          child: Icon(Icons.delete, size: 16, color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ],

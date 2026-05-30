@@ -9,6 +9,7 @@ import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../../enrollment/presentation/widgets/enrollment_history_widget.dart';
 import '../widgets/student_performance_widget.dart';
 import '../widgets/student_fee_history_widget.dart';
+import '../providers/student_provider.dart';
 
 class StudentDetailScreen extends StatelessWidget {
   final Student student;
@@ -19,10 +20,16 @@ class StudentDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Generate STU ID
-    final studentIdStr = 'STU${student.id?.toString().padLeft(4, '0') ?? '0000'}';
+    return Consumer<StudentProvider>(
+      builder: (context, provider, child) {
+        final currentStudent = provider.students.firstWhere(
+          (s) => s.id == student.id,
+          orElse: () => student,
+        );
+        
+        final studentIdStr = 'STU${currentStudent.id?.toString().padLeft(4, '0') ?? '0000'}';
 
-    return DefaultTabController(
+        return DefaultTabController(
       length: 3,
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
@@ -42,7 +49,7 @@ class StudentDetailScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => StudentFormScreen(student: student),
+                    builder: (_) => StudentFormScreen(student: currentStudent),
                   ),
                 );
               },
@@ -56,9 +63,9 @@ class StudentDetailScreen extends StatelessWidget {
               color: Colors.white,
               child: Column(
                 children: [
-                  _buildProfileHeader(context, studentIdStr),
+                  _buildProfileHeader(context, studentIdStr, currentStudent),
                   const Divider(height: 1, color: Color(0xFFF0F0F0)),
-                  _buildDetailsList(context),
+                  _buildDetailsList(context, currentStudent),
                   const Divider(height: 1, color: Color(0xFFF0F0F0)),
                   _buildTabBar(),
                 ],
@@ -78,6 +85,8 @@ class StudentDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  },
+);
   }
 
   Widget _wrapTabContent(Widget child) {
@@ -87,7 +96,7 @@ class StudentDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, String studentIdStr) {
+  Widget _buildProfileHeader(BuildContext context, String studentIdStr, Student currentStudent) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Row(
@@ -97,7 +106,7 @@ class StudentDetailScreen extends StatelessWidget {
             radius: 36,
             backgroundColor: const Color(0xFF3B41C5),
             child: Text(
-              _getInitials(student.name),
+              _getInitials(currentStudent.name),
               style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
             ),
           ),
@@ -110,17 +119,17 @@ class StudentDetailScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        student.name,
+                        currentStudent.name,
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    _buildStatusBadge(context),
+                    _buildStatusBadge(context, currentStudent),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Class ${student.className ?? '-'} • Roll ${student.rollNumber ?? '-'}',
+                  'Class ${currentStudent.className ?? '-'} • Roll ${currentStudent.rollNumber ?? '-'}',
                   style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
                 const SizedBox(height: 4),
@@ -146,10 +155,10 @@ class StudentDetailScreen extends StatelessWidget {
     }
   }
 
-  Widget _buildStatusBadge(BuildContext context) {
+  Widget _buildStatusBadge(BuildContext context, Student currentStudent) {
     return Consumer<EnrollmentProvider>(
       builder: (context, provider, child) {
-        final enrollments = provider.enrollments.where((e) => e.studentId == student.id);
+        final enrollments = provider.enrollments.where((e) => e.studentId == currentStudent.id);
         final status = _getStudentStatus(enrollments);
 
         Color bgColor;
@@ -180,33 +189,33 @@ class StudentDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailsList(BuildContext context) {
-    final admissionDateStr = DateFormat('dd MMM yyyy').format(student.createdAt);
+  Widget _buildDetailsList(BuildContext context, Student currentStudent) {
+    final admissionDateStr = DateFormat('dd MMM yyyy').format(currentStudent.createdAt);
     
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Column(
         children: [
-          _buildDetailRow(Icons.phone_outlined, 'Phone', student.phone ?? '-'),
+          _buildDetailRow(Icons.phone_outlined, 'Phone', currentStudent.phone ?? '-'),
           const SizedBox(height: 12),
-          _buildDetailRow(Icons.person_outline, 'Guardian', student.guardianName ?? '-'),
+          _buildDetailRow(Icons.person_outline, 'Guardian', currentStudent.guardianName ?? '-'),
           const SizedBox(height: 12),
-          _buildDetailRow(Icons.contact_phone_outlined, 'Guardian Phone', student.guardianPhone ?? '-'),
+          _buildDetailRow(Icons.contact_phone_outlined, 'Guardian Phone', currentStudent.guardianPhone ?? '-'),
           const SizedBox(height: 12),
-          _buildDetailRow(Icons.school_outlined, 'School / College', student.schoolCollege ?? '-'),
+          _buildDetailRow(Icons.school_outlined, 'School / College', currentStudent.schoolCollege ?? '-'),
           const SizedBox(height: 12),
           _buildDetailRow(Icons.calendar_today_outlined, 'Admission Date', admissionDateStr),
           const SizedBox(height: 12),
-          _buildStatusDetailRow(context),
+          _buildStatusDetailRow(context, currentStudent),
         ],
       ),
     );
   }
 
-  Widget _buildStatusDetailRow(BuildContext context) {
+  Widget _buildStatusDetailRow(BuildContext context, Student currentStudent) {
     return Consumer<EnrollmentProvider>(
       builder: (context, provider, child) {
-        final enrollments = provider.enrollments.where((e) => e.studentId == student.id);
+        final enrollments = provider.enrollments.where((e) => e.studentId == currentStudent.id);
         final status = _getStudentStatus(enrollments);
         return _buildDetailRow(Icons.verified_user_outlined, 'Status', status);
       },

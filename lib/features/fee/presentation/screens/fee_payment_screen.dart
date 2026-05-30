@@ -60,8 +60,8 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
     final monthName = DateFormat('MMMM yyyy').format(DateTime(widget.feeRecord.year, widget.feeRecord.month));
 
     // Try to get class name and batch name for UI perfection
-    final student = context.read<StudentProvider>().students.firstWhere((s) => s.id == widget.studentId, orElse: () => throw Exception('Student not found'));
-    final className = student.className ?? 'Unknown Class';
+    final studentIdx = context.read<StudentProvider>().students.indexWhere((s) => s.id == widget.studentId);
+    final className = studentIdx >= 0 ? context.read<StudentProvider>().students[studentIdx].className ?? 'Unknown Class' : 'Unknown Class';
     
     String batchName = widget.feeRecord.batchDetailsSnapshot ?? 'Unknown Batch';
 

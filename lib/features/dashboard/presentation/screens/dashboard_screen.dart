@@ -451,7 +451,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             if ((_selectedYear == null || r.year == _selectedYear) && r.month == _selectedMonth) {
               if (_selectedBatchId == null || r.batchId == _selectedBatchId) {
                  if (r.paidAmount > 0) {
-                   int day = r.updatedAt.day;
+                   int day = (r.paymentDate ?? r.updatedAt).day;
                    dailyIncome[day] = (dailyIncome[day] ?? 0) + r.paidAmount;
                  }
               }

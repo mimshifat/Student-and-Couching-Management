@@ -26,11 +26,25 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
     });
   }
 
-  void _leaveBatch(int enrollmentId) async {
+  void _leaveBatch(int enrollmentId, DateTime joinDate) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Leave Batch'),
+        content: const Text('Are you sure you want this student to leave this batch?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirm', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    if (!mounted) return;
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      initialDate: DateTime.now().isBefore(joinDate) ? joinDate : DateTime.now(),
+      firstDate: joinDate,
       lastDate: DateTime(2100),
       helpText: 'Select Leave Date',
     );
@@ -282,7 +296,7 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
                                       ),
                                       const SizedBox(width: 8),
                                       InkWell(
-                                        onTap: () => _leaveBatch(e.id!),
+                                        onTap: () => _leaveBatch(e.id!, e.joinDate),
                                         child: const Padding(
                                           padding: EdgeInsets.all(4.0),
                                           child: Icon(Icons.exit_to_app, size: 16, color: Colors.red),

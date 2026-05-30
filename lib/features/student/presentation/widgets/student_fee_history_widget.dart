@@ -286,7 +286,12 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                                 const SizedBox(height: 8),
                                 InkWell(
                                   onTap: () {
-                                    final student = context.read<StudentProvider>().students.firstWhere((s) => s.id == widget.studentId);
+                                    final studentIdx = context.read<StudentProvider>().students.indexWhere((s) => s.id == widget.studentId);
+                                    if (studentIdx == -1) {
+                                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student not found.')));
+                                      return;
+                                    }
+                                    final student = context.read<StudentProvider>().students[studentIdx];
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -318,7 +323,12 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                                 const SizedBox(height: 8),
                                 InkWell(
                                   onTap: () async {
-                                    final student = context.read<StudentProvider>().students.firstWhere((s) => s.id == widget.studentId);
+                                    final studentIdx = context.read<StudentProvider>().students.indexWhere((s) => s.id == widget.studentId);
+                                    if (studentIdx == -1) {
+                                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student not found.')));
+                                      return;
+                                    }
+                                    final student = context.read<StudentProvider>().students[studentIdx];
                                     if (student.phone != null && student.phone!.isNotEmpty) {
                                       final message = 'Dear ${student.name}, your fee payment of ৳${record.totalAmount.toStringAsFixed(0)} for $monthName ${record.year} has been received. Thank you!';
                                       final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');

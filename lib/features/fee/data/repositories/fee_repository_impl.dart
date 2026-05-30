@@ -239,6 +239,9 @@ class FeeRepositoryImpl implements FeeRepository {
       'is_settled': isSettled ? 1 : 0,
       'updated_at': nowStr,
     };
+    if (paidAmount > 0 || isSettled) {
+      updateData['payment_date'] = nowStr;
+    }
     if (note != null) {
       updateData['note'] = note;
     }

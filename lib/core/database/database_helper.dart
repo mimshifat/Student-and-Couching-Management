@@ -18,7 +18,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'coaching_app.db');
     return await openDatabase(
       path,
-      version: 15,
+      version: 16,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -137,6 +137,10 @@ class DatabaseHelper {
     if (oldVersion < 15) {
       await db.execute('ALTER TABLE fee_records ADD COLUMN note TEXT');
     }
+    if (oldVersion < 16) {
+      await db.execute('ALTER TABLE fee_records ADD COLUMN payment_date TEXT');
+      await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_enrollments_unique ON enrollments(student_id, batch_id) WHERE leave_date IS NULL');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -232,6 +236,7 @@ class DatabaseHelper {
         paid_amount REAL NOT NULL DEFAULT 0.0,
         is_settled INTEGER NOT NULL DEFAULT 0,
         note TEXT,
+        payment_date TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE
@@ -277,6 +282,9 @@ class DatabaseHelper {
     await db.execute('''
       INSERT INTO backup_settings (id, auto_backup_enabled) VALUES (1, 0)
     ''');
+
+    // Create unique index for enrollments
+    await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_enrollments_unique ON enrollments(student_id, batch_id) WHERE leave_date IS NULL');
   }
 
   Future<String> getDatabasePathStr() async {
