@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../domain/entities/batch.dart';
+import '../providers/batch_provider.dart';
 import 'batch_form_screen.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
@@ -49,15 +50,18 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Colors.white),
             onPressed: () {
+              final batchProvider = context.read<BatchProvider>();
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => BatchFormScreen(batch: _batch)),
               ).then((_) async {
-                await context.read<BatchProvider>().loadBatches();
-                final updated = context.read<BatchProvider>().batches.firstWhere((b) => b.id == _batch.id, orElse: () => _batch);
-                setState(() {
-                  _batch = updated;
-                });
+                await batchProvider.loadBatches();
+                final updated = batchProvider.batches.firstWhere((b) => b.id == _batch.id, orElse: () => _batch);
+                if (mounted) {
+                  setState(() {
+                    _batch = updated;
+                  });
+                }
               });
             },
           ),
@@ -153,7 +157,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                 ),
               ),
             ],
-          ],
+          ),
           if (_batch.scheduleDays != null || _batch.timeSlot != null) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),

@@ -107,7 +107,7 @@ class _FeeCollectionReportScreenState extends State<FeeCollectionReportScreen> {
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
-              value: _selectedMonth,
+              initialValue: _selectedMonth,
               items: List.generate(12, (index) {
                 return DropdownMenuItem(
                   value: index + 1,
@@ -130,7 +130,7 @@ class _FeeCollectionReportScreenState extends State<FeeCollectionReportScreen> {
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
-              value: _selectedYear,
+              initialValue: _selectedYear,
               items: List.generate(5, (index) {
                 int y = DateTime.now().year - 2 + index;
                 return DropdownMenuItem(value: y, child: Text('$y'));

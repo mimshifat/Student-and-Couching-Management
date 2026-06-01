@@ -383,10 +383,10 @@ class FeeRepositoryImpl implements FeeRepository {
       final Map<String, dynamic> updateData = {
         'paid_amount': newPaidAmount,
         'is_settled': (isSettled || currentlySettled) ? 1 : 0,
-        'updated_at': nowStr,
+        'updated_at': nowDateTimeStr,
       };
       if (paymentAmount > 0 || isSettled) {
-        updateData['payment_date'] = nowStr;
+        updateData['payment_date'] = nowDateTimeStr;
       }
       if (note != null && note.isNotEmpty) {
         updateData['note'] = note;

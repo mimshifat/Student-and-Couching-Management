@@ -20,7 +20,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'coaching_app.db');
     return await openDatabase(
       path,
-      version: 19,
+      version: _databaseVersion,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
