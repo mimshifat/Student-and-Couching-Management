@@ -2,7 +2,9 @@ import 'package:sqflite/sqflite.dart' as sqflite;
 import '../../domain/entities/batch.dart';
 import '../../domain/repositories/batch_repository.dart';
 import '../models/batch_model.dart';
+import '../models/batch_inactive_period_model.dart';
 import '../../../../core/database/database_helper.dart';
+import '../../../../core/utils/date_utils.dart';
 
 class BatchRepositoryImpl implements BatchRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
@@ -65,5 +67,39 @@ class BatchRepositoryImpl implements BatchRepository {
     return List.generate(maps.length, (i) {
       return BatchModel.fromMap(maps[i]);
     });
+  }
+
+  @override
+  Future<int> insertInactivePeriod(int batchId, DateTime startDate, {DateTime? endDate}) async {
+    final db = await _dbHelper.database;
+    final model = BatchInactivePeriodModel(
+      batchId: batchId,
+      startDate: startDate,
+      endDate: endDate,
+      createdAt: DateTime.now(),
+    );
+    return await db.insert('batch_inactive_periods', model.toMap());
+  }
+
+  @override
+  Future<void> updateInactivePeriod(int id, DateTime endDate) async {
+    final db = await _dbHelper.database;
+    await db.update(
+      'batch_inactive_periods',
+      {'end_date': DateUtilsHelper.formatForDb(endDate)},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getInactivePeriods(int batchId) async {
+    final db = await _dbHelper.database;
+    return await db.query(
+      'batch_inactive_periods',
+      where: 'batch_id = ?',
+      whereArgs: [batchId],
+      orderBy: 'start_date DESC',
+    );
   }
 }

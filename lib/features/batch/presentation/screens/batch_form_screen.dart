@@ -20,6 +20,8 @@ class _BatchFormScreenState extends State<BatchFormScreen> {
   late TextEditingController _descCtrl;
   late TextEditingController _feeCtrl;
   bool _isActive = true;
+  DateTime? _inactiveStartDate;
+  DateTime? _activationDate;
   String? _scheduleDays;
   String? _timeSlot;
   
@@ -87,7 +89,7 @@ class _BatchFormScreenState extends State<BatchFormScreen> {
       if (widget.batch == null) {
         success = await provider.addBatch(b);
       } else {
-        success = await provider.updateBatch(b);
+        success = await provider.updateBatch(b, inactiveStartDate: _inactiveStartDate, activationDate: _activationDate);
       }
 
       if (success && mounted) {
@@ -186,14 +188,58 @@ class _BatchFormScreenState extends State<BatchFormScreen> {
                         ),
                         child: SwitchListTile(
                           title: const Text('Batch is Active', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          subtitle: const Text('Inactive batches are skipped during fee generation.', style: TextStyle(fontSize: 12)),
+                          subtitle: const Text('Inactive batches are skipped or prorated during fee generation.', style: TextStyle(fontSize: 12)),
                           value: _isActive,
                           activeThumbColor: CustomFormWidgets.primaryColor,
-                          onChanged: (val) {
-                            setState(() => _isActive = val);
+                          onChanged: (val) async {
+                            if (widget.batch != null) {
+                              if (!val) {
+                                // Toggling to inactive
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2100),
+                                  helpText: 'Select Inactive Start Date',
+                                );
+                                if (picked != null) {
+                                  setState(() {
+                                    _isActive = false;
+                                    _inactiveStartDate = picked;
+                                    _activationDate = null;
+                                  });
+                                }
+                              } else {
+                                // Toggling to active
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2100),
+                                  helpText: 'Select Activation Date',
+                                );
+                                if (picked != null) {
+                                  setState(() {
+                                    _isActive = true;
+                                    _activationDate = picked;
+                                    _inactiveStartDate = null;
+                                  });
+                                }
+                              }
+                            } else {
+                              setState(() => _isActive = val);
+                            }
                           },
                         ),
                       ),
+                      if (_inactiveStartDate != null) ...[
+                        const SizedBox(height: 8),
+                        Text('Inactive Start: ${_inactiveStartDate!.toLocal().toString().split(' ')[0]}', style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                      if (_activationDate != null) ...[
+                        const SizedBox(height: 8),
+                        Text('Activation Date: ${_activationDate!.toLocal().toString().split(' ')[0]}', style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
                     ],
                   ),
                 ),

@@ -51,7 +51,7 @@ class BatchProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> updateBatch(Batch batch) async {
+  Future<bool> updateBatch(Batch batch, {DateTime? inactiveStartDate, DateTime? activationDate}) async {
     if (_hasConflict(batch)) {
       _errorMessage = 'Conflict: A batch is already scheduled for this day and time.';
       notifyListeners();
@@ -60,6 +60,19 @@ class BatchProvider with ChangeNotifier {
     
     try {
       await _repository.updateBatch(batch);
+      
+      if (batch.id != null) {
+        if (inactiveStartDate != null) {
+          await _repository.insertInactivePeriod(batch.id!, inactiveStartDate);
+        } else if (activationDate != null) {
+          final periods = await _repository.getInactivePeriods(batch.id!);
+          final openPeriod = periods.where((p) => p['end_date'] == null).firstOrNull;
+          if (openPeriod != null) {
+            await _repository.updateInactivePeriod(openPeriod['id'], activationDate);
+          }
+        }
+      }
+      
       await loadBatches();
       return true;
     } catch (e) {

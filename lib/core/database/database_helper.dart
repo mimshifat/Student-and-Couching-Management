@@ -18,7 +18,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'coaching_app.db');
     return await openDatabase(
       path,
-      version: 16,
+      version: 17,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -141,6 +141,18 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE fee_records ADD COLUMN payment_date TEXT');
       await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_enrollments_unique ON enrollments(student_id, batch_id) WHERE leave_date IS NULL');
     }
+    if (oldVersion < 17) {
+      await db.execute('''
+        CREATE TABLE batch_inactive_periods (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          batch_id INTEGER NOT NULL,
+          start_date TEXT NOT NULL,
+          end_date TEXT,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (batch_id) REFERENCES batches (id) ON DELETE CASCADE
+        )
+      ''');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -174,6 +186,17 @@ class DatabaseHelper {
         monthly_fee REAL NOT NULL DEFAULT 0.0,
         is_active INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE batch_inactive_periods (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        batch_id INTEGER NOT NULL,
+        start_date TEXT NOT NULL,
+        end_date TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (batch_id) REFERENCES batches (id) ON DELETE CASCADE
       )
     ''');
 

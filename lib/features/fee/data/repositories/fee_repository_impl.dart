@@ -59,6 +59,13 @@ class FeeRepositoryImpl implements FeeRepository {
       batchLookup[b['id'] as int] = b;
     }
 
+    final inactivePeriodsMap = await db.query('batch_inactive_periods');
+    Map<int, List<Map<String, dynamic>>> inactivePeriodsByBatch = {};
+    for (var p in inactivePeriodsMap) {
+      final batchId = p['batch_id'] as int;
+      inactivePeriodsByBatch.putIfAbsent(batchId, () => []).add(p);
+    }
+
     // Determine the start date (earliest of student creation date or earliest join date)
     DateTime startDate = studentCreatedAt;
     for (var e in enrollmentsMap) {
@@ -174,7 +181,15 @@ class FeeRepositoryImpl implements FeeRepository {
           bool isActiveThisMonth = joinDate.isBefore(lastDayOfMonth.add(const Duration(days: 1))) &&
               (leaveDate == null || leaveDate.isAfter(firstDayOfMonth.subtract(const Duration(days: 1))));
 
-          if (isActiveThisMonth && batchActive[batchId] != false) {
+          if (isActiveThisMonth) {
+            final periods = inactivePeriodsByBatch[batchId] ?? [];
+            bool isLegacyInactive = batchActive[batchId] == false && periods.isEmpty;
+            
+            // If it's a legacy inactive batch with no periods, just skip completely
+            if (isLegacyInactive) {
+               continue;
+            }
+
             final batch = batchLookup[batchId];
             if (batch != null) {
               String bName = (e['batch_name'] as String?) ?? (batch['name'] as String?) ?? 'Unknown';
@@ -198,22 +213,59 @@ class FeeRepositoryImpl implements FeeRepository {
             
             bool isFullMonth = (effectiveStart == firstDayOfMonth) && (effectiveEnd == lastDayOfMonth);
             
-            int activeDays = 0;
-            if (isFullMonth) {
-              activeDays = 30;
-            } else {
-              int startDay = effectiveStart.day > 30 ? 30 : effectiveStart.day;
-              int endDay = effectiveEnd.day > 30 ? 30 : effectiveEnd.day;
-              
-              if (effectiveStart == firstDayOfMonth) {
-                activeDays = endDay;
-              } else if (effectiveEnd == lastDayOfMonth) {
-                activeDays = 30 - startDay;
-              } else {
-                activeDays = endDay - startDay;
+            int startDay = effectiveStart.day > 30 ? 30 : effectiveStart.day;
+            int endDay = effectiveEnd.day > 30 ? 30 : effectiveEnd.day;
+            
+            if (effectiveStart == firstDayOfMonth) startDay = 1;
+            if (effectiveEnd == lastDayOfMonth) endDay = 30;
+            
+            int rawActiveDays = (endDay - startDay) + 1;
+            if (rawActiveDays < 0) rawActiveDays = 0;
+            if (rawActiveDays > 30) rawActiveDays = 30;
+
+            int inactiveDaysCount = 0;
+            if (periods.isNotEmpty) {
+              List<Map<String, DateTime?>> parsedPeriods = periods.map((p) => {
+                'start': DateUtilsHelper.parseFromDb(p['start_date'] as String),
+                'end': p['end_date'] != null ? DateUtilsHelper.parseFromDb(p['end_date'] as String) : null,
+              }).toList();
+
+              for (int d = startDay; d <= endDay; d++) {
+                int actualD = d > lastDayOfMonth.day ? lastDayOfMonth.day : d;
+                DateTime currentDate = DateTime(year, month, actualD);
+                
+                bool isInactive = false;
+                for (var p in parsedPeriods) {
+                  DateTime pStart = p['start']!;
+                  DateTime? pEnd = p['end'];
+                  
+                  DateTime justDate = DateTime(currentDate.year, currentDate.month, currentDate.day);
+                  DateTime justStart = DateTime(pStart.year, pStart.month, pStart.day);
+                  
+                  if (!justDate.isBefore(justStart)) {
+                    if (pEnd == null) {
+                      isInactive = true;
+                      break;
+                    } else {
+                      DateTime justEnd = DateTime(pEnd.year, pEnd.month, pEnd.day);
+                      if (!justDate.isAfter(justEnd)) {
+                        isInactive = true;
+                        break;
+                      }
+                    }
+                  }
+                }
+                
+                if (isInactive) {
+                  inactiveDaysCount++;
+                }
               }
-              
-              if (activeDays < 0) activeDays = 0;
+            }
+            
+            int activeDays = rawActiveDays - inactiveDaysCount;
+            if (activeDays < 0) activeDays = 0;
+            
+            if (inactiveDaysCount > 0 || !isFullMonth) {
               isPartialMonth = true;
             }
 
