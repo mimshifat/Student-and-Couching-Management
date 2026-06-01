@@ -32,11 +32,26 @@ class BatchRepositoryImpl implements BatchRepository {
   @override
   Future<int> deleteBatch(int id) async {
     final db = await _dbHelper.database;
-    return await db.delete(
+
+    // Soft-delete: mark batch as deleted and inactive
+    final result = await db.update(
       _tableName,
+      {'is_deleted': 1, 'is_active': 0},
       where: 'id = ?',
       whereArgs: [id],
     );
+
+    // Close all active enrollments so no new fees are generated,
+    // but keep enrollment records for history and reports
+    final now = DateUtilsHelper.formatForDb(DateTime.now());
+    await db.update(
+      'enrollments',
+      {'leave_date': now},
+      where: 'batch_id = ? AND leave_date IS NULL',
+      whereArgs: [id],
+    );
+
+    return result;
   }
 
   @override
@@ -61,6 +76,7 @@ class BatchRepositoryImpl implements BatchRepository {
       SELECT b.*, 
              (SELECT COUNT(*) FROM enrollments e WHERE e.batch_id = b.id AND e.leave_date IS NULL) as student_count
       FROM $_tableName b
+      WHERE b.is_deleted = 0
       ORDER BY b.is_active DESC, b.name ASC
     ''');
 

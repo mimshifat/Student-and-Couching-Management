@@ -14,31 +14,41 @@ class FeeProvider with ChangeNotifier {
   List<FeeRecord> _studentFeeRecords = [];
   List<FeeRecord> get studentFeeRecords => _studentFeeRecords;
 
-
-
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  /// Tracks whether fee generation has run this session.
+  /// Avoids re-running the expensive O(students×months) generation on every screen load.
+  bool _hasGeneratedFees = false;
+
+  /// Incremented every time pending records are reloaded, so the UI can detect data changes.
+  int _dataVersion = 0;
+  int get dataVersion => _dataVersion;
+
   FeeProvider(this._feeRepository, this._studentRepository);
 
-  Future<void> loadPendingFeeRecords() async {
+  Future<void> loadPendingFeeRecords({bool forceRegenerate = false}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Auto-generate missing cycles for all students so they show up in the overview
-      final students = await _studentRepository.getAllStudents();
-      for (final student in students) {
-        if (student.id != null) {
-          await _feeRepository.generateFeeRecords(student.id!, student.createdAt);
+      // Only run the expensive generation loop on first load or explicit refresh
+      if (!_hasGeneratedFees || forceRegenerate) {
+        final students = await _studentRepository.getAllStudents();
+        for (final student in students) {
+          if (student.id != null) {
+            await _feeRepository.generateFeeRecords(student.id!, student.createdAt);
+          }
         }
+        _hasGeneratedFees = true;
       }
 
       _pendingFeeRecords = await _feeRepository.getPendingFeeRecords();
+      _dataVersion++;
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -72,8 +82,12 @@ class FeeProvider with ChangeNotifier {
   Future<bool> addPayment(int feeRecordId, double paymentAmount, int studentId, {bool isSettled = false, String? note}) async {
     try {
       await _feeRepository.addPaymentTransaction(feeRecordId, paymentAmount, isSettled: isSettled, note: note);
+      // Regenerate only for this specific student (fast)
       await loadStudentFeeData(studentId);
-      await loadPendingFeeRecords();
+      // Lightweight reload: just fetch updated records from DB, no full regeneration
+      _pendingFeeRecords = await _feeRepository.getPendingFeeRecords();
+      _dataVersion++;
+      notifyListeners();
       return true;
     } catch (e) {
       _errorMessage = e.toString();

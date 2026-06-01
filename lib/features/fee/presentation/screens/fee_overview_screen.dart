@@ -23,6 +23,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
   int _selectedYear = DateTime.now().year;
   int? _selectedBatchId;
   Set<int>? _initialUnpaidIds;
+  int _lastDataVersion = -1;
 
   static const Color primaryNavy = Color(0xFF191A4E);
 
@@ -141,7 +142,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
       body: RefreshIndicator(
         onRefresh: () async {
           _initialUnpaidIds = null;
-          await context.read<FeeProvider>().loadPendingFeeRecords();
+          await context.read<FeeProvider>().loadPendingFeeRecords(forceRegenerate: true);
         },
         child: Consumer3<FeeProvider, BatchProvider, EnrollmentProvider>(
           builder: (context, feeProvider, batchProvider, enrollmentProvider, child) {
@@ -151,6 +152,11 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
 
             final batches = batchProvider.batches;
             final enrollments = enrollmentProvider.enrollments;
+
+            if (_lastDataVersion != feeProvider.dataVersion) {
+              _initialUnpaidIds = null;
+              _lastDataVersion = feeProvider.dataVersion;
+            }
 
             _initialUnpaidIds ??= feeProvider.pendingFeeRecords
                 .where((r) => r.paidAmount < r.totalAmount && !r.isSettled)

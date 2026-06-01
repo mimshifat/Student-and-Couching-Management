@@ -8,6 +8,7 @@ class Batch {
   final String? timeSlot;
   final double monthlyFee;
   final bool isActive;
+  final bool isDeleted;
   final int studentCount;
   final DateTime createdAt;
 
@@ -21,6 +22,7 @@ class Batch {
     this.timeSlot,
     this.monthlyFee = 0.0,
     this.isActive = true,
+    this.isDeleted = false,
     this.studentCount = 0,
     required this.createdAt,
   });
@@ -33,7 +35,9 @@ class Batch {
     String? endTime,
     String? scheduleDays,
     String? timeSlot,
+    double? monthlyFee,
     bool? isActive,
+    bool? isDeleted,
     int? studentCount,
     DateTime? createdAt,
   }) {
@@ -45,7 +49,9 @@ class Batch {
       endTime: endTime ?? this.endTime,
       scheduleDays: scheduleDays ?? this.scheduleDays,
       timeSlot: timeSlot ?? this.timeSlot,
+      monthlyFee: monthlyFee ?? this.monthlyFee,
       isActive: isActive ?? this.isActive,
+      isDeleted: isDeleted ?? this.isDeleted,
       studentCount: studentCount ?? this.studentCount,
       createdAt: createdAt ?? this.createdAt,
     );

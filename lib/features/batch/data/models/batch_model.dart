@@ -12,6 +12,7 @@ class BatchModel extends Batch {
     super.timeSlot,
     super.monthlyFee = 0.0,
     super.isActive = true,
+    super.isDeleted = false,
     super.studentCount = 0,
     required super.createdAt,
   });
@@ -27,6 +28,7 @@ class BatchModel extends Batch {
       timeSlot: entity.timeSlot,
       monthlyFee: entity.monthlyFee,
       isActive: entity.isActive,
+      isDeleted: entity.isDeleted,
       studentCount: entity.studentCount,
       createdAt: entity.createdAt,
     );
@@ -43,6 +45,7 @@ class BatchModel extends Batch {
       timeSlot: map['time_slot'],
       monthlyFee: (map['monthly_fee'] as num?)?.toDouble() ?? 0.0,
       isActive: map['is_active'] == 1,
+      isDeleted: map['is_deleted'] == 1,
       studentCount: map['student_count'] ?? 0,
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
     );
@@ -59,6 +62,7 @@ class BatchModel extends Batch {
       'time_slot': timeSlot,
       'monthly_fee': monthlyFee,
       'is_active': isActive ? 1 : 0,
+      'is_deleted': isDeleted ? 1 : 0,
       'created_at': DateUtilsHelper.formatForDb(createdAt),
     };
   }

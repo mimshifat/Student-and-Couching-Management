@@ -225,7 +225,7 @@ class FeeRepositoryImpl implements FeeRepository {
 
             int inactiveDaysCount = 0;
             if (periods.isNotEmpty) {
-              List<Map<String, DateTime?>> parsedPeriods = periods.map((p) => {
+              List<Map<String, DateTime?>> parsedPeriods = periods.map((p) => <String, DateTime?>{
                 'start': DateUtilsHelper.parseFromDb(p['start_date'] as String),
                 'end': p['end_date'] != null ? DateUtilsHelper.parseFromDb(p['end_date'] as String) : null,
               }).toList();
@@ -377,11 +377,12 @@ class FeeRepositoryImpl implements FeeRepository {
       if (record.isEmpty) return;
 
       final currentPaid = (record.first['paid_amount'] as num).toDouble();
+      final currentlySettled = (record.first['is_settled'] as int?) == 1;
       final newPaidAmount = currentPaid + paymentAmount;
 
       final Map<String, dynamic> updateData = {
         'paid_amount': newPaidAmount,
-        'is_settled': isSettled ? 1 : 0,
+        'is_settled': (isSettled || currentlySettled) ? 1 : 0,
         'updated_at': nowStr,
       };
       if (paymentAmount > 0 || isSettled) {
