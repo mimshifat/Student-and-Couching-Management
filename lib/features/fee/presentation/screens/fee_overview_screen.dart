@@ -246,12 +246,12 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                   items: [
                     DropdownMenuItem(
                       value: null,
-                      child: Text('All Months $_selectedYear', overflow: TextOverflow.ellipsis),
+                      child: Text('All Months $_selectedYear'),
                     ),
                     ...List.generate(12, (index) {
                       return DropdownMenuItem(
                         value: index + 1,
-                        child: Text('${_months[index]} $_selectedYear', overflow: TextOverflow.ellipsis),
+                        child: Text('${_months[index]} $_selectedYear'),
                       );
                     }),
                   ],
@@ -279,8 +279,8 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                   icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
                   style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
                   items: [
-                    const DropdownMenuItem(value: null, child: Text('All Batches', overflow: TextOverflow.ellipsis)),
-                    ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, overflow: TextOverflow.ellipsis))),
+                    const DropdownMenuItem(value: null, child: Text('All Batches')),
+                    ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name))),
                   ],
                   onChanged: (val) {
                     setState(() => _selectedBatchId = val);

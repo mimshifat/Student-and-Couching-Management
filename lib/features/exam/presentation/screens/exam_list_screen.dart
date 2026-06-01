@@ -243,7 +243,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                     style: const TextStyle(fontSize: 13, color: Colors.black87),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('All Batches')),
-                      ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, overflow: TextOverflow.ellipsis))),
+                      ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name))),
                     ],
                     onChanged: (val) => setState(() => _selectedBatchId = val),
                   ),

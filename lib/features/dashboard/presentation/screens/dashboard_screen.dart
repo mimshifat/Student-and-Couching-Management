@@ -108,6 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     dropdownStyleData: DropdownStyleData(
                       maxHeight: 300,
+                      width: 130,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Colors.white,
@@ -115,16 +116,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       offset: const Offset(0, -8),
                     ),
                     menuItemStyleData: const MenuItemStyleData(
-                      height: 40,
                       padding: EdgeInsets.symmetric(horizontal: 12),
                     ),
                     style: const TextStyle(color: Color(0xFF1B5E20), fontWeight: FontWeight.w600, fontSize: 13),
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('All Years', overflow: TextOverflow.ellipsis)),
+                      const DropdownMenuItem(value: null, child: Text('All Years')),
                       ...years.map((y) {
                         return DropdownMenuItem(
                           value: y,
-                          child: Text('$y', overflow: TextOverflow.ellipsis),
+                          child: Text('$y'),
                         );
                       }),
                     ],
@@ -154,6 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     dropdownStyleData: DropdownStyleData(
                       maxHeight: 300,
+                      width: 140,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Colors.white,
@@ -161,16 +162,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       offset: const Offset(0, -8),
                     ),
                     menuItemStyleData: const MenuItemStyleData(
-                      height: 40,
                       padding: EdgeInsets.symmetric(horizontal: 12),
                     ),
                     style: const TextStyle(color: Color(0xFF1B5E20), fontWeight: FontWeight.w600, fontSize: 13),
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('All Months', overflow: TextOverflow.ellipsis)),
+                      const DropdownMenuItem(value: null, child: Text('All Months')),
                       ...List.generate(12, (index) {
                         return DropdownMenuItem(
                           value: index + 1,
-                          child: Text(months[index], overflow: TextOverflow.ellipsis),
+                          child: Text(months[index]),
                         );
                       }),
                     ],
@@ -200,6 +200,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     dropdownStyleData: DropdownStyleData(
                       maxHeight: 300,
+                      width: 220,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: Colors.white,
@@ -207,13 +208,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       offset: const Offset(0, -8),
                     ),
                     menuItemStyleData: const MenuItemStyleData(
-                      height: 40,
                       padding: EdgeInsets.symmetric(horizontal: 12),
                     ),
                     style: const TextStyle(color: Color(0xFF37474F), fontWeight: FontWeight.w600, fontSize: 13),
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('All Batches', overflow: TextOverflow.ellipsis)),
-                      ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, overflow: TextOverflow.ellipsis))),
+                      const DropdownMenuItem(value: null, child: Text('All Batches')),
+                      ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name))),
                     ],
                     onChanged: (val) {
                       setState(() => _selectedBatchId = val);

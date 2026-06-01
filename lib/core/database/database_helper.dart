@@ -199,7 +199,8 @@ class DatabaseHelper {
         address TEXT,
         notes TEXT,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        deleted_at TEXT
       )
     ''');
 

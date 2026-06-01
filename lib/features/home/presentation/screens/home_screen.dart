@@ -214,6 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             dropdownStyleData: DropdownStyleData(
                               maxHeight: 300,
+                              width: 220,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
                                 color: Colors.white,
@@ -221,13 +222,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               offset: const Offset(0, -8),
                             ),
                             menuItemStyleData: const MenuItemStyleData(
-                              height: 40,
                               padding: EdgeInsets.symmetric(horizontal: 12),
                             ),
                             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87),
                             items: [
-                              const DropdownMenuItem(value: null, child: Text('All Batches', overflow: TextOverflow.ellipsis)),
-                              ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, overflow: TextOverflow.ellipsis))),
+                              const DropdownMenuItem(value: null, child: Text('All Batches')),
+                              ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name))),
                             ],
                             onChanged: (val) {
                               setState(() => _selectedBatchId = val);
