@@ -236,7 +236,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         int activeCount = 0;
         for (var s in allStudents) {
           final enrollments = enrollmentProvider.enrollments.where((e) => e.studentId == s.id).toList();
-          final isActive = enrollments.any((e) => e.leaveDate == null || e.leaveDate!.isAfter(DateTime.now()));
+          final isActive = enrollments.any((e) => e.leaveDate == null);
           if (isActive) activeCount++;
         }
 

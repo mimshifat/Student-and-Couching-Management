@@ -148,7 +148,7 @@ class StudentDetailScreen extends StatelessWidget {
   String _getStudentStatus(Iterable<dynamic> enrollments) {
     if (enrollments.isEmpty) {
       return 'New';
-    } else if (enrollments.any((e) => e.leaveDate == null || e.leaveDate!.isAfter(DateTime.now()))) {
+    } else if (enrollments.any((e) => e.leaveDate == null)) {
       return 'Running';
     } else {
       return 'Previous';

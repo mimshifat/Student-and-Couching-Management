@@ -186,7 +186,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
     final studentEnrollments = enrollments.where((e) => e.studentId == student.id).toList();
     if (studentEnrollments.isEmpty) {
       return 'New';
-    } else if (studentEnrollments.any((e) => e.leaveDate == null || e.leaveDate!.isAfter(DateTime.now()))) {
+    } else if (studentEnrollments.any((e) => e.leaveDate == null)) {
       return 'Running';
     } else {
       return 'Previous';
