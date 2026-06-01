@@ -193,19 +193,26 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: DropdownButtonHideUnderline(
-                    child: DropdownButton<Batch>(
-                      value: _selectedBatch,
+                    child: DropdownButton<int?>(
+                      value: _selectedBatch?.id,
                       isExpanded: true,
                       menuMaxHeight: 300,
                       icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
                       style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500),
                       items: batchProvider.batches.map((b) {
-                        return DropdownMenuItem(
-                          value: b,
+                        return DropdownMenuItem<int?>(
+                          value: b.id,
                           child: Text(b.name, overflow: TextOverflow.ellipsis),
                         );
                       }).toList(),
-                      onChanged: _onBatchChanged,
+                      onChanged: (val) {
+                        if (val != null) {
+                          try {
+                            final newBatch = batchProvider.batches.firstWhere((b) => b.id == val);
+                            _onBatchChanged(newBatch);
+                          } catch (_) {}
+                        }
+                      },
                     ),
                   ),
                 );
@@ -337,6 +344,16 @@ class _RoutineScreenState extends State<RoutineScreen> {
           orElse: () => Batch(name: 'Unknown Batch', createdAt: DateTime.now())
         );
         
+        String timeStr = '';
+        if (r.startTime.isNotEmpty && r.endTime.isNotEmpty) {
+          timeStr = '${r.startTime} - ${r.endTime}';
+        } else {
+          timeStr = batch.timeSlot ?? '';
+          if (timeStr.isEmpty && batch.startTime != null && batch.startTime!.isNotEmpty && batch.endTime != null && batch.endTime!.isNotEmpty) {
+            timeStr = '${batch.startTime} - ${batch.endTime}';
+          }
+        }
+        
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 12.0),
           child: Row(
@@ -380,7 +397,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${r.startTime} - ${r.endTime}',
+                    timeStr.isNotEmpty ? timeStr : '-',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: primaryNavy),
                   ),
                   const SizedBox(height: 8),
@@ -466,7 +483,18 @@ class _RoutineScreenState extends State<RoutineScreen> {
               final fullDay = fullDays[i];
 
               final routinesForDay = provider.routines.where((r) => r.dayOfWeek == fullDay).toList();
-              final subjects = routinesForDay.map((r) => '${r.subject} (${r.startTime} - ${r.endTime})').join('\n');
+              final subjects = routinesForDay.map((r) {
+                String timeStr = '';
+                if (r.startTime.isNotEmpty && r.endTime.isNotEmpty) {
+                  timeStr = '${r.startTime} - ${r.endTime}';
+                } else if (_selectedBatch != null) {
+                  timeStr = _selectedBatch!.timeSlot ?? '';
+                  if (timeStr.isEmpty && _selectedBatch!.startTime != null && _selectedBatch!.startTime!.isNotEmpty && _selectedBatch!.endTime != null && _selectedBatch!.endTime!.isNotEmpty) {
+                    timeStr = '${_selectedBatch!.startTime} - ${_selectedBatch!.endTime}';
+                  }
+                }
+                return timeStr.isNotEmpty ? '${r.subject} ($timeStr)' : r.subject;
+              }).join('\n');
 
               return TableRow(
                 children: [
