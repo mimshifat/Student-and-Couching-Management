@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 import '../providers/fee_provider.dart';
 import '../utils/fee_report_pdf_generator.dart';
@@ -101,13 +102,22 @@ class _FeeCollectionReportScreenState extends State<FeeCollectionReportScreen> {
       child: Row(
         children: [
           Expanded(
-            child: DropdownButtonFormField<int>(
+            child: DropdownButtonFormField2<int>(
               decoration: InputDecoration(
                 labelText: 'Month',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
-              initialValue: _selectedMonth,
+              value: _selectedMonth,
+              isExpanded: true,
+              dropdownStyleData: DropdownStyleData(
+                maxHeight: 300,
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.white),
+                offset: const Offset(0, -8),
+              ),
+              menuItemStyleData: const MenuItemStyleData(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+              ),
               items: List.generate(12, (index) {
                 return DropdownMenuItem(
                   value: index + 1,
@@ -124,13 +134,22 @@ class _FeeCollectionReportScreenState extends State<FeeCollectionReportScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: DropdownButtonFormField<int>(
+            child: DropdownButtonFormField2<int>(
               decoration: InputDecoration(
                 labelText: 'Year',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
-              initialValue: _selectedYear,
+              value: _selectedYear,
+              isExpanded: true,
+              dropdownStyleData: DropdownStyleData(
+                maxHeight: 300,
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.white),
+                offset: const Offset(0, -8),
+              ),
+              menuItemStyleData: const MenuItemStyleData(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+              ),
               items: List.generate(5, (index) {
                 int y = DateTime.now().year - 2 + index;
                 return DropdownMenuItem(value: y, child: Text('$y'));

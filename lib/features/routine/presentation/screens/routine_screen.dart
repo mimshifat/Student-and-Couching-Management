@@ -466,7 +466,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
               final fullDay = fullDays[i];
 
               final routinesForDay = provider.routines.where((r) => r.dayOfWeek == fullDay).toList();
-              final subjects = routinesForDay.map((r) => r.subject).join(', ');
+              final subjects = routinesForDay.map((r) => '${r.subject} (${r.startTime} - ${r.endTime})').join('\n');
 
               return TableRow(
                 children: [
