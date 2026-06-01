@@ -69,9 +69,9 @@ class FeeProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> updatePaidAmount(int feeRecordId, double paidAmount, int studentId, {bool isSettled = false, String? note}) async {
+  Future<bool> addPayment(int feeRecordId, double paymentAmount, int studentId, {bool isSettled = false, String? note}) async {
     try {
-      await _feeRepository.updatePaidAmount(feeRecordId, paidAmount, isSettled: isSettled, note: note);
+      await _feeRepository.addPaymentTransaction(feeRecordId, paymentAmount, isSettled: isSettled, note: note);
       await loadStudentFeeData(studentId);
       await loadPendingFeeRecords();
       return true;
@@ -79,6 +79,16 @@ class FeeProvider with ChangeNotifier {
       _errorMessage = e.toString();
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getCollectionReport(int month, int year) async {
+    try {
+      return await _feeRepository.getFeeCollectionReport(month, year);
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return [];
     }
   }
 }

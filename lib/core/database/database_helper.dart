@@ -18,7 +18,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'coaching_app.db');
     return await openDatabase(
       path,
-      version: 17,
+      version: 18,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -153,6 +153,27 @@ class DatabaseHelper {
         )
       ''');
     }
+    if (oldVersion < 18) {
+      await db.execute('''
+        CREATE TABLE fee_transactions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          fee_record_id INTEGER NOT NULL,
+          amount REAL NOT NULL,
+          payment_date TEXT NOT NULL,
+          note TEXT,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (fee_record_id) REFERENCES fee_records (id) ON DELETE CASCADE
+        )
+      ''');
+      
+      // Migrate existing payments
+      await db.execute('''
+        INSERT INTO fee_transactions (fee_record_id, amount, payment_date, created_at, note)
+        SELECT id, paid_amount, COALESCE(payment_date, created_at), created_at, note
+        FROM fee_records
+        WHERE paid_amount > 0
+      ''');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -263,6 +284,18 @@ class DatabaseHelper {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE fee_transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fee_record_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        payment_date TEXT NOT NULL,
+        note TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (fee_record_id) REFERENCES fee_records (id) ON DELETE CASCADE
       )
     ''');
 

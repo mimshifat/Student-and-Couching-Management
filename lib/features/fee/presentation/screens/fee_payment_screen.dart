@@ -47,11 +47,10 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
       // Allow 0 if they just want to mark as settled or add a note
       if (newPayment == 0 && !_isSettled && widget.feeRecord.paidAmount == 0 && _noteCtrl.text.trim().isEmpty) return;
 
-      final totalPaid = widget.feeRecord.paidAmount + newPayment;
-
+      // We no longer calculate totalPaid here, we send the individual payment transaction
       final provider = context.read<FeeProvider>();
       final note = _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim();
-      final success = await provider.updatePaidAmount(widget.feeRecord.id!, totalPaid, widget.studentId, isSettled: _isSettled, note: note);
+      final success = await provider.addPayment(widget.feeRecord.id!, newPayment, widget.studentId, isSettled: _isSettled, note: note);
       
       if (success && mounted) {
         if (newPayment > 0) {

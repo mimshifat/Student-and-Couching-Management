@@ -6,6 +6,7 @@ import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import 'fee_payment_screen.dart';
+import 'fee_collection_report_screen.dart';
 import '../../../../core/widgets/app_drawer.dart';
 
 class FeeOverviewScreen extends StatefulWidget {
@@ -121,6 +122,16 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
         ),
         title: const Text('Fees / Payments', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+            tooltip: 'Collection Report',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FeeCollectionReportScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.filter_alt_outlined, color: Colors.white),
             onPressed: _showFilterSheet,

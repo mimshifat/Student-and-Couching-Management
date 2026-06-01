@@ -356,27 +356,74 @@ class FeeRepositoryImpl implements FeeRepository {
   }
 
   @override
-  Future<void> updatePaidAmount(int feeRecordId, double paidAmount, {bool isSettled = false, String? note}) async {
+  Future<void> addPaymentTransaction(int feeRecordId, double paymentAmount, {bool isSettled = false, String? note}) async {
     final db = await _dbHelper.database;
     final nowStr = DateUtilsHelper.formatForDb(DateTime.now());
 
-    final Map<String, dynamic> updateData = {
-      'paid_amount': paidAmount,
-      'is_settled': isSettled ? 1 : 0,
-      'updated_at': nowStr,
-    };
-    if (paidAmount > 0 || isSettled) {
-      updateData['payment_date'] = nowStr;
-    }
-    if (note != null) {
-      updateData['note'] = note;
-    }
+    await db.transaction((txn) async {
+      // 1. Insert into fee_transactions
+      if (paymentAmount != 0) {
+        await txn.insert('fee_transactions', {
+          'fee_record_id': feeRecordId,
+          'amount': paymentAmount,
+          'payment_date': nowStr,
+          'note': note,
+          'created_at': nowStr,
+        });
+      }
 
-    await db.update(
-      _feeTable,
-      updateData,
-      where: 'id = ?',
-      whereArgs: [feeRecordId],
-    );
+      // 2. Fetch existing fee_record to get current paid_amount
+      final record = await txn.query(_feeTable, where: 'id = ?', whereArgs: [feeRecordId]);
+      if (record.isEmpty) return;
+
+      final currentPaid = (record.first['paid_amount'] as num).toDouble();
+      final newPaidAmount = currentPaid + paymentAmount;
+
+      final Map<String, dynamic> updateData = {
+        'paid_amount': newPaidAmount,
+        'is_settled': isSettled ? 1 : 0,
+        'updated_at': nowStr,
+      };
+      if (paymentAmount > 0 || isSettled) {
+        updateData['payment_date'] = nowStr;
+      }
+      if (note != null && note.isNotEmpty) {
+        updateData['note'] = note;
+      }
+
+      await txn.update(
+        _feeTable,
+        updateData,
+        where: 'id = ?',
+        whereArgs: [feeRecordId],
+      );
+    });
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getFeeCollectionReport(int month, int year) async {
+    final db = await _dbHelper.database;
+    final monthStr = month.toString().padLeft(2, '0');
+    final yearMonth = '$year-$monthStr';
+
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT 
+        t.id as transaction_id,
+        t.amount as transaction_amount,
+        t.payment_date,
+        t.note as transaction_note,
+        r.month as fee_month,
+        r.year as fee_year,
+        r.batch_details_snapshot,
+        s.name as student_name,
+        s.phone as student_phone
+      FROM fee_transactions t
+      JOIN fee_records r ON t.fee_record_id = r.id
+      JOIN students s ON r.student_id = s.id
+      WHERE t.payment_date LIKE ?
+      ORDER BY t.payment_date DESC, s.name ASC
+    ''', ['$yearMonth%']);
+
+    return maps;
   }
 }
