@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/entities/fee_record.dart';
 import '../providers/fee_provider.dart';
@@ -26,7 +27,9 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
   @override
   void initState() {
     super.initState();
-    _amountCtrl = TextEditingController(text: widget.feeRecord.paidAmount > 0 ? widget.feeRecord.paidAmount.toStringAsFixed(0) : '');
+    double remaining = widget.feeRecord.totalAmount - widget.feeRecord.paidAmount;
+    if (remaining < 0) remaining = 0;
+    _amountCtrl = TextEditingController(text: remaining > 0 ? remaining.toStringAsFixed(0) : '');
     _isSettled = widget.feeRecord.isSettled;
   }
 
@@ -39,14 +42,34 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
 
   void _submit() async {
     if (_formKey.currentState!.validate()) {
-      final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0.0;
-      if (amount <= 0) return;
+      final newPayment = double.tryParse(_amountCtrl.text.trim()) ?? 0.0;
+      
+      // Allow 0 if they just want to mark as settled or add a note
+      if (newPayment == 0 && !_isSettled && widget.feeRecord.paidAmount == 0 && _noteCtrl.text.trim().isEmpty) return;
+
+      final totalPaid = widget.feeRecord.paidAmount + newPayment;
 
       final provider = context.read<FeeProvider>();
       final note = _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim();
-      final success = await provider.updatePaidAmount(widget.feeRecord.id!, amount, widget.studentId, isSettled: _isSettled, note: note);
+      final success = await provider.updatePaidAmount(widget.feeRecord.id!, totalPaid, widget.studentId, isSettled: _isSettled, note: note);
       
       if (success && mounted) {
+        if (newPayment > 0) {
+          final students = context.read<StudentProvider>().students;
+          final studentIdx = students.indexWhere((s) => s.id == widget.studentId);
+          if (studentIdx >= 0) {
+            final student = students[studentIdx];
+            if (student.phone != null && student.phone!.isNotEmpty) {
+              final monthName = DateFormat('MMMM').format(DateTime(widget.feeRecord.year, widget.feeRecord.month));
+              final message = '[CSA]\nDear ${student.name}, your fee payment of ${newPayment.toStringAsFixed(0)} TK for $monthName ${widget.feeRecord.year} has been received. Thank you!\n-Abdus Samad';
+              final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri);
+              }
+            }
+          }
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Recorded successfully.')));
         Navigator.pop(context);
       } else if (mounted) {
@@ -126,20 +149,38 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.grey.shade200),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                        child: Column(
                           children: [
-                            const Text('Total Fee (Calculated)', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600)),
-                            Text('৳ ${widget.feeRecord.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const Text('Total Fee (Calculated)', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600)),
+                                Text('৳ ${widget.feeRecord.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+                              ],
+                            ),
+                            if (widget.feeRecord.paidAmount > 0) ...[
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Divider(height: 1, color: Colors.black12),
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  const Text('Already Paid', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600)),
+                                  Text('৳ ${widget.feeRecord.paidAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2B9348))),
+                                ],
+                              ),
+                            ]
                           ],
                         ),
                       ),
                       const SizedBox(height: 24),
                       
                       CustomFormWidgets.buildTextField(
-                        label: 'Paid Amount *',
-                        hint: 'Enter paid amount',
+                        label: 'Amount to Pay Now *',
+                        hint: 'Enter payment amount (use negative to correct)',
                         prefixText: '৳ ',
                         controller: _amountCtrl,
                         isNumber: true,

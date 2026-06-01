@@ -101,84 +101,137 @@ class FeeRepositoryImpl implements FeeRepository {
       );
       
       Map<int, Map<String, dynamic>> existingRecordsByBatch = {};
+      Map<int, List<Map<String, dynamic>>> allExistingRecordsByBatch = {};
       for (var r in existingRecords) {
-        existingRecordsByBatch[r['batch_id'] as int] = r;
+        final batchId = r['batch_id'] as int;
+        allExistingRecordsByBatch.putIfAbsent(batchId, () => []).add(r);
       }
 
+      // Consolidate duplicates if any
+      for (var batchId in allExistingRecordsByBatch.keys) {
+        final records = allExistingRecordsByBatch[batchId]!;
+        if (records.length > 1) {
+          double totalPaid = 0.0;
+          double maxTotalAmount = 0.0;
+          String? paymentDate;
+          String? note;
+          int isSettled = 0;
+          
+          Map<String, dynamic> mainRecord = Map.from(records.first);
+          
+          for (var r in records) {
+             totalPaid += (r['paid_amount'] as num).toDouble();
+             double rTotal = (r['total_amount'] as num).toDouble();
+             if (rTotal > maxTotalAmount) maxTotalAmount = rTotal;
+             if (r['is_settled'] == 1) isSettled = 1;
+             if (r['payment_date'] != null) paymentDate = r['payment_date'] as String;
+             if (r['note'] != null) {
+                note = note == null ? r['note'] : '$note\n${r['note']}';
+             }
+          }
+          
+          await db.update(_feeTable, {
+            'paid_amount': totalPaid,
+            'total_amount': maxTotalAmount,
+            'is_settled': isSettled,
+            'payment_date': paymentDate,
+            'note': note,
+          }, where: 'id = ?', whereArgs: [mainRecord['id']]);
+          
+          for (int i = 1; i < records.length; i++) {
+             await db.delete(_feeTable, where: 'id = ?', whereArgs: [records[i]['id']]);
+          }
+          
+          mainRecord['paid_amount'] = totalPaid;
+          mainRecord['total_amount'] = maxTotalAmount;
+          mainRecord['is_settled'] = isSettled;
+          existingRecordsByBatch[batchId] = mainRecord;
+        } else {
+          existingRecordsByBatch[batchId] = records.first;
+        }
+      }
+
+      // Group enrollments by batch
+      Map<int, List<Map<String, dynamic>>> enrollmentsByBatch = {};
       for (var e in enrollmentsMap) {
         final batchId = e['batch_id'] as int;
-        
-        final joinDate = DateUtilsHelper.parseFromDb(e['join_date'] as String);
-        final leaveDateStr = e['leave_date'] as String?;
-        final leaveDate = leaveDateStr != null ? DateUtilsHelper.parseFromDb(leaveDateStr) : null;
+        enrollmentsByBatch.putIfAbsent(batchId, () => []).add(e);
+      }
 
-        double batchMonthlyFee = 0.0;
+      for (var batchEntry in enrollmentsByBatch.entries) {
+        final batchId = batchEntry.key;
+        final enrollments = batchEntry.value;
+        
+        double totalBatchMonthlyFee = 0.0;
         String snapshotText = 'Unknown';
         bool isPartialMonth = false;
         
-        bool isActiveThisMonth = joinDate.isBefore(lastDayOfMonth.add(const Duration(days: 1))) &&
-            (leaveDate == null || leaveDate.isAfter(firstDayOfMonth.subtract(const Duration(days: 1))));
+        for (var e in enrollments) {
+          final joinDate = DateUtilsHelper.parseFromDb(e['join_date'] as String);
+          final leaveDateStr = e['leave_date'] as String?;
+          final leaveDate = leaveDateStr != null ? DateUtilsHelper.parseFromDb(leaveDateStr) : null;
 
-        if (isActiveThisMonth && batchActive[batchId] != false) {
-          final batch = batchLookup[batchId];
-          if (batch != null) {
-            String bName = (e['batch_name'] as String?) ?? (batch['name'] as String?) ?? 'Unknown';
-            String bDays = (e['batch_schedule_days'] as String?) ?? (batch['schedule_days'] as String?) ?? '';
-            String bTime = (e['batch_time_slot'] as String?) ?? (batch['time_slot'] as String?) ?? '';
-            snapshotText = bName;
-            if (bDays.isNotEmpty && bTime.isNotEmpty) {
-               snapshotText += ' ($bDays | $bTime)';
+          bool isActiveThisMonth = joinDate.isBefore(lastDayOfMonth.add(const Duration(days: 1))) &&
+              (leaveDate == null || leaveDate.isAfter(firstDayOfMonth.subtract(const Duration(days: 1))));
+
+          if (isActiveThisMonth && batchActive[batchId] != false) {
+            final batch = batchLookup[batchId];
+            if (batch != null) {
+              String bName = (e['batch_name'] as String?) ?? (batch['name'] as String?) ?? 'Unknown';
+              String bDays = (e['batch_schedule_days'] as String?) ?? (batch['schedule_days'] as String?) ?? '';
+              String bTime = (e['batch_time_slot'] as String?) ?? (batch['time_slot'] as String?) ?? '';
+              snapshotText = bName;
+              if (bDays.isNotEmpty && bTime.isNotEmpty) {
+                 snapshotText += ' ($bDays | $bTime)';
+              }
             }
-          }
-          
-          final feeOverrideObj = e['fee_override'];
-          double? feeOverride = feeOverrideObj != null ? (feeOverrideObj as num).toDouble() : null;
-
-          double batchFee = batchFees[batchId] ?? 0.0;
-          double finalBatchFee = feeOverride ?? batchFee;
-          if (finalBatchFee < 0) finalBatchFee = 0;
-
-          DateTime effectiveStart = joinDate.isAfter(firstDayOfMonth) ? joinDate : firstDayOfMonth;
-          DateTime effectiveEnd = (leaveDate != null && leaveDate.isBefore(lastDayOfMonth)) ? leaveDate : lastDayOfMonth;
-          
-          bool isFullMonth = (effectiveStart == firstDayOfMonth) && (effectiveEnd == lastDayOfMonth);
-          
-          int activeDays = 0;
-          if (isFullMonth) {
-            activeDays = 30;
-            isPartialMonth = false;
-          } else {
-            // User requested simplified counting where joining on 15th = exactly 15 days active (half fee)
-            int startDay = effectiveStart.day > 30 ? 30 : effectiveStart.day;
-            int endDay = effectiveEnd.day > 30 ? 30 : effectiveEnd.day;
             
-            if (effectiveStart == firstDayOfMonth) {
-              activeDays = endDay;
-            } else if (effectiveEnd == lastDayOfMonth) {
-              // E.g. joining on 15th => 30 - 15 = 15 days active
-              activeDays = 30 - startDay;
+            final feeOverrideObj = e['fee_override'];
+            double? feeOverride = feeOverrideObj != null ? (feeOverrideObj as num).toDouble() : null;
+
+            double batchFee = batchFees[batchId] ?? 0.0;
+            double finalBatchFee = feeOverride ?? batchFee;
+            if (finalBatchFee < 0) finalBatchFee = 0;
+
+            DateTime effectiveStart = joinDate.isAfter(firstDayOfMonth) ? joinDate : firstDayOfMonth;
+            DateTime effectiveEnd = (leaveDate != null && leaveDate.isBefore(lastDayOfMonth)) ? leaveDate : lastDayOfMonth;
+            
+            bool isFullMonth = (effectiveStart == firstDayOfMonth) && (effectiveEnd == lastDayOfMonth);
+            
+            int activeDays = 0;
+            if (isFullMonth) {
+              activeDays = 30;
             } else {
-              activeDays = endDay - startDay;
+              int startDay = effectiveStart.day > 30 ? 30 : effectiveStart.day;
+              int endDay = effectiveEnd.day > 30 ? 30 : effectiveEnd.day;
+              
+              if (effectiveStart == firstDayOfMonth) {
+                activeDays = endDay;
+              } else if (effectiveEnd == lastDayOfMonth) {
+                activeDays = 30 - startDay;
+              } else {
+                activeDays = endDay - startDay;
+              }
+              
+              if (activeDays < 0) activeDays = 0;
+              isPartialMonth = true;
             }
-            
-            if (activeDays < 0) activeDays = 0;
-            isPartialMonth = true;
-          }
 
-          if (activeDays > 0) {
-            batchMonthlyFee = ((finalBatchFee / 30) * activeDays).roundToDouble();
+            if (activeDays > 0) {
+              totalBatchMonthlyFee += ((finalBatchFee / 30) * activeDays).roundToDouble();
+            }
           }
         }
 
         final existingRecord = existingRecordsByBatch[batchId];
 
         if (existingRecord == null) {
-          if (batchMonthlyFee > 0) {
+          if (totalBatchMonthlyFee > 0) {
             final feeRecord = FeeRecordModel(
               studentId: studentId,
               month: month,
               year: year,
-              totalAmount: batchMonthlyFee,
+              totalAmount: totalBatchMonthlyFee,
               paidAmount: 0.0,
               studentClass: studentClass,
               batchId: batchId,
@@ -193,7 +246,7 @@ class FeeRepositoryImpl implements FeeRepository {
           final paidAmount = (existingRecord['paid_amount'] as num).toDouble();
           final currentTotalAmount = (existingRecord['total_amount'] as num).toDouble();
 
-          if (batchMonthlyFee == 0) {
+          if (totalBatchMonthlyFee == 0) {
             if (paidAmount == 0) {
               await db.delete(_feeTable, where: 'id = ?', whereArgs: [id]);
             } else if (currentTotalAmount != 0) {
@@ -207,14 +260,14 @@ class FeeRepositoryImpl implements FeeRepository {
                 whereArgs: [id],
               );
             }
-          } else if (batchMonthlyFee != currentTotalAmount) {
+          } else if (totalBatchMonthlyFee != currentTotalAmount) {
             bool isPastMonth = year < now.year || (year == now.year && month < now.month);
             
             if (!isPastMonth || isPartialMonth) {
               await db.update(
                 _feeTable,
                 {
-                  'total_amount': batchMonthlyFee,
+                  'total_amount': totalBatchMonthlyFee,
                   'updated_at': DateUtilsHelper.formatForDb(DateTime.now()),
                 },
                 where: 'id = ?',
