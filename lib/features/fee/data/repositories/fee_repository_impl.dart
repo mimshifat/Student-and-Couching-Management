@@ -141,11 +141,32 @@ class FeeRepositoryImpl implements FeeRepository {
           DateTime effectiveStart = joinDate.isAfter(firstDayOfMonth) ? joinDate : firstDayOfMonth;
           DateTime effectiveEnd = (leaveDate != null && leaveDate.isBefore(lastDayOfMonth)) ? leaveDate : lastDayOfMonth;
           
-          int activeDays = effectiveEnd.difference(effectiveStart).inDays + 1;
-          if (activeDays > daysInMonth) activeDays = daysInMonth;
-          if (activeDays < daysInMonth) isPartialMonth = true;
+          bool isFullMonth = (effectiveStart == firstDayOfMonth) && (effectiveEnd == lastDayOfMonth);
+          
+          int activeDays = 0;
+          if (isFullMonth) {
+            activeDays = 30;
+            isPartialMonth = false;
+          } else {
+            // User requested simplified counting where joining on 15th = exactly 15 days active (half fee)
+            int startDay = effectiveStart.day > 30 ? 30 : effectiveStart.day;
+            int endDay = effectiveEnd.day > 30 ? 30 : effectiveEnd.day;
+            
+            if (effectiveStart == firstDayOfMonth) {
+              activeDays = endDay;
+            } else if (effectiveEnd == lastDayOfMonth) {
+              // E.g. joining on 15th => 30 - 15 = 15 days active
+              activeDays = 30 - startDay;
+            } else {
+              activeDays = endDay - startDay;
+            }
+            
+            if (activeDays < 0) activeDays = 0;
+            isPartialMonth = true;
+          }
+
           if (activeDays > 0) {
-            batchMonthlyFee = (finalBatchFee / daysInMonth) * activeDays;
+            batchMonthlyFee = ((finalBatchFee / 30) * activeDays).roundToDouble();
           }
         }
 
