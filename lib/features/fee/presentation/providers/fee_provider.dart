@@ -30,6 +30,14 @@ class FeeProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Auto-generate missing cycles for all students so they show up in the overview
+      final students = await _studentRepository.getAllStudents();
+      for (final student in students) {
+        if (student.id != null) {
+          await _feeRepository.generateFeeRecords(student.id!, student.createdAt);
+        }
+      }
+
       _pendingFeeRecords = await _feeRepository.getPendingFeeRecords();
     } catch (e) {
       _errorMessage = e.toString();

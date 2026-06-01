@@ -346,11 +346,11 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
           statusBgColor = const Color(0xFFE8F8EE); // Light green
           statusTextColor = const Color(0xFF2B9348);
         } else if (paid > 0) {
-          statusText = 'Partial';
+          statusText = 'Due: ৳${(total - paid).toStringAsFixed(0)}';
           statusBgColor = const Color(0xFFFFF3E0); // Light orange
           statusTextColor = const Color(0xFFE65100);
         } else {
-          statusText = 'Unpaid';
+          statusText = 'Due: ৳${(total - paid).toStringAsFixed(0)}';
           statusBgColor = const Color(0xFFFFEBEE); // Light red
           statusTextColor = const Color(0xFFC62828);
         }
