@@ -31,6 +31,7 @@ class FeeRepositoryImpl implements FeeRepository {
       SELECT f.*, s.name as student_name
       FROM $_feeTable f
       JOIN students s ON f.student_id = s.id
+      WHERE s.deleted_at IS NULL
       ORDER BY s.name ASC, f.year DESC, f.month DESC
     ''');
 

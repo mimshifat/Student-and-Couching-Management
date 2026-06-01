@@ -6,7 +6,7 @@ class DatabaseHelper {
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  static const int _databaseVersion = 20;
+  static const int _databaseVersion = 21;
 
   static Database? _database;
 
@@ -180,7 +180,18 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE batches ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
     }
     if (oldVersion < 20) {
-      await db.execute('ALTER TABLE students ADD COLUMN deleted_at TEXT');
+      try {
+        await db.execute('ALTER TABLE students ADD COLUMN deleted_at TEXT');
+      } catch (e) {
+        // Ignore if already exists
+      }
+    }
+    if (oldVersion < 21) {
+      try {
+        await db.execute('ALTER TABLE students ADD COLUMN deleted_at TEXT');
+      } catch (e) {
+        // Ignore if already exists
+      }
     }
   }
 

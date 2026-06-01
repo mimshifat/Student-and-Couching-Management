@@ -60,7 +60,7 @@ class FeeReportPdfGenerator {
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text('Collection Month: $monthName $year', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
-            pw.Text('Total Collected: ৳${totalCollected.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.green700)),
+            pw.Text('Total Collected: Tk. ${totalCollected.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.green700)),
           ]
         ),
         pw.SizedBox(height: 10),
@@ -99,7 +99,7 @@ class FeeReportPdfGenerator {
         t['student_name'] ?? 'Unknown',
         t['batch_details_snapshot'] ?? '-',
         feeFor,
-        '৳${(t['transaction_amount'] as num).toStringAsFixed(0)}',
+        'Tk. ${(t['transaction_amount'] as num).toStringAsFixed(0)}',
       ];
     }).toList();
 
@@ -119,6 +119,13 @@ class FeeReportPdfGenerator {
         4: pw.Alignment.centerRight,
       },
       oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey100),
+      columnWidths: const {
+        0: pw.FlexColumnWidth(1.2),
+        1: pw.FlexColumnWidth(2),
+        2: pw.FlexColumnWidth(3.5),
+        3: pw.FlexColumnWidth(1.5),
+        4: pw.FlexColumnWidth(1.2),
+      },
     );
   }
 }
