@@ -330,7 +330,7 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                                     }
                                     final student = context.read<StudentProvider>().students[studentIdx];
                                     if (student.phone != null && student.phone!.isNotEmpty) {
-                                      final message = 'Dear ${student.name}, your fee payment of ৳${record.totalAmount.toStringAsFixed(0)} for $monthName ${record.year} has been received. Thank you!';
+                                      final message = '[CSA]\nDear ${student.name}, your fee payment of Tk. ${record.paidAmount.toStringAsFixed(0)} for $monthName ${record.year} has been received. Thank you!\n-Abdus Samad';
                                       final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');
                                       if (await canLaunchUrl(uri)) {
                                         await launchUrl(uri);

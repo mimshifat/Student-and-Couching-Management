@@ -450,7 +450,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                             if (studentList.isNotEmpty) {
                               final student = studentList.first;
                               if (student.phone != null && student.phone!.isNotEmpty) {
-                                final message = '[CSA]\nDear ${student.name}, your fee payment of ${r.paidAmount.toStringAsFixed(0)} TK for $monthName ${r.year} has been received. Thank you!\n-Abdus Samad';
+                                final message = '[CSA]\nDear ${student.name}, your fee payment of Tk. ${r.paidAmount.toStringAsFixed(0)} for $monthName ${r.year} has been received. Thank you!\n-Abdus Samad';
                                 final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');
                                 if (await canLaunchUrl(uri)) {
                                   await launchUrl(uri);

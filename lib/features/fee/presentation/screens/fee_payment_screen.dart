@@ -95,7 +95,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
           final student = students[studentIdx];
           if (student.phone != null && student.phone!.isNotEmpty) {
             final monthName = DateFormat('MMMM').format(DateTime(widget.feeRecord.year, widget.feeRecord.month));
-            final message = '[CSA]\nDear ${student.name}, your fee payment of ${newPayment.toStringAsFixed(0)} TK for $monthName ${widget.feeRecord.year} has been received. Thank you!\n-Abdus Samad';
+            final message = '[CSA]\nDear ${student.name}, your fee payment of Tk. ${newPayment.toStringAsFixed(0)} for $monthName ${widget.feeRecord.year} has been received. Thank you!\n-Abdus Samad';
             final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');
             if (await canLaunchUrl(uri)) {
               await launchUrl(uri);
