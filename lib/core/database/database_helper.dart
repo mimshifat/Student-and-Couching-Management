@@ -6,6 +6,8 @@ class DatabaseHelper {
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
+  static const int _databaseVersion = 20;
+
   static Database? _database;
 
   Future<Database> get database async {
@@ -176,6 +178,9 @@ class DatabaseHelper {
     }
     if (oldVersion < 19) {
       await db.execute('ALTER TABLE batches ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
+    }
+    if (oldVersion < 20) {
+      await db.execute('ALTER TABLE students ADD COLUMN deleted_at TEXT');
     }
   }
 

@@ -358,7 +358,7 @@ class FeeRepositoryImpl implements FeeRepository {
   @override
   Future<void> addPaymentTransaction(int feeRecordId, double paymentAmount, {bool isSettled = false, String? note}) async {
     final db = await _dbHelper.database;
-    final nowStr = DateUtilsHelper.formatForDb(DateTime.now());
+    final nowDateTimeStr = DateUtilsHelper.formatDateTimeForDb(DateTime.now());
 
     await db.transaction((txn) async {
       // 1. Insert into fee_transactions
@@ -366,9 +366,9 @@ class FeeRepositoryImpl implements FeeRepository {
         await txn.insert('fee_transactions', {
           'fee_record_id': feeRecordId,
           'amount': paymentAmount,
-          'payment_date': nowStr,
+          'payment_date': nowDateTimeStr,
           'note': note,
-          'created_at': nowStr,
+          'created_at': nowDateTimeStr,
         });
       }
 

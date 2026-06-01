@@ -22,6 +22,8 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _amountCtrl;
   final TextEditingController _noteCtrl = TextEditingController();
+  late TextEditingController _studentNameCtrl;
+  late TextEditingController _batchNameCtrl;
   late bool _isSettled;
 
   @override
@@ -30,6 +32,14 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
     double remaining = widget.feeRecord.totalAmount - widget.feeRecord.paidAmount;
     if (remaining < 0) remaining = 0;
     _amountCtrl = TextEditingController(text: remaining > 0 ? remaining.toStringAsFixed(0) : '');
+    
+    final studentIdx = context.read<StudentProvider>().students.indexWhere((s) => s.id == widget.studentId);
+    final className = studentIdx >= 0 ? context.read<StudentProvider>().students[studentIdx].className ?? 'Unknown Class' : 'Unknown Class';
+    String batchName = widget.feeRecord.batchDetailsSnapshot ?? 'Unknown Batch';
+    
+    _studentNameCtrl = TextEditingController(text: '${widget.studentName} ($className)');
+    _batchNameCtrl = TextEditingController(text: batchName);
+    
     _isSettled = widget.feeRecord.isSettled;
   }
 
@@ -37,6 +47,8 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
   void dispose() {
     _amountCtrl.dispose();
     _noteCtrl.dispose();
+    _studentNameCtrl.dispose();
+    _batchNameCtrl.dispose();
     super.dispose();
   }
 
@@ -47,46 +59,62 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
       // Allow 0 if they just want to mark as settled or add a note
       if (newPayment == 0 && !_isSettled && widget.feeRecord.paidAmount == 0 && _noteCtrl.text.trim().isEmpty) return;
 
-      // We no longer calculate totalPaid here, we send the individual payment transaction
-      final provider = context.read<FeeProvider>();
-      final note = _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim();
-      final success = await provider.addPayment(widget.feeRecord.id!, newPayment, widget.studentId, isSettled: _isSettled, note: note);
-      
-      if (success && mounted) {
-        if (newPayment > 0) {
-          final students = context.read<StudentProvider>().students;
-          final studentIdx = students.indexWhere((s) => s.id == widget.studentId);
-          if (studentIdx >= 0) {
-            final student = students[studentIdx];
-            if (student.phone != null && student.phone!.isNotEmpty) {
-              final monthName = DateFormat('MMMM').format(DateTime(widget.feeRecord.year, widget.feeRecord.month));
-              final message = '[CSA]\nDear ${student.name}, your fee payment of ${newPayment.toStringAsFixed(0)} TK for $monthName ${widget.feeRecord.year} has been received. Thank you!\n-Abdus Samad';
-              final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri);
-              }
+      if (newPayment < 0) {
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Confirm Negative Payment'),
+            content: Text('You are entering a negative payment (৳${newPayment.toStringAsFixed(0)}). This will reduce the student\'s total paid amount. Are you sure you want to proceed with this correction?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Proceed', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+        if (confirm != true) return;
+      }
+
+      await _processPayment(newPayment);
+    }
+  }
+
+  Future<void> _processPayment(double newPayment) async {
+    final provider = context.read<FeeProvider>();
+    final note = _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim();
+    final success = await provider.addPayment(widget.feeRecord.id!, newPayment, widget.studentId, isSettled: _isSettled, note: note);
+    
+    if (success && mounted) {
+      if (newPayment > 0) {
+        final students = context.read<StudentProvider>().students;
+        final studentIdx = students.indexWhere((s) => s.id == widget.studentId);
+        if (studentIdx >= 0) {
+          final student = students[studentIdx];
+          if (student.phone != null && student.phone!.isNotEmpty) {
+            final monthName = DateFormat('MMMM').format(DateTime(widget.feeRecord.year, widget.feeRecord.month));
+            final message = '[CSA]\nDear ${student.name}, your fee payment of ${newPayment.toStringAsFixed(0)} TK for $monthName ${widget.feeRecord.year} has been received. Thank you!\n-Abdus Samad';
+            final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri);
             }
           }
         }
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Recorded successfully.')));
-          Navigator.pop(context);
-        }
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(provider.errorMessage ?? 'Error saving payment')));
       }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Recorded successfully.')));
+        Navigator.pop(context);
+      }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(provider.errorMessage ?? 'Error saving payment')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final monthName = DateFormat('MMMM yyyy').format(DateTime(widget.feeRecord.year, widget.feeRecord.month));
-
-    // Try to get class name and batch name for UI perfection
-    final studentIdx = context.read<StudentProvider>().students.indexWhere((s) => s.id == widget.studentId);
-    final className = studentIdx >= 0 ? context.read<StudentProvider>().students[studentIdx].className ?? 'Unknown Class' : 'Unknown Class';
-    
-    String batchName = widget.feeRecord.batchDetailsSnapshot ?? 'Unknown Batch';
 
     return Scaffold(
       backgroundColor: CustomFormWidgets.backgroundColor,
@@ -116,7 +144,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                       const SizedBox(height: 20),
                       CustomFormWidgets.buildTextField(
                         label: 'Student',
-                        controller: TextEditingController(text: '${widget.studentName} ($className)'),
+                        controller: _studentNameCtrl,
                         icon: Icons.person,
                         readOnly: true,
                         maxLines: 2,
@@ -124,7 +152,7 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                       const SizedBox(height: 16),
                       CustomFormWidgets.buildTextField(
                         label: 'Batch',
-                        controller: TextEditingController(text: batchName),
+                        controller: _batchNameCtrl,
                         icon: Icons.class_outlined,
                         readOnly: true,
                         maxLines: 2,

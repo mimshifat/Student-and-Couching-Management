@@ -16,6 +16,7 @@ class StudentModel extends Student {
     super.notes,
     required super.createdAt,
     required super.updatedAt,
+    super.deletedAt,
   });
 
   factory StudentModel.fromEntity(Student entity) {
@@ -33,6 +34,7 @@ class StudentModel extends Student {
       notes: entity.notes,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+      deletedAt: entity.deletedAt,
     );
   }
 
@@ -51,6 +53,7 @@ class StudentModel extends Student {
       notes: map['notes'],
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
       updatedAt: DateUtilsHelper.parseFromDb(map['updated_at']),
+      deletedAt: map['deleted_at'] != null ? DateUtilsHelper.parseFromDb(map['deleted_at']) : null,
     );
   }
 
@@ -69,6 +72,7 @@ class StudentModel extends Student {
       'notes': notes,
       'created_at': DateUtilsHelper.formatForDb(createdAt),
       'updated_at': DateUtilsHelper.formatForDb(updatedAt),
+      'deleted_at': deletedAt != null ? DateUtilsHelper.formatForDb(deletedAt!) : null,
     };
   }
 }

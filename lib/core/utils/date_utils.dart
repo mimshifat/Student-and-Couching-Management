@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 
 class DateUtilsHelper {
   static final DateFormat _isoFormat = DateFormat('yyyy-MM-dd');
+  static final DateFormat _isoDateTimeFormat = DateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
   static final DateFormat _displayFormat = DateFormat('dd MMM yyyy');
   static final DateFormat _monthYearFormat = DateFormat('MMMM yyyy');
 
@@ -12,11 +13,21 @@ class DateUtilsHelper {
 
   // Parse from DB
   static DateTime parseFromDb(String dateStr) {
-    try {
-      return _isoFormat.parse(dateStr);
-    } catch (e) {
-      return DateTime.now(); // Fallback
+    // If string has T, parse as DateTime
+    if (dateStr.contains('T')) {
+      return parseDateTimeFromDb(dateStr);
     }
+    return _isoFormat.parse(dateStr);
+  }
+
+  // Format to store in DB with Time
+  static String formatDateTimeForDb(DateTime date) {
+    return _isoDateTimeFormat.format(date.toUtc());
+  }
+
+  // Parse from DB with Time
+  static DateTime parseDateTimeFromDb(String dateStr) {
+    return _isoDateTimeFormat.parse(dateStr, true).toLocal();
   }
 
   // Format for UI Display

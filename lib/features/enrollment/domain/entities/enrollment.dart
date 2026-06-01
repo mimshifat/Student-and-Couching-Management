@@ -31,35 +31,37 @@ class Enrollment {
     this.studentName,
   });
 
+  static const Object _sentinel = Object();
+
   Enrollment copyWith({
     int? id,
     int? studentId,
     int? batchId,
     DateTime? joinDate,
-    DateTime? leaveDate,
-    double? feeOverride,
-    String? studentClass,
-    String? batchNameSnapshot,
-    String? batchScheduleDaysSnapshot,
-    String? batchTimeSlotSnapshot,
+    Object? leaveDate = _sentinel,
+    Object? feeOverride = _sentinel,
+    Object? studentClass = _sentinel,
+    Object? batchNameSnapshot = _sentinel,
+    Object? batchScheduleDaysSnapshot = _sentinel,
+    Object? batchTimeSlotSnapshot = _sentinel,
     DateTime? createdAt,
-    String? batchName,
-    String? studentName,
+    Object? batchName = _sentinel,
+    Object? studentName = _sentinel,
   }) {
     return Enrollment(
       id: id ?? this.id,
       studentId: studentId ?? this.studentId,
       batchId: batchId ?? this.batchId,
       joinDate: joinDate ?? this.joinDate,
-      leaveDate: leaveDate ?? this.leaveDate,
-      feeOverride: feeOverride ?? this.feeOverride,
-      studentClass: studentClass ?? this.studentClass,
-      batchNameSnapshot: batchNameSnapshot ?? this.batchNameSnapshot,
-      batchScheduleDaysSnapshot: batchScheduleDaysSnapshot ?? this.batchScheduleDaysSnapshot,
-      batchTimeSlotSnapshot: batchTimeSlotSnapshot ?? this.batchTimeSlotSnapshot,
+      leaveDate: leaveDate == _sentinel ? this.leaveDate : leaveDate as DateTime?,
+      feeOverride: feeOverride == _sentinel ? this.feeOverride : feeOverride as double?,
+      studentClass: studentClass == _sentinel ? this.studentClass : studentClass as String?,
+      batchNameSnapshot: batchNameSnapshot == _sentinel ? this.batchNameSnapshot : batchNameSnapshot as String?,
+      batchScheduleDaysSnapshot: batchScheduleDaysSnapshot == _sentinel ? this.batchScheduleDaysSnapshot : batchScheduleDaysSnapshot as String?,
+      batchTimeSlotSnapshot: batchTimeSlotSnapshot == _sentinel ? this.batchTimeSlotSnapshot : batchTimeSlotSnapshot as String?,
       createdAt: createdAt ?? this.createdAt,
-      batchName: batchName ?? this.batchName,
-      studentName: studentName ?? this.studentName,
+      batchName: batchName == _sentinel ? this.batchName : batchName as String?,
+      studentName: studentName == _sentinel ? this.studentName : studentName as String?,
     );
   }
 }

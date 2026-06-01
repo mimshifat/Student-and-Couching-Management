@@ -22,15 +22,17 @@ class BatchDetailScreen extends StatefulWidget {
 class _BatchDetailScreenState extends State<BatchDetailScreen> {
   static const Color primaryNavy = Color(0xFF191A4E);
   late Future<List<Enrollment>> _studentsFuture;
+  late Batch _batch;
 
   @override
   void initState() {
     super.initState();
+    _batch = widget.batch;
     _loadStudents();
   }
 
   void _loadStudents() {
-    _studentsFuture = context.read<EnrollmentProvider>().getStudentsByBatch(widget.batch.id!);
+    _studentsFuture = context.read<EnrollmentProvider>().getStudentsByBatch(_batch.id!);
   }
 
   @override
@@ -38,7 +40,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text(widget.batch.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(_batch.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryNavy,
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
@@ -49,9 +51,13 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => BatchFormScreen(batch: widget.batch)),
-              ).then((_) {
-                setState(() {}); // refresh batch details if changed
+                MaterialPageRoute(builder: (_) => BatchFormScreen(batch: _batch)),
+              ).then((_) async {
+                await context.read<BatchProvider>().loadBatches();
+                final updated = context.read<BatchProvider>().batches.firstWhere((b) => b.id == _batch.id, orElse: () => _batch);
+                setState(() {
+                  _batch = updated;
+                });
               });
             },
           ),
@@ -87,7 +93,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => BatchStudentEnrollmentScreen(batch: widget.batch),
+              builder: (_) => BatchStudentEnrollmentScreen(batch: _batch),
             ),
           ).then((_) {
             _loadStudents();
@@ -135,37 +141,37 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.batch.name,
+                      _batch.name,
                       style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Batch Fee: ৳${widget.batch.monthlyFee.toStringAsFixed(0)}',
+                      'Batch Fee: ৳${_batch.monthlyFee.toStringAsFixed(0)}',
                       style: const TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
               ),
             ],
-          ),
-          if (widget.batch.scheduleDays != null || widget.batch.timeSlot != null) ...[
+          ],
+          if (_batch.scheduleDays != null || _batch.timeSlot != null) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Divider(),
             ),
-            if (widget.batch.scheduleDays != null && widget.batch.scheduleDays!.isNotEmpty)
-              _buildInfoRow(Icons.calendar_month_outlined, 'Schedule', widget.batch.scheduleDays!),
-            if (widget.batch.timeSlot != null && widget.batch.timeSlot!.isNotEmpty)
-              _buildInfoRow(Icons.access_time_outlined, 'Time', widget.batch.timeSlot!),
+            if (_batch.scheduleDays != null && _batch.scheduleDays!.isNotEmpty)
+              _buildInfoRow(Icons.calendar_month_outlined, 'Schedule', _batch.scheduleDays!),
+            if (_batch.timeSlot != null && _batch.timeSlot!.isNotEmpty)
+              _buildInfoRow(Icons.access_time_outlined, 'Time', _batch.timeSlot!),
           ],
-          if (widget.batch.description != null && widget.batch.description!.isNotEmpty) ...[
+          if (_batch.description != null && _batch.description!.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Divider(),
             ),
             const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
             const SizedBox(height: 8),
-            Text(widget.batch.description!, style: const TextStyle(color: Colors.black54, fontSize: 14)),
+            Text(_batch.description!, style: const TextStyle(color: Colors.black54, fontSize: 14)),
           ],
         ],
       ),

@@ -91,7 +91,12 @@ class EnrollmentRepositoryImpl implements EnrollmentRepository {
   @override
   Future<List<Enrollment>> getAllEnrollments() async {
     final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(_tableName);
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT e.*, COALESCE(e.batch_name, b.name) as batch_name, s.name as student_name
+      FROM $_tableName e 
+      JOIN batches b ON e.batch_id = b.id 
+      JOIN students s ON e.student_id = s.id
+    ''');
     return List.generate(maps.length, (i) => EnrollmentModel.fromMap(maps[i]));
   }
 

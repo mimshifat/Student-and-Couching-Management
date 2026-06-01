@@ -12,6 +12,7 @@ class Student {
   final String? notes;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? deletedAt;
 
   Student({
     this.id,
@@ -27,6 +28,7 @@ class Student {
     this.notes,
     required this.createdAt,
     required this.updatedAt,
+    this.deletedAt,
   });
 
   Student copyWith({
@@ -43,6 +45,7 @@ class Student {
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Object? deletedAt = const Object(),
   }) {
     return Student(
       id: id ?? this.id,
@@ -58,6 +61,7 @@ class Student {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt == const Object() ? this.deletedAt : deletedAt as DateTime?,
     );
   }
 }

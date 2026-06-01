@@ -96,15 +96,57 @@ class BatchProvider with ChangeNotifier {
 
   bool _hasConflict(Batch newBatch) {
     if (newBatch.scheduleDays == null || newBatch.timeSlot == null) return false;
+    if (newBatch.scheduleDays!.isEmpty || newBatch.timeSlot!.isEmpty) return false;
+    
+    final newDays = newBatch.scheduleDays!.toLowerCase().split(RegExp(r'[^a-z]+')).where((d) => d.isNotEmpty).toSet();
     
     for (var b in _batches) {
-      if (!b.isActive) continue;
-      if (b.id == newBatch.id) continue;
+      if (!b.isActive || b.id == newBatch.id) continue;
+      if (b.scheduleDays == null || b.timeSlot == null) continue;
       
-      if (b.scheduleDays == newBatch.scheduleDays && b.timeSlot == newBatch.timeSlot) {
-        return true;
+      final existingDays = b.scheduleDays!.toLowerCase().split(RegExp(r'[^a-z]+')).where((d) => d.isNotEmpty).toSet();
+      
+      // If there's an overlap in days, check time slot overlap
+      if (newDays.intersection(existingDays).isNotEmpty) {
+        if (_hasTimeOverlap(b.timeSlot!, newBatch.timeSlot!)) {
+          return true;
+        }
       }
     }
     return false;
+  }
+
+  bool _hasTimeOverlap(String slot1, String slot2) {
+    if (slot1.trim() == slot2.trim()) return true;
+    
+    int? parseMinutes(String timeStr) {
+      try {
+        timeStr = timeStr.trim().toLowerCase();
+        bool isPm = timeStr.contains('pm');
+        timeStr = timeStr.replaceAll(RegExp(r'[a-z ]'), '');
+        final parts = timeStr.split(':');
+        if (parts.isEmpty) return null;
+        int hours = int.parse(parts[0]);
+        int minutes = parts.length > 1 ? int.parse(parts[1]) : 0;
+        if (isPm && hours != 12) hours += 12;
+        if (!isPm && hours == 12) hours = 0;
+        return hours * 60 + minutes;
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    final s1Parts = slot1.split('-');
+    final s2Parts = slot2.split('-');
+    if (s1Parts.length != 2 || s2Parts.length != 2) return slot1 == slot2;
+    
+    final start1 = parseMinutes(s1Parts[0]);
+    final end1 = parseMinutes(s1Parts[1]);
+    final start2 = parseMinutes(s2Parts[0]);
+    final end2 = parseMinutes(s2Parts[1]);
+    
+    if (start1 == null || end1 == null || start2 == null || end2 == null) return slot1 == slot2;
+    
+    return start1 < end2 && start2 < end1;
   }
 }
