@@ -151,52 +151,99 @@ class BackupRepositoryImpl implements BackupRepository {
       throw Exception('Bot Token format is invalid. It should look like "123456:ABC-DEF..."');
     }
 
-    try {
-      final dbFile = await getDatabaseFile();
+    final dbFile = await getDatabaseFile();
 
-      // Worst-case 3: DB file does not exist
-      if (!await dbFile.exists()) {
-        throw Exception('Database file could not be found for backup.');
-      }
-
-      final fileName = 'coaching_backup_${DateTime.now().millisecondsSinceEpoch}.db';
-      final uri = Uri.parse('https://api.telegram.org/bot$token/sendDocument');
-      final request = http.MultipartRequest('POST', uri)
-        ..fields['chat_id'] = chatId
-        ..fields['caption'] = '📦 Coaching App Backup\n🕐 ${DateTime.now().toLocal().toString().substring(0, 19)}'
-        ..files.add(await http.MultipartFile.fromPath(
-          'document',
-          dbFile.path,
-          filename: fileName,
-        ));
-
-      // Worst-case 4: Network timeout — cap at 30 seconds
-      final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw Exception('Request timed out. Check your internet connection.'),
-      );
-
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        await updateSettings(settings.copyWith(lastBackupTime: DateTime.now()));
-        return true;
-      }
-
-      // Worst-case 5: Telegram API rejected (wrong token, chat ID, etc.)
-      if (response.statusCode == 401) {
-        throw Exception('Invalid Bot Token. Please check your Telegram settings.');
-      }
-      if (response.statusCode == 400) {
-        throw Exception('Invalid Chat ID or the bot is not a member of the chat. Status: ${response.body}');
-      }
-      throw Exception('Telegram API error (${response.statusCode}): ${response.body}');
-    } on SocketException {
-      // Worst-case 6: No internet at all
-      throw Exception('No internet connection. Backup will be retried automatically when connected.');
-    } on HttpException catch (e) {
-      throw Exception('Network error: ${e.message}');
+    // Worst-case 3: DB file does not exist
+    if (!await dbFile.exists()) {
+      throw Exception('Database file could not be found for backup.');
     }
+
+    // Retry up to 3 times for transient network failures (mobile data can be flaky)
+    const maxRetries = 3;
+    Exception? lastError;
+
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        final fileName = 'coaching_backup_${DateTime.now().millisecondsSinceEpoch}.db';
+        final uri = Uri.parse('https://api.telegram.org/bot$token/sendDocument');
+        final request = http.MultipartRequest('POST', uri)
+          ..fields['chat_id'] = chatId
+          ..fields['caption'] = '📦 Coaching App Backup\n🕐 ${DateTime.now().toLocal().toString().substring(0, 19)}'
+          ..files.add(await http.MultipartFile.fromPath(
+            'document',
+            dbFile.path,
+            filename: fileName,
+          ));
+
+        // 60 seconds timeout — mobile data can be slow
+        final streamedResponse = await request.send().timeout(
+          const Duration(seconds: 60),
+          onTimeout: () => throw Exception('Request timed out. Please try again with a stronger connection.'),
+        );
+
+        final response = await http.Response.fromStream(streamedResponse);
+
+        if (response.statusCode == 200) {
+          await updateSettings(settings.copyWith(lastBackupTime: DateTime.now()));
+          return true;
+        }
+
+        // Non-retryable API errors — throw immediately, don't retry
+        if (response.statusCode == 401) {
+          throw Exception('Invalid Bot Token. Please check your Telegram settings.');
+        }
+        if (response.statusCode == 400) {
+          throw Exception('Invalid Chat ID or the bot is not a member of the chat. Status: ${response.body}');
+        }
+        if (response.statusCode == 403) {
+          throw Exception('Bot is blocked or does not have permission to send to this chat.');
+        }
+        if (response.statusCode == 429) {
+          // Rate limited — wait and retry
+          await Future.delayed(Duration(seconds: 5 * attempt));
+          lastError = Exception('Telegram rate limit reached. Retrying...');
+          continue;
+        }
+        throw Exception('Telegram API error (${response.statusCode}): ${response.body}');
+      } on SocketException catch (e) {
+        // Network unreachable / DNS failure / connection refused
+        lastError = Exception('Connection failed: ${e.message}');
+        if (attempt < maxRetries) {
+          await Future.delayed(Duration(seconds: 2 * attempt));
+          continue;
+        }
+      } on HttpException catch (e) {
+        lastError = Exception('HTTP error: ${e.message}');
+        if (attempt < maxRetries) {
+          await Future.delayed(Duration(seconds: 2 * attempt));
+          continue;
+        }
+      } on HandshakeException catch (e) {
+        // TLS/SSL handshake failure — ISP blocking or certificate issue
+        lastError = Exception('Secure connection failed (SSL/TLS error). Your network may be blocking Telegram.\nDetails: ${e.message}');
+        if (attempt < maxRetries) {
+          await Future.delayed(Duration(seconds: 2 * attempt));
+          continue;
+        }
+      } on Exception catch (e) {
+        // If it's an API-level error (non-retryable), rethrow immediately
+        final msg = e.toString();
+        if (msg.contains('Invalid Bot Token') ||
+            msg.contains('Invalid Chat ID') ||
+            msg.contains('Bot is blocked') ||
+            msg.contains('Bot Token format')) {
+          rethrow;
+        }
+        lastError = e;
+        if (attempt < maxRetries) {
+          await Future.delayed(Duration(seconds: 2 * attempt));
+          continue;
+        }
+      }
+    }
+
+    // All retries exhausted
+    throw lastError ?? Exception('Failed to send backup after $maxRetries attempts. Please check your internet connection and try again.');
   }
 }
 

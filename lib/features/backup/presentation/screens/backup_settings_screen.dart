@@ -137,8 +137,8 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                               if (success) {
                                 final error = await provider.sendToTelegram();
                                 if (ctx.mounted) {
+                                  Navigator.pop(ctx);
                                   if (error == null) {
-                                    Navigator.pop(ctx);
                                     _showSuccess('Telegram configured and backup sent successfully!');
                                   } else {
                                     _showError('Failed to send backup: $error');
@@ -164,7 +164,8 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                         ),
                         onPressed: () async {
                            final error = await provider.sendToTelegram();
-                           if (mounted) {
+                           if (ctx.mounted) {
+                             Navigator.pop(ctx);
                              if (error == null) {
                                _showSuccess('Backup sent to Telegram successfully!');
                              } else {
