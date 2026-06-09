@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/exam.dart';
 import '../../domain/entities/result.dart';
+import '../../domain/entities/detailed_result.dart';
 import '../../domain/repositories/exam_repository.dart';
 import '../../../enrollment/domain/repositories/enrollment_repository.dart';
 
@@ -14,6 +15,9 @@ class ExamProvider with ChangeNotifier {
   List<ExamResult> _currentResults = [];
   List<ExamResult> get currentResults => _currentResults;
 
+  List<DetailedResult> _detailedResults = [];
+  List<DetailedResult> get detailedResults => _detailedResults;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -22,6 +26,21 @@ class ExamProvider with ChangeNotifier {
 
   ExamProvider(this._repository, this._enrollmentRepo) {
     loadAllExams();
+  }
+
+  Future<void> loadDetailedResultsForStudent(int studentId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _detailedResults = await _repository.getDetailedResultsForStudent(studentId);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> loadAllExams() async {

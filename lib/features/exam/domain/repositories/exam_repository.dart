@@ -1,5 +1,6 @@
 import '../entities/exam.dart';
 import '../entities/result.dart';
+import '../entities/detailed_result.dart';
 
 abstract class ExamRepository {
   Future<int> insertExam(Exam exam);
@@ -12,4 +13,6 @@ abstract class ExamRepository {
   Future<List<ExamResult>> getResultsForExam(int examId);
   Future<List<ExamResult>> getResultsForStudent(int studentId);
   Future<List<ExamResult>> getResultsForStudentAndBatch(int studentId, int batchId);
+  
+  Future<List<DetailedResult>> getDetailedResultsForStudent(int studentId);
 }

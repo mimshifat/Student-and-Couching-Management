@@ -1,9 +1,11 @@
 import 'package:sqflite/sqflite.dart' as sqflite;
 import '../../domain/entities/exam.dart';
 import '../../domain/entities/result.dart';
+import '../../domain/entities/detailed_result.dart';
 import '../../domain/repositories/exam_repository.dart';
 import '../models/exam_model.dart';
 import '../models/result_model.dart';
+import '../models/detailed_result_model.dart';
 import '../../../../core/database/database_helper.dart';
 
 class ExamRepositoryImpl implements ExamRepository {
@@ -116,5 +118,24 @@ class ExamRepositoryImpl implements ExamRepository {
     );
 
     return List.generate(maps.length, (i) => ResultModel.fromMap(maps[i]));
+  }
+
+  @override
+  Future<List<DetailedResult>> getDetailedResultsForStudent(int studentId) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT r.*, 
+             e.title as exam_title, e.exam_type, e.exam_date, e.total_marks,
+             b.name as batch_name, 
+             s.name as student_name, s.class_name
+      FROM $_resultTable r
+      JOIN $_examTable e ON r.exam_id = e.id
+      LEFT JOIN batches b ON r.batch_id = b.id
+      LEFT JOIN students s ON r.student_id = s.id
+      WHERE r.student_id = ?
+      ORDER BY e.exam_date DESC
+    ''', [studentId]);
+
+    return List.generate(maps.length, (i) => DetailedResultModel.fromMap(maps[i]));
   }
 }

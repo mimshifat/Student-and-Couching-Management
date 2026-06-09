@@ -13,7 +13,7 @@ import '../../../student/presentation/screens/student_list_screen.dart';
 import '../../../fee/presentation/screens/fee_overview_screen.dart';
 import '../../../exam/presentation/screens/exam_list_screen.dart';
 import '../../../routine/presentation/screens/routine_screen.dart';
-import '../../../notes/presentation/screens/note_list_screen.dart';
+
 import '../../../../core/widgets/app_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -348,11 +348,11 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RoutineScreen())),
         ),
         _buildActionCard(
-          title: 'Add\nNote',
-          icon: Icons.note_add,
+          title: 'Result\nAnalytics',
+          icon: Icons.analytics,
           color: const Color(0xFFD81B60),
           bgColor: const Color(0xFFFCE4EC),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NoteListScreen())),
+          onTap: () => Navigator.pushNamed(context, '/result-analytics'),
         ),
         _buildActionCard(
           title: 'View\nAll Students',

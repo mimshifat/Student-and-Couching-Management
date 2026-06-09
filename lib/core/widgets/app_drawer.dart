@@ -44,6 +44,14 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.analytics),
+            title: const Text('Result Analytics'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/result-analytics');
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.calendar_month),
             title: const Text('Routine'),
             onTap: () {

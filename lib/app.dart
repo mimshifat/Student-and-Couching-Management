@@ -3,6 +3,7 @@ import 'core/theme/app_theme.dart';
 import 'features/student/presentation/screens/student_list_screen.dart';
 import 'features/batch/presentation/screens/batch_list_screen.dart';
 import 'features/exam/presentation/screens/exam_list_screen.dart';
+import 'features/exam/presentation/screens/result_analytics_screen.dart';
 import 'features/fee/presentation/screens/fee_overview_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
@@ -29,6 +30,7 @@ class CoachingApp extends StatelessWidget {
         '/batches': (context) => const BatchListScreen(),
         '/exams': (context) => const ExamListScreen(),
         '/routine': (context) => const RoutineScreen(),
+        '/result-analytics': (context) => const ResultAnalyticsScreen(),
       },
     );
   }
