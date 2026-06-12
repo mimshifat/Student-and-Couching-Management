@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../domain/entities/exam.dart';
 import '../../domain/entities/result.dart';
 import '../../domain/entities/detailed_result.dart';
+import '../../domain/entities/batch_summary.dart';
 import '../../domain/repositories/exam_repository.dart';
 import '../../../enrollment/domain/repositories/enrollment_repository.dart';
 
@@ -43,6 +44,63 @@ class ExamProvider with ChangeNotifier {
     }
   }
 
+  List<DetailedResult> _batchSummaryResults = [];
+  List<DetailedResult> get batchSummaryResults => _batchSummaryResults;
+
+  Future<void> loadDetailedResultsByBatch(int? batchId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _batchSummaryResults = await _repository.getDetailedResultsByBatch(batchId);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // --- Performance-optimised provider methods ---
+
+  List<DetailedResult> _yearFilteredResults = [];
+  List<DetailedResult> get yearFilteredResults => _yearFilteredResults;
+
+  /// Loads student results filtered by year at DB level — no in-memory loop.
+  Future<void> loadDetailedResultsByYear(int studentId, int year) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _yearFilteredResults =
+          await _repository.getDetailedResultsForStudentByYear(studentId, year);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  List<BatchSummary> _batchSummaries = [];
+  List<BatchSummary> get batchSummaries => _batchSummaries;
+
+  /// Loads one aggregate row per batch — avoids loading thousands of raw rows.
+  Future<void> loadBatchSummaries(int? batchId, int year) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _batchSummaries = await _repository.getBatchSummaries(batchId, year);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> loadAllExams() async {
     _isLoading = true;
     _errorMessage = null;
@@ -50,6 +108,26 @@ class ExamProvider with ChangeNotifier {
 
     try {
       _exams = await _repository.getAllExams();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadFilteredExams({int? year, int? month, int? batchId, String? searchQuery}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _exams = await _repository.getFilteredExams(
+        year: year,
+        month: month,
+        batchId: batchId,
+        searchQuery: searchQuery,
+      );
     } catch (e) {
       _errorMessage = e.toString();
     } finally {

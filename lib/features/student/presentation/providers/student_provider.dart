@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/student.dart';
+import '../../domain/entities/student_summary.dart';
 import '../../domain/repositories/student_repository.dart';
 
 class StudentProvider with ChangeNotifier {
@@ -7,6 +8,9 @@ class StudentProvider with ChangeNotifier {
 
   List<Student> _students = [];
   List<Student> get students => _students;
+
+  List<StudentSummary> _studentSummaries = [];
+  List<StudentSummary> get studentSummaries => _studentSummaries;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -16,6 +20,29 @@ class StudentProvider with ChangeNotifier {
 
   StudentProvider(this._repository) {
     loadStudents();
+  }
+
+  Future<void> loadStudentSummaries({
+    String? className,
+    int? batchId,
+    String? searchQuery,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _studentSummaries = await _repository.getFilteredStudentSummaries(
+        className: className,
+        batchId: batchId,
+        searchQuery: searchQuery,
+      );
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> loadStudents() async {
@@ -45,6 +72,21 @@ class StudentProvider with ChangeNotifier {
 
     try {
       _students = await _repository.searchStudents(query);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadStudentsByBatch(int batchId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _students = await _repository.getStudentsByBatch(batchId);
     } catch (e) {
       _errorMessage = e.toString();
     } finally {

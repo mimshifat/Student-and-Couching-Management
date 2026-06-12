@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +19,7 @@ class ExamListScreen extends StatefulWidget {
 class _ExamListScreenState extends State<ExamListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  Timer? _debounceTimer;
   
   final int _currentYear = DateTime.now().year;
   late int _selectedYear;
@@ -31,13 +33,23 @@ class _ExamListScreenState extends State<ExamListScreen> {
     super.initState();
     _selectedYear = _currentYear;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ExamProvider>().loadAllExams();
+      _loadExams();
       context.read<BatchProvider>().loadBatches();
     });
   }
 
+  void _loadExams() {
+    context.read<ExamProvider>().loadFilteredExams(
+      year: _selectedYear,
+      month: _selectedMonth,
+      batchId: _selectedBatchId,
+      searchQuery: _searchQuery,
+    );
+  }
+
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -83,28 +95,8 @@ class _ExamListScreenState extends State<ExamListScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final exams = provider.exams.where((e) {
-            // Search filter
-            if (_searchQuery.isNotEmpty && !e.title.toLowerCase().contains(_searchQuery)) {
-              return false;
-            }
-            // Year filter
-            if (e.examDate.year != _selectedYear) {
-              return false;
-            }
-            // Month filter
-            if (_selectedMonth != null && e.examDate.month != _selectedMonth) {
-              return false;
-            }
-            // Batch filter
-            if (_selectedBatchId != null && e.batchId != _selectedBatchId) {
-              return false;
-            }
-            return true;
-          }).toList();
-          
-          // Sort exams by date descending
-          exams.sort((a, b) => b.examDate.compareTo(a.examDate));
+          // Exams are already filtered and sorted at DB level
+          final exams = provider.exams;
 
           return Column(
             children: [
@@ -121,11 +113,14 @@ class _ExamListScreenState extends State<ExamListScreen> {
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    addAutomaticKeepAlives: false,
                     itemCount: exams.length,
                     separatorBuilder: (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final exam = exams[index];
-                      return _buildExamCard(exam, provider);
+                      return RepaintBoundary(
+                        child: _buildExamCard(exam, provider),
+                      );
                     },
                   ),
                 ),
@@ -148,7 +143,13 @@ class _ExamListScreenState extends State<ExamListScreen> {
         ),
         child: TextField(
           controller: _searchController,
-          onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+          onChanged: (val) {
+            _debounceTimer?.cancel();
+            _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+              _searchQuery = val.toLowerCase();
+              _loadExams();
+            });
+          },
           decoration: const InputDecoration(
             hintText: 'Search exam',
             hintStyle: TextStyle(color: Colors.black38, fontSize: 14),
@@ -192,7 +193,10 @@ class _ExamListScreenState extends State<ExamListScreen> {
                       value: _selectedYear,
                       style: const TextStyle(fontSize: 13, color: Colors.black87),
                       items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList(),
-                      onChanged: (val) => setState(() => _selectedYear = val!),
+                      onChanged: (val) {
+                        setState(() => _selectedYear = val!);
+                        _loadExams();
+                      },
                     ),
                   ),
                 ),
@@ -217,7 +221,10 @@ class _ExamListScreenState extends State<ExamListScreen> {
                         const DropdownMenuItem(value: null, child: Text('All Months')),
                         ...List.generate(12, (index) => DropdownMenuItem(value: index + 1, child: Text(months[index]))),
                       ],
-                      onChanged: (val) => setState(() => _selectedMonth = val),
+                      onChanged: (val) {
+                        setState(() => _selectedMonth = val);
+                        _loadExams();
+                      },
                     ),
                   ),
                 ),
@@ -245,7 +252,10 @@ class _ExamListScreenState extends State<ExamListScreen> {
                       const DropdownMenuItem(value: null, child: Text('All Batches')),
                       ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name))),
                     ],
-                    onChanged: (val) => setState(() => _selectedBatchId = val),
+                    onChanged: (val) {
+                      setState(() => _selectedBatchId = val);
+                      _loadExams();
+                    },
                   ),
                 ),
               );

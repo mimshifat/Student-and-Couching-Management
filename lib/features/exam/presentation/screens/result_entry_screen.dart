@@ -111,7 +111,9 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
                           separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF0F0F0)),
                           itemBuilder: (context, index) {
                             final result = provider.currentResults[index];
-                            return _buildTableRow(result, provider);
+                            return RepaintBoundary(
+                              child: _buildTableRow(result, provider),
+                            );
                           },
                         ),
                       ),
@@ -231,6 +233,7 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
                 child: result.isAbsent 
                   ? const Center(child: Text('-', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)))
                   : TextFormField(
+                      key: ValueKey(result.studentId), // preserve state on list rebuild
                       initialValue: result.obtainedMarks?.toString() ?? '',
                       textAlign: TextAlign.center,
                       keyboardType: TextInputType.number,

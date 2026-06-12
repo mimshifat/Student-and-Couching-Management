@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,8 +7,8 @@ import '../../../fee/presentation/providers/fee_provider.dart';
 import 'student_form_screen.dart';
 import 'student_detail_screen.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
-import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../domain/entities/student.dart';
+import '../../domain/entities/student_summary.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
@@ -22,7 +23,9 @@ class _StudentListScreenState extends State<StudentListScreen> {
   String? _filterClass;
   int? _filterBatchId;
   String _statusFilter = 'All';
+  String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  Timer? _debounceTimer;
 
   static const Color primaryNavy = Color(0xFF191A4E);
 
@@ -30,15 +33,35 @@ class _StudentListScreenState extends State<StudentListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<StudentProvider>().loadStudents();
+      _loadStudents();
       context.read<FeeProvider>().loadPendingFeeRecords();
       context.read<BatchProvider>().loadBatches();
-      context.read<EnrollmentProvider>().loadEnrollments();
+      // Load all students just to populate the Class dropdown (or we could fetch distinct classes)
+      context.read<StudentProvider>().loadStudents(); 
     });
   }
 
+  void _loadStudents() {
+    context.read<StudentProvider>().loadStudentSummaries(
+      className: _filterClass,
+      batchId: _filterBatchId,
+      searchQuery: _searchQuery,
+    );
+  }
+
   void _onSearch(String query) {
-    context.read<StudentProvider>().searchStudents(query);
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      setState(() => _searchQuery = query);
+      _loadStudents();
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _showFilterSheet(List<String> classes) {
@@ -94,6 +117,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
                         onChanged: (val) {
                           setSheetState(() => _filterClass = val);
                           setState(() => _filterClass = val);
+                          _loadStudents();
                         },
                       ),
                     ),
@@ -138,6 +162,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
                             onChanged: (val) {
                               setSheetState(() => _filterBatchId = val);
                               setState(() => _filterBatchId = val);
+                              _loadStudents();
                             },
                           ),
                         ),
@@ -180,17 +205,6 @@ class _StudentListScreenState extends State<StudentListScreen> {
       return parts[0].substring(0, 1).toUpperCase();
     }
     return '${parts[0].substring(0, 1)}${parts[1].substring(0, 1)}'.toUpperCase();
-  }
-
-  String _getStudentStatus(Student student, List<dynamic> enrollments) {
-    final studentEnrollments = enrollments.where((e) => e.studentId == student.id).toList();
-    if (studentEnrollments.isEmpty) {
-      return 'New';
-    } else if (studentEnrollments.any((e) => e.leaveDate == null)) {
-      return 'Running';
-    } else {
-      return 'Previous';
-    }
   }
 
   @override
@@ -236,31 +250,26 @@ class _StudentListScreenState extends State<StudentListScreen> {
           )
         ],
       ),
-      body: Consumer2<StudentProvider, EnrollmentProvider>(
-        builder: (context, studentProvider, enrollmentProvider, child) {
-          final allStudents = studentProvider.students;
-          final classes = allStudents.map((e) => e.className).whereType<String>().where((e) => e.isNotEmpty).toSet().toList();
-          final enrollments = enrollmentProvider.enrollments;
-
-          // Apply top-level Class/Batch filters first
-          final filteredByClassBatch = allStudents.where((s) {
-            bool matchesClass = _filterClass == null || s.className == _filterClass;
-            bool matchesBatch = _filterBatchId == null || enrollments.any((e) => e.studentId == s.id && e.batchId == _filterBatchId && e.leaveDate == null);
-            return matchesClass && matchesBatch;
-          }).toList();
-
-          // Categorize for chips
-          final newStudents = filteredByClassBatch.where((s) => _getStudentStatus(s, enrollments) == 'New').toList();
-          final runningStudents = filteredByClassBatch.where((s) => _getStudentStatus(s, enrollments) == 'Running').toList();
-          final previousStudents = filteredByClassBatch.where((s) => _getStudentStatus(s, enrollments) == 'Previous').toList();
+      body: Consumer<StudentProvider>(
+        builder: (context, studentProvider, child) {
+          // Keep classes mapped from allStudents to populate the filter dropdown
+          final classes = studentProvider.students.map((e) => e.className).whereType<String>().where((e) => e.isNotEmpty).toSet().toList();
           
-          int allCount = filteredByClassBatch.length;
+          // Data is already filtered by class, batch, and search at the DB level
+          final summaries = studentProvider.studentSummaries;
+
+          // Locally split by pre-calculated DB status (very fast)
+          final newStudents = summaries.where((s) => s.status == 'New').toList();
+          final runningStudents = summaries.where((s) => s.status == 'Running').toList();
+          final previousStudents = summaries.where((s) => s.status == 'Previous').toList();
+          
+          int allCount = summaries.length;
           int newCount = newStudents.length;
           int runningCount = runningStudents.length;
           int previousCount = previousStudents.length;
 
-          // Apply status filter
-          List<Student> displayStudents;
+          // Apply status filter for display
+          List<StudentSummary> displayStudents;
           switch (_statusFilter) {
             case 'New':
               displayStudents = newStudents;
@@ -273,7 +282,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
               break;
             case 'All':
             default:
-              displayStudents = filteredByClassBatch;
+              displayStudents = summaries;
           }
 
           return Column(
@@ -283,7 +292,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
               Expanded(
                 child: studentProvider.isLoading 
                     ? const Center(child: CircularProgressIndicator())
-                    : _buildStudentList(displayStudents, enrollments),
+                    : _buildStudentList(displayStudents),
               ),
             ],
           );
@@ -380,18 +389,20 @@ class _StudentListScreenState extends State<StudentListScreen> {
     );
   }
 
-  Widget _buildStudentList(List<Student> students, List<dynamic> enrollments) {
-    if (students.isEmpty) {
+  Widget _buildStudentList(List<StudentSummary> summaries) {
+    if (summaries.isEmpty) {
       return const Center(child: Text('No students found.', style: TextStyle(color: Colors.black54)));
     }
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: students.length,
+      addAutomaticKeepAlives: false,
+      itemCount: summaries.length,
       separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF0F0F0)),
       itemBuilder: (context, index) {
-        final student = students[index];
-        final status = _getStudentStatus(student, enrollments);
+        final summary = summaries[index];
+        final student = summary.student;
+        final status = summary.status;
         
         Color bgColor;
         Color textColor;
@@ -406,86 +417,87 @@ class _StudentListScreenState extends State<StudentListScreen> {
           textColor = const Color(0xFF7B1FA2);
         }
         
-        return InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => StudentDetailScreen(student: student),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: _getAvatarColor(student.name),
-                  child: Text(
-                    _getInitials(student.name),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+        return RepaintBoundary(
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => StudentDetailScreen(student: student),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        student.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${(student.className?.toLowerCase().startsWith('class') ?? false) ? student.className : 'Class: ${student.className ?? 'N/A'}'} • Roll: ${student.rollNumber ?? 'N/A'}',
-                        style: const TextStyle(fontSize: 12, color: Colors.black54),
-                      ),
-                      const SizedBox(height: 2),
-                      GestureDetector(
-                        onTap: () async {
-                          if (student.phone != null && student.phone!.isNotEmpty) {
-                            final Uri launchUri = Uri(scheme: 'tel', path: student.phone!);
-                            if (await canLaunchUrl(launchUri)) {
-                              await launchUrl(launchUri);
-                            }
-                          }
-                        },
-                        child: Text(
-                          student.phone ?? 'No phone',
-                          style: const TextStyle(fontSize: 12, color: Colors.black54),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      color: textColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: _getAvatarColor(student.name),
+                    child: Text(
+                      _getInitials(student.name),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: () {
-                    // Show some bottom sheet or menu for edit/delete
-                    _showStudentOptions(student);
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.all(4.0),
-                    child: Icon(Icons.more_vert, size: 20, color: Colors.black54),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          student.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${(student.className?.toLowerCase().startsWith('class') ?? false) ? student.className : 'Class: ${student.className ?? 'N/A'}'} • Roll: ${student.rollNumber ?? 'N/A'}',
+                          style: const TextStyle(fontSize: 12, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 2),
+                        GestureDetector(
+                          onTap: () async {
+                            if (student.phone != null && student.phone!.isNotEmpty) {
+                              final Uri launchUri = Uri(scheme: 'tel', path: student.phone!);
+                              if (await canLaunchUrl(launchUri)) {
+                                await launchUrl(launchUri);
+                              }
+                            }
+                          },
+                          child: Text(
+                            student.phone ?? 'No phone',
+                            style: const TextStyle(fontSize: 12, color: Colors.black54),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () {
+                      _showStudentOptions(student);
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.more_vert, size: 20, color: Colors.black54),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-
 import '../providers/exam_provider.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
@@ -30,6 +29,8 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<StudentProvider>().loadStudents();
       context.read<BatchProvider>().loadBatches();
+      // Use efficient aggregate query instead of loading all raw rows
+      context.read<ExamProvider>().loadBatchSummaries(null, _selectedYear);
     });
   }
 
@@ -38,8 +39,32 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
       _selectedStudent = student;
     });
     if (student != null && student.id != null) {
-      context.read<ExamProvider>().loadDetailedResultsForStudent(student.id!);
+      // Use year-filtered DB query — no Dart .where() loop
+      context.read<ExamProvider>().loadDetailedResultsByYear(student.id!, _selectedYear);
     }
+  }
+
+  void _onYearChanged(int year) {
+    setState(() => _selectedYear = year);
+    // Reload data for the new year at DB level
+    context.read<ExamProvider>().loadBatchSummaries(_selectedBatchId, year);
+    if (_selectedStudent?.id != null) {
+      context.read<ExamProvider>().loadDetailedResultsByYear(_selectedStudent!.id!, year);
+    }
+  }
+
+  void _onBatchChanged(int? batchId) {
+    setState(() {
+      _selectedBatchId = batchId;
+      _selectedStudent = null;
+    });
+    if (batchId == null) {
+      context.read<StudentProvider>().loadStudents();
+    } else {
+      context.read<StudentProvider>().loadStudentsByBatch(batchId);
+    }
+    // Use efficient aggregate query
+    context.read<ExamProvider>().loadBatchSummaries(batchId, _selectedYear);
   }
 
   @override
@@ -64,27 +89,16 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
       body: Consumer3<StudentProvider, BatchProvider, ExamProvider>(
         builder: (context, studentProvider, batchProvider, examProvider, child) {
           final batches = batchProvider.batches;
-          final allStudents = studentProvider.students;
-
-          // Note: In a real app, we might want to filter students by enrollment in the selected batch.
-          // For simplicity and since we don't have the enrollment map here easily, we'll just show all 
-          // if no batch is selected. If a batch is selected, we ideally should filter, but the user
-          // requested "always select present year, bellow left batch, right student... bellow search specific student"
-          // We will use the searchable dropdown for student which covers the "search specific student" requirement.
-
-          List<Student> filteredStudents = allStudents;
-          // If we had a way to easily filter students by batch here we would, but without enrollment data loaded
-          // efficiently, we'll just show all students and let the search handle it.
+          // Students are already filtered by batch (or all) via the provider
+          final filteredStudents = studentProvider.students;
 
           return Column(
             children: [
               _buildFilterSection(batches, filteredStudents),
               if (_selectedStudent == null)
-                const Expanded(
-                  child: Center(
-                    child: Text('Please select a student to view result analytics', style: TextStyle(color: Colors.black54, fontSize: 16)),
-                  ),
-                )
+                examProvider.isLoading
+                  ? const Expanded(child: Center(child: CircularProgressIndicator()))
+                  : _buildBatchSummary(examProvider)
               else if (examProvider.isLoading)
                 const Expanded(child: Center(child: CircularProgressIndicator()))
               else
@@ -128,7 +142,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                       value: _selectedYear,
                       items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList(),
                       onChanged: (val) {
-                        if (val != null) setState(() => _selectedYear = val);
+                        if (val != null) _onYearChanged(val);
                       },
                     ),
                   ),
@@ -164,9 +178,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                             const DropdownMenuItem(value: null, child: Text('All Batches', style: TextStyle(fontSize: 13))),
                             ...batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, style: const TextStyle(fontSize: 13)))),
                           ],
-                          onChanged: (val) {
-                            setState(() => _selectedBatchId = val);
-                          },
+                          onChanged: _onBatchChanged,
                         ),
                       ),
                     ),
@@ -179,8 +191,6 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Search Student', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
-                    const SizedBox(height: 4),
                     SearchableDropdown<Student, Student>(
                       label: '', // Hidden label
                       icon: Icons.person_search,
@@ -202,9 +212,205 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
     );
   }
 
+  Widget _buildBatchSummary(ExamProvider examProvider) {
+    final summaries = examProvider.batchSummaries;
+
+    if (summaries.isEmpty) {
+      return Expanded(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.bar_chart_outlined, size: 72, color: Colors.grey.shade300),
+              const SizedBox(height: 16),
+              Text(
+                'No exam results for $_selectedYear',
+                style: const TextStyle(color: Colors.black45, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Add exam results to see analytics',
+                style: TextStyle(color: Colors.black38, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Overall stats computed from already-aggregated BatchSummary objects — O(n batches) not O(n results)
+    final totalResults = summaries.fold(0, (s, b) => s + b.totalResults);
+    final totalAbsents = summaries.fold(0, (s, b) => s + b.absentCount);
+    final totalObtained = summaries.fold(0.0, (s, b) => s + b.totalObtained);
+    final totalAvailable = summaries.fold(0.0, (s, b) => s + b.totalAvailable);
+    final overallAvg = totalAvailable > 0 ? (totalObtained / totalAvailable) * 100 : 0.0;
+
+    final bannerLabel = _selectedBatchId == null
+        ? 'All Batches — $_selectedYear'
+        : '${summaries.first.batchName} — $_selectedYear';
+
+    return Expanded(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Overall Summary Banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF191A4E), Color(0xFF2D3080)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(color: const Color(0xFF191A4E).withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.analytics, color: Colors.white70, size: 18),
+                      const SizedBox(width: 8),
+                      Text(bannerLabel, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildBannerStat('Total Results', totalResults.toString()),
+                      _buildBannerStat('Avg Score', '${overallAvg.toStringAsFixed(1)}%'),
+                      _buildBannerStat('Absent', totalAbsents.toString()),
+                      _buildBannerStat('Batches', summaries.length.toString()),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text('Batch Performance', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const SizedBox(height: 12),
+            // Per-batch cards — one item per BatchSummary (not per raw result row)
+            ...summaries.map((b) {
+              final bColor = b.avgPercent >= 70
+                  ? const Color(0xFF2B9348)
+                  : b.avgPercent >= 40
+                      ? const Color(0xFFF57C00)
+                      : const Color(0xFFD32F2F);
+
+              return RepaintBoundary(
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2))],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF0F4F8),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.group, color: Color(0xFF191A4E), size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(b.batchName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
+                                Text('${b.uniqueStudents} students • ${b.totalResults} results', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: bColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${b.avgPercent.toStringAsFixed(1)}%',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: bColor),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: (b.avgPercent / 100).clamp(0.0, 1.0),
+                          minHeight: 6,
+                          backgroundColor: Colors.grey.shade100,
+                          valueColor: AlwaysStoppedAnimation<Color>(bColor),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _buildBatchStatPill(Icons.assignment_turned_in, '${b.totalResults} Results', const Color(0xFF1A73E8)),
+                          const SizedBox(width: 8),
+                          _buildBatchStatPill(Icons.show_chart, '${b.totalObtained.toStringAsFixed(0)}/${b.totalAvailable.toStringAsFixed(0)} pts', const Color(0xFF2B9348)),
+                          const SizedBox(width: 8),
+                          _buildBatchStatPill(Icons.person_off, '${b.absentCount} Absent', const Color(0xFFD32F2F)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBannerStat(String label, String value) {
+    return Column(
+      children: [
+        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
+        const SizedBox(height: 2),
+        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+      ],
+    );
+  }
+
+  Widget _buildBatchStatPill(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAnalyticsContent(ExamProvider examProvider) {
-    // Filter results by selected year
-    final yearResults = examProvider.detailedResults.where((r) => r.examDate.year == _selectedYear).toList();
+    // Results are already filtered by year at DB level — no in-memory .where() needed
+    final yearResults = examProvider.yearFilteredResults;
 
     if (yearResults.isEmpty) {
       return Expanded(
@@ -305,10 +511,14 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              addAutomaticKeepAlives: false,
+              addRepaintBoundaries: false, // We add our own RepaintBoundary
               itemCount: yearResults.length,
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                return _buildResultCard(yearResults[index]);
+                return RepaintBoundary(
+                  child: _buildResultCard(yearResults[index]),
+                );
               },
             ),
           ),

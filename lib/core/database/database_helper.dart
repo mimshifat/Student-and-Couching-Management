@@ -30,6 +30,11 @@ class DatabaseHelper {
   Future<void> _onConfigure(Database db) async {
     // Enable foreign keys
     await db.execute('PRAGMA foreign_keys = ON');
+    // Performance indexes — safe: IF NOT EXISTS, no version bump needed
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_results_student_id ON results(student_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_results_batch_id ON results(batch_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_exams_exam_date ON exams(exam_date)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_exams_batch_id ON exams(batch_id)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
