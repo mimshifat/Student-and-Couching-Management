@@ -67,8 +67,7 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Consumer<FeeProvider>(
@@ -367,7 +366,6 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
             },
           ),
         ],
-      ),
     );
   }
 }

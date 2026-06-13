@@ -56,32 +56,38 @@ class StudentDetailScreen extends StatelessWidget {
             ),
           ],
         ),
-        body: Column(
-          children: [
-            // Top Section (White Background)
-            Container(
-              color: Colors.white,
-              child: Column(
-                children: [
-                  _buildProfileHeader(context, studentIdStr, currentStudent),
-                  const Divider(height: 1, color: Color(0xFFF0F0F0)),
-                  _buildDetailsList(context, currentStudent),
-                  const Divider(height: 1, color: Color(0xFFF0F0F0)),
-                  _buildTabBar(),
-                ],
+        body: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverToBoxAdapter(
+                child: Container(
+                  color: Colors.white,
+                  child: Column(
+                    children: [
+                      _buildProfileHeader(context, studentIdStr, currentStudent),
+                      const Divider(height: 1, color: Color(0xFFF0F0F0)),
+                      _buildDetailsList(context, currentStudent),
+                      const Divider(height: 1, color: Color(0xFFF0F0F0)),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            // Bottom Section (Tab Views)
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _wrapTabContent(EnrollmentHistoryWidget(studentId: student.id!)),
-                  _wrapTabContent(StudentFeeHistoryWidget(studentId: student.id!)),
-                  _wrapTabContent(StudentPerformanceWidget(studentId: student.id!)),
-                ],
+              SliverOverlapAbsorber(
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                sliver: SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SliverAppBarDelegate(_buildTabBar()),
+                ),
               ),
-            ),
-          ],
+            ];
+          },
+          body: TabBarView(
+            children: [
+              _wrapTabContent(EnrollmentHistoryWidget(studentId: student.id!)),
+              _wrapTabContent(StudentFeeHistoryWidget(studentId: student.id!)),
+              _wrapTabContent(StudentPerformanceWidget(studentId: student.id!)),
+            ],
+          ),
         ),
       ),
     );
@@ -90,9 +96,22 @@ class StudentDetailScreen extends StatelessWidget {
   }
 
   Widget _wrapTabContent(Widget child) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: child,
+    return Builder(
+      builder: (context) {
+        return CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          key: PageStorageKey<String>(child.runtimeType.toString()),
+          slivers: [
+            SliverOverlapInjector(
+              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.all(16.0),
+              sliver: SliverToBoxAdapter(child: child),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -251,7 +270,7 @@ class StudentDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTabBar() {
+  TabBar _buildTabBar() {
     return const TabBar(
       labelColor: Color(0xFF3B41C5),
       unselectedLabelColor: Colors.black54,
@@ -274,5 +293,31 @@ class StudentDetailScreen extends StatelessWidget {
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts[0][0].toUpperCase();
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar _tabBar;
+
+  _SliverAppBarDelegate(this._tabBar);
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Colors.white,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
   }
 }

@@ -22,9 +22,9 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
   }
 
   // ── palette ──────────────────────────────────────────────────────────────
-  static const _primary = Color(0xFF1A73E8);
-  static const _bg = Color(0xFFF4F7FE);
-  static const _cardBg = Colors.white;
+  static const _primary = Color(0xFF3B41C5);
+  static const _bg = Color(0xFFF4F6F9);
+  static const _textDark = Color(0xFF111827);
 
   @override
   Widget build(BuildContext context) {
@@ -52,28 +52,27 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
 
   AppBar _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: _bg,
       elevation: 0,
-      surfaceTintColor: Colors.white,
+      scrolledUnderElevation: 0,
+      centerTitle: false,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-            color: Colors.black87, size: 20),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textDark, size: 20),
         onPressed: () => Navigator.pop(context),
       ),
-      title: Consumer<AnnualReportProvider>(
-        builder: (ctx, provider, child) => Text(
-          'Annual Report - ${provider.selectedYear}',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+      title: const Text(
+        'Annual Report',
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
+          color: _textDark,
+          letterSpacing: -0.5,
         ),
       ),
       actions: [
         Consumer<AnnualReportProvider>(
           builder: (ctx, provider, child) => Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 16),
             child: _buildYearDropdown(provider),
           ),
         ),
@@ -86,28 +85,30 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
     if (years.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F0FE),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _primary.withValues(alpha: 0.3)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20), // pill shape
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
-          value: years.contains(provider.selectedYear)
-              ? provider.selectedYear
-              : years.first,
-          isDense: true,
-          icon: const Icon(Icons.keyboard_arrow_down,
-              color: _primary, size: 18),
-          style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: _primary),
+          value: years.contains(provider.selectedYear) ? provider.selectedYear : years.first,
+          icon: const Padding(
+            padding: EdgeInsets.only(left: 8.0),
+            child: Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF4B5563), size: 20),
+          ),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _textDark),
           dropdownColor: Colors.white,
-          items: years
-              .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
-              .toList(),
+          borderRadius: BorderRadius.circular(16),
+          items: years.map((y) => DropdownMenuItem(value: y, child: Text('$y'))).toList(),
           onChanged: (y) {
             if (y == null) return;
             provider.loadReport(y);
@@ -121,16 +122,26 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
 
   Widget _buildFab() {
     return Consumer<AnnualReportProvider>(
-      builder: (ctx, provider, child) => FloatingActionButton.extended(
-        onPressed: provider.entries.isEmpty || provider.isLoading
-            ? null
-            : () => _exportPdf(provider),
-        backgroundColor: _primary,
-        disabledElevation: 0,
-        icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
-        label: const Text('Export PDF',
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+      builder: (ctx, provider, child) => Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: _primary.withValues(alpha: 0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            )
+          ],
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: provider.entries.isEmpty || provider.isLoading ? null : () => _exportPdf(provider),
+          backgroundColor: _primary,
+          elevation: 0,
+          highlightElevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          icon: const Icon(Icons.download_rounded, color: Colors.white),
+          label: const Text('Export PDF', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 0.5)),
+        ),
       ),
     );
   }
@@ -157,11 +168,9 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
         _buildSummaryCard(provider.entries.length, provider.selectedYear),
         Expanded(
           child: ListView.builder(
-            padding:
-                const EdgeInsets.fromLTRB(16, 12, 16, 100),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
             itemCount: provider.entries.length,
-            itemBuilder: (context, index) =>
-                _buildStudentCard(index + 1, provider.entries[index]),
+            itemBuilder: (context, index) => _buildStudentCard(index + 1, provider.entries[index]),
           ),
         ),
       ],
@@ -172,53 +181,69 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
 
   Widget _buildSummaryCard(int total, int year) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      margin: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1A73E8), Color(0xFF4A90E2)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+          colors: [Color(0xFF283593), Color(0xFF3F51B5)], // sleek indigo/blue
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: _primary.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF3F51B5).withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.people_alt_rounded,
-                color: Colors.white, size: 26),
+            child: const Icon(Icons.people_alt_rounded, color: Colors.white, size: 32),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '$total Students',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              const Text(
+                'Total Enrolled',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                  letterSpacing: 0.5,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                'Report for $year',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.85),
-                ),
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '$total',
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Students',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -233,202 +258,155 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
     final isDeleted = entry.studentName == '[Deleted Student]';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: _cardBg,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── header row ────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDeleted
-                  ? Colors.red.shade50
-                  : const Color(0xFFF0F6FF),
-              borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16)),
-            ),
-            child: Row(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
                 // Serial badge
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 40,
+                  height: 40,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: isDeleted
-                        ? Colors.red.shade100
-                        : const Color(0xFFE8F0FE),
-                    shape: BoxShape.circle,
+                    color: isDeleted ? Colors.red.shade50 : const Color(0xFFF0F4FF),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '$serial',
+                    serial.toString().padLeft(2, '0'),
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: isDeleted
-                          ? Colors.red.shade700
-                          : _primary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: isDeleted ? Colors.red.shade400 : _primary,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              entry.studentName,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: isDeleted
-                                    ? Colors.red.shade700
-                                    : Colors.black87,
-                              ),
-                            ),
-                          ),
-                          if (isDeleted) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade100,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'Deleted',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.red.shade700,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                      Text(
+                        entry.studentName,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: isDeleted ? Colors.red.shade300 : const Color(0xFF1A1D2E),
+                          decoration: isDeleted ? TextDecoration.lineThrough : null,
+                        ),
                       ),
+                      const SizedBox(height: 4),
                       if (entry.phone != null && entry.phone!.isNotEmpty)
                         Row(
                           children: [
-                            Icon(Icons.phone_outlined,
-                                size: 13,
-                                color: Colors.grey.shade600),
+                            Icon(Icons.phone_android_rounded, size: 14, color: Colors.grey.shade500),
                             const SizedBox(width: 4),
                             Text(
                               entry.phone!,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
+                              style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
                             ),
                           ],
-                        ),
+                        )
+                      else
+                        Text('No Phone Number', style: TextStyle(fontSize: 13, color: Colors.grey.shade400, fontStyle: FontStyle.italic)),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          // ── batch list ────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (entry.batches.length > 1)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(
-                      'Enrolled in ${entry.batches.length} batches',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: _primary.withValues(alpha: 0.8),
-                        fontWeight: FontWeight.w600,
-                      ),
+                if (isDeleted)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: Text('Deleted', style: TextStyle(color: Colors.red.shade400, fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
-                ...entry.batches.asMap().entries.map(
-                      (e) => _buildBatchRow(e.key, e.value,
-                          entry.batches.length > 1),
-                    ),
               ],
             ),
-          ),
-        ],
+            
+            // Batches section
+            if (entry.batches.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Divider(height: 1, color: Color(0xFFF0F0F0)),
+              const SizedBox(height: 16),
+              ...entry.batches.map((b) => _buildSleekBatchRow(b)),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBatchRow(int index, BatchInfo batch, bool showIndex) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFF),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFDCE8FF)),
-      ),
+  Widget _buildSleekBatchRow(BatchInfo batch) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (showIndex)
-            Container(
-              margin: const EdgeInsets.only(right: 8, top: 1),
-              width: 20,
-              height: 20,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _primary.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                '${index + 1}',
-                style: const TextStyle(
-                    fontSize: 10,
-                    color: _primary,
-                    fontWeight: FontWeight.bold),
-              ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F7FA),
+              borderRadius: BorderRadius.circular(10),
             ),
+            child: const Icon(Icons.class_outlined, size: 16, color: Color(0xFF6B7280)),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 6,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _infoChip(
-                  Icons.school_outlined,
-                  batch.batchName ?? 'Unknown Batch',
-                  const Color(0xFF1A73E8),
-                  const Color(0xFFE8F0FE),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        batch.batchName ?? 'Unknown Batch',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF374151)),
+                      ),
+                    ),
+                    if (batch.studentClass != null && batch.studentClass!.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE5F6FD),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          batch.studentClass!,
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF0284C7), fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ]
+                  ],
                 ),
-                _infoChip(
-                  Icons.class_outlined,
-                  batch.studentClass ?? 'Unknown Class',
-                  const Color(0xFF2B9348),
-                  const Color(0xFFE8F8EE),
-                ),
-                if (_scheduleText(batch).isNotEmpty)
-                  _infoChip(
-                    Icons.schedule_outlined,
-                    _scheduleText(batch),
-                    const Color(0xFFF57C00),
-                    const Color(0xFFFFF3E0),
+                if (_scheduleText(batch).isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.schedule_rounded, size: 13, color: Color(0xFF9CA3AF)),
+                      const SizedBox(width: 4),
+                      Text(
+                        _scheduleText(batch),
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                      ),
+                    ],
                   ),
+                ],
               ],
             ),
           ),
@@ -444,31 +422,6 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
     return parts.join(' • ');
   }
 
-  Widget _infoChip(
-      IconData icon, String label, Color color, Color bgColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-                fontSize: 11,
-                color: color,
-                fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ── Empty / Error states ──────────────────────────────────────────────────
 
   Widget _buildEmpty(int year) {
@@ -476,12 +429,24 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.assignment_outlined,
-              size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 20,
+                )
+              ]
+            ),
+            child: Icon(Icons.folder_open_rounded, size: 64, color: Colors.grey.shade300),
+          ),
+          const SizedBox(height: 24),
           Text(
             'No students enrolled in $year',
-            style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade500),
             textAlign: TextAlign.center,
           ),
         ],

@@ -150,8 +150,7 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
         Row(
@@ -338,7 +337,6 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
           },
         ),
       ],
-    ),
     );
   }
 }
