@@ -30,7 +30,7 @@ class FeeProvider with ChangeNotifier {
 
   FeeProvider(this._feeRepository, this._studentRepository);
 
-  Future<void> loadPendingFeeRecords({bool forceRegenerate = false}) async {
+  Future<void> loadPendingFeeRecords({bool forceRegenerate = false, int? year, bool includePreviousUnpaid = false}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -38,16 +38,24 @@ class FeeProvider with ChangeNotifier {
     try {
       // Only run the expensive generation loop on first load or explicit refresh
       if (!_hasGeneratedFees || forceRegenerate) {
-        final students = await _studentRepository.getAllStudents();
-        for (final student in students) {
-          if (student.id != null) {
+        // CRITICAL: Only regenerate for ACTIVE students (leave_date IS NULL).
+        // Previous students (5,000) have finalized records — regenerating them
+        // on every launch caused multi-minute freezes at scale.
+        final activeStudentIds = await _studentRepository.getActiveStudentIds();
+        for (final studentId in activeStudentIds) {
+          final student = await _studentRepository.getStudentById(studentId);
+          if (student != null) {
             await _feeRepository.generateFeeRecords(student.id!, student.createdAt);
           }
         }
         _hasGeneratedFees = true;
       }
 
-      _pendingFeeRecords = await _feeRepository.getPendingFeeRecords();
+      // Pass year to DB query so only relevant records are loaded into memory
+      _pendingFeeRecords = await _feeRepository.getPendingFeeRecords(
+        year: year,
+        includePreviousUnpaid: includePreviousUnpaid,
+      );
       _dataVersion++;
     } catch (e) {
       _errorMessage = e.toString();
@@ -84,8 +92,9 @@ class FeeProvider with ChangeNotifier {
       await _feeRepository.addPaymentTransaction(feeRecordId, paymentAmount, isSettled: isSettled, note: note);
       // Regenerate only for this specific student (fast)
       await loadStudentFeeData(studentId);
-      // Lightweight reload: just fetch updated records from DB, no full regeneration
-      _pendingFeeRecords = await _feeRepository.getPendingFeeRecords();
+      // Lightweight reload: fetch current year's records only (no full regeneration)
+      final int currentYear = DateTime.now().year;
+      _pendingFeeRecords = await _feeRepository.getPendingFeeRecords(year: currentYear);
       _dataVersion++;
       notifyListeners();
       return true;

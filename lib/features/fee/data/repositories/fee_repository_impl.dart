@@ -24,16 +24,32 @@ class FeeRepositoryImpl implements FeeRepository {
   }
 
   @override
-  Future<List<FeeRecord>> getPendingFeeRecords() async {
+  Future<List<FeeRecord>> getPendingFeeRecords({int? year, bool includePreviousUnpaid = false}) async {
     final db = await _dbHelper.database;
-    // We fetch all records for the overview instead of just pending ones
+
+    String whereClause;
+    List<Object?> args = [];
+
+    if (year != null) {
+      if (includePreviousUnpaid) {
+        // Current year's records PLUS any unpaid/unsettled records from prior years
+        whereClause = 's.deleted_at IS NULL AND (f.year = ? OR (f.year < ? AND f.paid_amount < f.total_amount AND f.is_settled = 0))';
+        args = [year, year];
+      } else {
+        whereClause = 's.deleted_at IS NULL AND f.year = ?';
+        args = [year];
+      }
+    } else {
+      whereClause = 's.deleted_at IS NULL';
+    }
+
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
       SELECT f.*, s.name as student_name
       FROM $_feeTable f
       JOIN students s ON f.student_id = s.id
-      WHERE s.deleted_at IS NULL
+      WHERE $whereClause
       ORDER BY s.name ASC, f.year DESC, f.month DESC
-    ''');
+    ''', args);
 
     return List.generate(maps.length, (i) => FeeRecordModel.fromMap(maps[i]));
   }

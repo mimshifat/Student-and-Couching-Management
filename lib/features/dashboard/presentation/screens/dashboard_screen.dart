@@ -28,7 +28,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<StudentProvider>().loadStudents();
       context.read<BatchProvider>().loadBatches();
-      context.read<FeeProvider>().loadPendingFeeRecords();
+      // Load only the current year by default; chart/cards filter further in-memory
+      context.read<FeeProvider>().loadPendingFeeRecords(year: _selectedYear);
       context.read<EnrollmentProvider>().loadEnrollments();
     });
   }
@@ -66,8 +67,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _buildFilters(),
             const SizedBox(height: 24),
             _buildSummaryCards(context),
-            const SizedBox(height: 24),
-            _buildDifferenceCard(context),
             const SizedBox(height: 32),
             _buildChartSection(context),
           ],
@@ -130,6 +129,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                     onChanged: (val) {
                       setState(() => _selectedYear = val);
+                      // Reload fee records for the newly selected year (null = all years)
+                      context.read<FeeProvider>().loadPendingFeeRecords(year: val);
                     },
                   ),
                 ),
@@ -231,19 +232,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildSummaryCards(BuildContext context) {
     return Consumer3<StudentProvider, EnrollmentProvider, FeeProvider>(
       builder: (context, studentProvider, enrollmentProvider, feeProvider, _) {
-        // Calculate Students
+        // O(n) active student count using a Set of active student IDs
+        final activeStudentIds = enrollmentProvider.enrollments
+            .where((e) => e.leaveDate == null)
+            .map((e) => e.studentId)
+            .toSet();
         final allStudents = studentProvider.students;
-        int activeCount = 0;
-        for (var s in allStudents) {
-          final enrollments = enrollmentProvider.enrollments.where((e) => e.studentId == s.id).toList();
-          final isActive = enrollments.any((e) => e.leaveDate == null);
-          if (isActive) activeCount++;
-        }
+        final int activeCount =
+            allStudents.where((s) => activeStudentIds.contains(s.id)).length;
 
-        // Calculate Fees for selected month/year
+        // Compute fee totals once — reused by both summary cards and difference card
         double totalExpected = 0;
         double totalCollected = 0;
-        
         for (var r in feeProvider.pendingFeeRecords) {
           if (_selectedMonth != null && r.month != _selectedMonth) continue;
           if (_selectedYear != null && r.year != _selectedYear) continue;
@@ -251,108 +251,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
           totalExpected += r.totalAmount;
           totalCollected += r.paidAmount;
         }
+        final double difference = totalExpected - totalCollected;
 
-        return GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.4, // Adjusted for content
+        return Column(
           children: [
-            _buildDataCard(
-              title: 'Total Students',
-              value: '${allStudents.length}',
-              subtitle: 'All Students',
-              iconData: Icons.person_outline_rounded,
-              iconColor: const Color(0xFF5E60CE),
-              iconBgColor: const Color(0xFFEEF0FE),
+            GridView.count(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              childAspectRatio: 1.4,
+              children: [
+                _buildDataCard(
+                  title: 'Total Students',
+                  value: '${allStudents.length}',
+                  subtitle: 'All Students',
+                  iconData: Icons.person_outline_rounded,
+                  iconColor: const Color(0xFF5E60CE),
+                  iconBgColor: const Color(0xFFEEF0FE),
+                ),
+                _buildDataCard(
+                  title: 'Active Students',
+                  value: '$activeCount',
+                  subtitle: 'Currently Active',
+                  iconData: Icons.check_circle_outline_rounded,
+                  iconColor: const Color(0xFF2B9348),
+                  iconBgColor: const Color(0xFFE8F8EE),
+                ),
+                _buildDataCard(
+                  title: 'Total Income',
+                  value: '৳ ${totalCollected.toStringAsFixed(0)}',
+                  subtitle: _selectedMonth == null ? (_selectedYear == null ? 'All Time' : 'This Year') : 'This Month',
+                  iconData: Icons.account_balance_wallet_outlined,
+                  iconColor: const Color(0xFF00B4D8),
+                  iconBgColor: const Color(0xFFE0F7FA),
+                ),
+                _buildDataCard(
+                  title: 'Expected Income',
+                  value: '৳ ${totalExpected.toStringAsFixed(0)}',
+                  subtitle: _selectedMonth == null ? (_selectedYear == null ? 'All Time' : 'This Year') : 'This Month',
+                  iconData: Icons.receipt_long_outlined,
+                  iconColor: const Color(0xFFF48C06),
+                  iconBgColor: const Color(0xFFFFF3E0),
+                ),
+              ],
             ),
-            _buildDataCard(
-              title: 'Active Students',
-              value: '$activeCount',
-              subtitle: 'Currently Active',
-              iconData: Icons.check_circle_outline_rounded,
-              iconColor: const Color(0xFF2B9348),
-              iconBgColor: const Color(0xFFE8F8EE),
-            ),
-            _buildDataCard(
-              title: 'Total Income',
-              value: '৳ ${totalCollected.toStringAsFixed(0)}',
-              subtitle: _selectedMonth == null ? (_selectedYear == null ? 'All Time' : 'This Year') : 'This Month',
-              iconData: Icons.account_balance_wallet_outlined,
-              iconColor: const Color(0xFF00B4D8),
-              iconBgColor: const Color(0xFFE0F7FA),
-            ),
-            _buildDataCard(
-              title: 'Expected Income',
-              value: '৳ ${totalExpected.toStringAsFixed(0)}',
-              subtitle: _selectedMonth == null ? (_selectedYear == null ? 'All Time' : 'This Year') : 'This Month',
-              iconData: Icons.receipt_long_outlined,
-              iconColor: const Color(0xFFF48C06),
-              iconBgColor: const Color(0xFFFFF3E0),
-            ),
+            const SizedBox(height: 24),
+            _buildDifferenceWidget(difference),
           ],
         );
       },
     );
   }
 
-  Widget _buildDifferenceCard(BuildContext context) {
-    return Consumer<FeeProvider>(
-      builder: (context, feeProvider, _) {
-        double totalExpected = 0;
-        double totalCollected = 0;
-        
-        for (var r in feeProvider.pendingFeeRecords) {
-          if (_selectedMonth != null && r.month != _selectedMonth) continue;
-          if (_selectedYear != null && r.year != _selectedYear) continue;
-          if (_selectedBatchId != null && r.batchId != _selectedBatchId) continue;
-          totalExpected += r.totalAmount;
-          totalCollected += r.paidAmount;
-        }
-        
-        double difference = totalExpected - totalCollected;
-
-        return Container(
-          width: MediaQuery.of(context).size.width / 2 - 24, // approx half width to match design layout
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF7ED), // very light orange
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.orange.shade100, width: 0.5),
+  Widget _buildDifferenceWidget(double difference) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange.shade100, width: 0.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEDD5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.assignment_late_outlined, color: Color(0xFFEA580C), size: 24),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFEDD5),
-                  borderRadius: BorderRadius.circular(12),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Difference', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF52525B))),
+                const SizedBox(height: 4),
+                Text(
+                  '৳ ${difference.toStringAsFixed(0)}',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
                 ),
-                child: const Icon(Icons.assignment_late_outlined, color: Color(0xFFEA580C), size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Difference', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF52525B))),
-                    const SizedBox(height: 4),
-                    Text(
-                      '৳ ${difference.toStringAsFixed(0)}',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text('Expected - Received', style: TextStyle(fontSize: 10, color: Color(0xFF71717A))),
-                  ],
-                ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                const Text('Expected - Received', style: TextStyle(fontSize: 10, color: Color(0xFF71717A))),
+              ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 

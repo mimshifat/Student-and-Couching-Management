@@ -12,6 +12,11 @@ class StudentProvider with ChangeNotifier {
   List<StudentSummary> _studentSummaries = [];
   List<StudentSummary> get studentSummaries => _studentSummaries;
 
+  /// Distinct class names from DB — populated by loadDistinctClassNames().
+  /// Much cheaper than loading all students just for the filter dropdown.
+  List<String> _distinctClassNames = [];
+  List<String> get distinctClassNames => _distinctClassNames;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -57,6 +62,26 @@ class StudentProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Loads only distinct class names from DB — O(distinct classes) not O(all students).
+  Future<void> loadDistinctClassNames() async {
+    try {
+      _distinctClassNames = await _repository.getDistinctClassNames();
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+  }
+
+  /// Fetches only the phone number of one student — avoids loading all 5,300 students.
+  Future<String?> fetchStudentPhone(int studentId) async {
+    try {
+      return await _repository.getStudentPhoneById(studentId);
+    } catch (e) {
+      _errorMessage = e.toString();
+      return null;
     }
   }
 

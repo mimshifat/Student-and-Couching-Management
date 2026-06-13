@@ -129,32 +129,35 @@ class StudentRepositoryImpl implements StudentRepository {
       args.add('%$searchQuery%');
     }
 
-    // Status filter
+    // Status filter using JOIN aggregate (no correlated subquery)
+    String statusHavingClause = '';
     if (status != null && status != 'All') {
       if (status == 'New') {
-        conditions.add('(SELECT COUNT(*) FROM enrollments e WHERE e.student_id = s.id) = 0');
+        statusHavingClause = 'HAVING total_enrollments = 0';
       } else if (status == 'Running') {
-        conditions.add('(SELECT COUNT(*) FROM enrollments e WHERE e.student_id = s.id AND e.leave_date IS NULL) > 0');
+        statusHavingClause = 'HAVING active_enrollments > 0';
       } else if (status == 'Previous') {
-        conditions.add('''
-          (SELECT COUNT(*) FROM enrollments e WHERE e.student_id = s.id) > 0 
-          AND (SELECT COUNT(*) FROM enrollments e WHERE e.student_id = s.id AND e.leave_date IS NULL) = 0
-        ''');
+        statusHavingClause = 'HAVING total_enrollments > 0 AND active_enrollments = 0';
       }
     }
 
     final whereClause = conditions.join(' AND ');
 
-    // Query with calculated status
+    // Single JOIN with GROUP BY replaces 2 correlated subqueries per row
     final String query = '''
-      SELECT s.*, 
-        CASE 
-          WHEN (SELECT COUNT(*) FROM enrollments e WHERE e.student_id = s.id) = 0 THEN 'New'
-          WHEN (SELECT COUNT(*) FROM enrollments e WHERE e.student_id = s.id AND e.leave_date IS NULL) > 0 THEN 'Running'
+      SELECT s.*,
+        COUNT(e.id) as total_enrollments,
+        SUM(CASE WHEN e.leave_date IS NULL THEN 1 ELSE 0 END) as active_enrollments,
+        CASE
+          WHEN COUNT(e.id) = 0 THEN 'New'
+          WHEN SUM(CASE WHEN e.leave_date IS NULL THEN 1 ELSE 0 END) > 0 THEN 'Running'
           ELSE 'Previous'
         END as calc_status
       FROM $_tableName s
+      LEFT JOIN enrollments e ON e.student_id = s.id
       WHERE $whereClause
+      GROUP BY s.id
+      $statusHavingClause
       ORDER BY s.name ASC
     ''';
 
@@ -180,5 +183,39 @@ class StudentRepositoryImpl implements StudentRepository {
     return List.generate(maps.length, (i) {
       return StudentModel.fromMap(maps[i]);
     });
+  }
+
+  @override
+  Future<List<String>> getDistinctClassNames() async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      "SELECT DISTINCT class_name FROM $_tableName WHERE deleted_at IS NULL AND class_name IS NOT NULL AND class_name != '' ORDER BY class_name ASC",
+    );
+    return maps.map((m) => m['class_name'] as String).toList();
+  }
+
+  @override
+  Future<List<int>> getActiveStudentIds() async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT DISTINCT s.id FROM $_tableName s
+      INNER JOIN enrollments e ON e.student_id = s.id
+      WHERE e.leave_date IS NULL AND s.deleted_at IS NULL
+    ''');
+    return maps.map((m) => m['id'] as int).toList();
+  }
+
+  @override
+  Future<String?> getStudentPhoneById(int id) async {
+    final db = await _dbHelper.database;
+    final maps = await db.query(
+      _tableName,
+      columns: ['phone'],
+      where: 'id = ? AND deleted_at IS NULL',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return maps.first['phone'] as String?;
   }
 }

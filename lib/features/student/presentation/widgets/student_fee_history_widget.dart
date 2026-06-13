@@ -286,18 +286,14 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                                 const SizedBox(height: 8),
                                 InkWell(
                                   onTap: () {
-                                    final studentIdx = context.read<StudentProvider>().students.indexWhere((s) => s.id == widget.studentId);
-                                    if (studentIdx == -1) {
-                                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student not found.')));
-                                      return;
-                                    }
-                                    final student = context.read<StudentProvider>().students[studentIdx];
+                                    // studentName is already in the fee record — no student list lookup needed
+                                    final studentName = record.studentName ?? 'Student';
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => FeePaymentScreen(
                                           studentId: widget.studentId,
-                                          studentName: student.name,
+                                          studentName: studentName,
                                           feeRecord: record,
                                         ),
                                       ),
@@ -323,15 +319,13 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                                 const SizedBox(height: 8),
                                 InkWell(
                                   onTap: () async {
-                                    final studentIdx = context.read<StudentProvider>().students.indexWhere((s) => s.id == widget.studentId);
-                                    if (studentIdx == -1) {
-                                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student not found.')));
-                                      return;
-                                    }
-                                    final student = context.read<StudentProvider>().students[studentIdx];
-                                    if (student.phone != null && student.phone!.isNotEmpty) {
-                                      final message = '[CSA]\nDear ${student.name}, your fee payment of Tk. ${record.paidAmount.toStringAsFixed(0)} for $monthName ${record.year} has been received. Thank you!\n-Abdus Samad';
-                                      final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');
+                                    // Fetch phone on-demand — no student list required
+                                    final phone = await context.read<StudentProvider>().fetchStudentPhone(widget.studentId);
+                                    if (!context.mounted) return;
+                                    if (phone != null && phone.isNotEmpty) {
+                                      final studentName = record.studentName ?? 'Student';
+                                      final message = '[CSA]\nDear $studentName, your fee payment of Tk. ${record.paidAmount.toStringAsFixed(0)} for $monthName ${record.year} has been received. Thank you!\n-Abdus Samad';
+                                      final uri = Uri.parse('sms:$phone?body=${Uri.encodeComponent(message)}');
                                       if (await canLaunchUrl(uri)) {
                                         await launchUrl(uri);
                                       } else {
@@ -340,9 +334,7 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                                         }
                                       }
                                     } else {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student has no phone number.')));
-                                      }
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student has no phone number.')));
                                     }
                                   },
                                   child: Container(

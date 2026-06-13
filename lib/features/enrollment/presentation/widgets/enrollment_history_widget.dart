@@ -52,8 +52,18 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
     if (picked != null && mounted) {
       await context.read<EnrollmentProvider>().leaveBatch(enrollmentId, widget.studentId, picked);
       if (mounted) {
-        context.read<FeeProvider>().loadStudentFeeData(widget.studentId);
-        context.read<FeeProvider>().loadPendingFeeRecords();
+        // forceRegenerate=true so the partial-month fee for the leave month
+        // is recalculated immediately, not deferred to the next app launch.
+        // loadStudentFeeData MUST be awaited first — it recalculates this specific
+        // student's partial-month fee BEFORE the overview's forceRegenerate loop runs.
+        final currentYear = DateTime.now().year;
+        await context.read<FeeProvider>().loadStudentFeeData(widget.studentId);
+        if (mounted) {
+          await context.read<FeeProvider>().loadPendingFeeRecords(
+            forceRegenerate: true,
+            year: currentYear,
+          );
+        }
       }
     }
   }
@@ -80,9 +90,17 @@ class _EnrollmentHistoryWidgetState extends State<EnrollmentHistoryWidget> {
               final double? newFee = val.isEmpty ? null : double.tryParse(val);
               await context.read<EnrollmentProvider>().updateFeeOverride(enrollmentId, widget.studentId, newFee);
               if (ctx.mounted) {
-                ctx.read<FeeProvider>().loadStudentFeeData(widget.studentId);
-                ctx.read<FeeProvider>().loadPendingFeeRecords();
-                Navigator.pop(ctx);
+                final currentYear = DateTime.now().year;
+                // Await loadStudentFeeData first so the new fee override is
+                // applied to this student's records before the overview reloads.
+                await ctx.read<FeeProvider>().loadStudentFeeData(widget.studentId);
+                if (ctx.mounted) {
+                  await ctx.read<FeeProvider>().loadPendingFeeRecords(
+                    forceRegenerate: true,
+                    year: currentYear,
+                  );
+                  if (ctx.mounted) Navigator.pop(ctx);
+                }
               }
             },
             child: const Text('Save'),

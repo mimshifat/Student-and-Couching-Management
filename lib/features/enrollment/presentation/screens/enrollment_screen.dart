@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../domain/entities/enrollment.dart';
 import '../providers/enrollment_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
+import '../../../fee/presentation/providers/fee_provider.dart';
 import '../../../../core/widgets/custom_form_widgets.dart';
 
 class EnrollmentScreen extends StatefulWidget {
@@ -75,7 +76,14 @@ class _EnrollmentScreenState extends State<EnrollmentScreen> {
     final success = await provider.enrollStudent(enrollment);
 
     if (success && mounted) {
-      Navigator.pop(context);
+      // Generate fee records for this student immediately in the same session.
+      // Without this, fees only appear after the next app launch.
+      final currentYear = DateTime.now().year;
+      await context.read<FeeProvider>().loadPendingFeeRecords(
+        forceRegenerate: true,
+        year: currentYear,
+      );
+      if (mounted) Navigator.pop(context);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(provider.errorMessage ?? 'An error occurred')),

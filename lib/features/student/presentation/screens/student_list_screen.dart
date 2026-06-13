@@ -36,8 +36,8 @@ class _StudentListScreenState extends State<StudentListScreen> {
       _loadStudents();
       context.read<FeeProvider>().loadPendingFeeRecords();
       context.read<BatchProvider>().loadBatches();
-      // Load all students just to populate the Class dropdown (or we could fetch distinct classes)
-      context.read<StudentProvider>().loadStudents(); 
+      // Load only distinct class names — not all 5,300 students
+      context.read<StudentProvider>().loadDistinctClassNames();
     });
   }
 
@@ -252,8 +252,8 @@ class _StudentListScreenState extends State<StudentListScreen> {
       ),
       body: Consumer<StudentProvider>(
         builder: (context, studentProvider, child) {
-          // Keep classes mapped from allStudents to populate the filter dropdown
-          final classes = studentProvider.students.map((e) => e.className).whereType<String>().where((e) => e.isNotEmpty).toSet().toList();
+          // Use pre-loaded distinct class names (not full student list)
+          final classes = studentProvider.distinctClassNames;
           
           // Data is already filtered by class, batch, and search at the DB level
           final summaries = studentProvider.studentSummaries;

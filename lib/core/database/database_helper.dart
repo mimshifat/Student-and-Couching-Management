@@ -35,6 +35,10 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_results_batch_id ON results(batch_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_exams_exam_date ON exams(exam_date)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_exams_batch_id ON exams(batch_id)');
+    // Critical indexes for 5,000+ student scale
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_enrollments_student_id ON enrollments(student_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_fee_records_student_year ON fee_records(student_id, year)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_students_deleted_at ON students(deleted_at)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {

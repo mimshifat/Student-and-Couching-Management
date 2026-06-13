@@ -41,10 +41,9 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<FeeProvider>().loadPendingFeeRecords();
+      context.read<FeeProvider>().loadPendingFeeRecords(year: _selectedYear);
       context.read<BatchProvider>().loadBatches();
       context.read<EnrollmentProvider>().loadEnrollments();
-      context.read<StudentProvider>().loadStudents();
     });
   }
 
@@ -91,6 +90,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                     onChanged: (val) {
                       if (val != null) {
                         setState(() => _selectedYear = val);
+                        context.read<FeeProvider>().loadPendingFeeRecords(year: val);
                         Navigator.pop(context);
                       }
                     },
@@ -142,7 +142,10 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
       body: RefreshIndicator(
         onRefresh: () async {
           _initialUnpaidIds = null;
-          await context.read<FeeProvider>().loadPendingFeeRecords(forceRegenerate: true);
+          await context.read<FeeProvider>().loadPendingFeeRecords(
+            forceRegenerate: true,
+            year: _selectedYear,
+          );
         },
         child: Consumer3<FeeProvider, BatchProvider, EnrollmentProvider>(
           builder: (context, feeProvider, batchProvider, enrollmentProvider, child) {
@@ -168,14 +171,14 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                 if (!r.studentName!.toLowerCase().contains(_searchQuery)) return false;
               }
               if (_selectedMonth != null && r.month != _selectedMonth) return false;
+              // Strict year filter — only selected year's records
               if (r.year != _selectedYear) return false;
               
-              // Batch filter logic
+              // Batch filter
               if (_selectedBatchId != null) {
                 if (r.batchId != null) {
                   if (r.batchId != _selectedBatchId) return false;
                 } else {
-                  // Legacy fallback
                   bool inBatch = enrollments.any((e) => e.studentId == r.studentId && e.batchId == _selectedBatchId);
                   if (!inBatch) return false;
                 }
@@ -202,9 +205,12 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
             // Calculate summary based on ALL matching records, so users can see their total payments
             double totalFee = allMatchingRecords.fold(0.0, (sum, r) => sum + r.totalAmount);
             double totalPaid = allMatchingRecords.fold(0.0, (sum, r) => sum + r.paidAmount);
-            
-            // For items that are settled, the remaining difference should be 0 even if paidAmount < totalAmount
-            double difference = totalFee - totalPaid;
+
+            // Settled records count as fully cleared — only genuinely unpaid records add to the difference
+            double difference = allMatchingRecords.fold(0.0, (sum, r) {
+              if (r.isSettled || r.paidAmount >= r.totalAmount) return sum;
+              return sum + (r.totalAmount - r.paidAmount);
+            });
 
           return Column(
             children: [
@@ -445,25 +451,22 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                       ? IconButton(
                           icon: const Icon(Icons.message, color: Color(0xFF2B9348)),
                           onPressed: () async {
-                            final students = context.read<StudentProvider>().students;
-                            final studentList = students.where((s) => s.id == r.studentId);
-                            if (studentList.isNotEmpty) {
-                              final student = studentList.first;
-                              if (student.phone != null && student.phone!.isNotEmpty) {
-                                final message = '[CSA]\nDear ${student.name}, your fee payment of Tk. ${r.paidAmount.toStringAsFixed(0)} for $monthName ${r.year} has been received. Thank you!\n-Abdus Samad';
-                                final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri);
-                                } else {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open messaging app.')));
-                                  }
-                                }
+                            // Fetch only this student's phone — no need to load all students
+                            final phone = await context.read<StudentProvider>().fetchStudentPhone(r.studentId);
+                            if (!context.mounted) return;
+                            if (phone != null && phone.isNotEmpty) {
+                              final studentName = r.studentName ?? 'Student';
+                              final message = '[CSA]\nDear $studentName, your fee payment of Tk. ${r.paidAmount.toStringAsFixed(0)} for $monthName ${r.year} has been received. Thank you!\n-Abdus Samad';
+                              final uri = Uri.parse('sms:$phone?body=${Uri.encodeComponent(message)}');
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
                               } else {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student has no phone number.')));
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open messaging app.')));
                                 }
                               }
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student has no phone number.')));
                             }
                           },
                         )
