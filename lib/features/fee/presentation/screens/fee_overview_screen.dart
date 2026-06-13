@@ -206,11 +206,8 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
             double totalFee = allMatchingRecords.fold(0.0, (sum, r) => sum + r.totalAmount);
             double totalPaid = allMatchingRecords.fold(0.0, (sum, r) => sum + r.paidAmount);
 
-            // Settled records count as fully cleared — only genuinely unpaid records add to the difference
-            double difference = allMatchingRecords.fold(0.0, (sum, r) {
-              if (r.isSettled || r.paidAmount >= r.totalAmount) return sum;
-              return sum + (r.totalAmount - r.paidAmount);
-            });
+            // Calculate difference as exactly Total Fee - Total Paid so the math always adds up
+            double difference = totalFee - totalPaid;
 
           return Column(
             children: [

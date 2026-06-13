@@ -247,7 +247,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         for (var r in feeProvider.pendingFeeRecords) {
           if (_selectedMonth != null && r.month != _selectedMonth) continue;
           if (_selectedYear != null && r.year != _selectedYear) continue;
-          if (_selectedBatchId != null && r.batchId != _selectedBatchId) continue;
+          if (_selectedBatchId != null) {
+            if (r.batchId != null) {
+              if (r.batchId != _selectedBatchId) continue;
+            } else {
+              bool inBatch = enrollmentProvider.enrollments.any((e) => e.studentId == r.studentId && e.batchId == _selectedBatchId);
+              if (!inBatch) continue;
+            }
+          }
           totalExpected += r.totalAmount;
           totalCollected += r.paidAmount;
         }
@@ -424,7 +431,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Map<int, double> monthlyIncome = {};
           for (var r in records) {
             if (_selectedYear == null || r.year == _selectedYear) {
-              if (_selectedBatchId == null || r.batchId == _selectedBatchId) {
+              bool includeBatch = true;
+              if (_selectedBatchId != null) {
+                if (r.batchId != null) {
+                  includeBatch = r.batchId == _selectedBatchId;
+                } else {
+                  final enrollmentProvider = context.read<EnrollmentProvider>();
+                  includeBatch = enrollmentProvider.enrollments.any((e) => e.studentId == r.studentId && e.batchId == _selectedBatchId);
+                }
+              }
+              if (includeBatch) {
                 monthlyIncome[r.month] = (monthlyIncome[r.month] ?? 0) + r.paidAmount;
               }
             }
@@ -438,7 +454,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Map<int, double> dailyIncome = {};
           for (var r in records) {
             if ((_selectedYear == null || r.year == _selectedYear) && r.month == _selectedMonth) {
-              if (_selectedBatchId == null || r.batchId == _selectedBatchId) {
+              bool includeBatch = true;
+              if (_selectedBatchId != null) {
+                if (r.batchId != null) {
+                  includeBatch = r.batchId == _selectedBatchId;
+                } else {
+                  final enrollmentProvider = context.read<EnrollmentProvider>();
+                  includeBatch = enrollmentProvider.enrollments.any((e) => e.studentId == r.studentId && e.batchId == _selectedBatchId);
+                }
+              }
+              if (includeBatch) {
                  if (r.paidAmount > 0) {
                    int day = (r.paymentDate ?? r.updatedAt).day;
                    dailyIncome[day] = (dailyIncome[day] ?? 0) + r.paidAmount;
