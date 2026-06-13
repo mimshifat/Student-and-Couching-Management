@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -53,27 +54,42 @@ class AnnualReportProvider with ChangeNotifier {
     }
   }
 
-  /// Shares/prints the annual report as a PDF.
+  /// Exports the annual report as a PDF using the system print/save dialog.
   Future<void> exportToPdf() async {
-    final pdf = pw.Document();
+    final doc = pw.Document();
 
-    pdf.addPage(
+    final reportTitle = 'Annual Student Enrollment Report - $_selectedYear';
+
+    doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-        header: (_) => _pdfHeader(),
-        footer: (ctx) => _pdfFooter(ctx),
-        build: (ctx) => [
-          _pdfSummary(),
-          pw.SizedBox(height: 16),
-          _pdfTable(),
-        ],
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return [
+            _buildPdfHeader(reportTitle),
+            pw.SizedBox(height: 20),
+            _buildPdfTable(),
+          ];
+        },
+        footer: (pw.Context context) => pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              'Generated: ${DateTime.now().toLocal().toString().split('.').first}',
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+            ),
+            pw.Text(
+              'Page ${context.pageNumber} of ${context.pagesCount}',
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+            ),
+          ],
+        ),
       ),
     );
 
-    await Printing.sharePdf(
-      bytes: await pdf.save(),
-      filename: 'annual_report_$_selectedYear.pdf',
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => doc.save(),
+      name: 'Annual_Report_$_selectedYear.pdf',
     );
   }
 
@@ -113,82 +129,77 @@ class AnnualReportProvider with ChangeNotifier {
     return map.values.toList();
   }
 
-  // ── PDF helpers ───────────────────────────────────────────────────────────
+  // ── PDF builder helpers ───────────────────────────────────────────────────
 
-  pw.Widget _pdfHeader() {
+  pw.Widget _buildPdfHeader(String title) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          'বার্ষিক রিপোর্ট - $_selectedYear',
+          title,
           style: pw.TextStyle(
-            fontSize: 18,
+            fontSize: 24,
             fontWeight: pw.FontWeight.bold,
+            color: PdfColors.blue900,
           ),
         ),
-        pw.Divider(thickness: 1.5),
+        pw.SizedBox(height: 10),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              'Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now())}',
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+            ),
+            pw.Text(
+              'Total Students: ${_entries.length}',
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+            ),
+          ],
+        ),
         pw.SizedBox(height: 4),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              'Report Year: $_selectedYear',
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 10),
+        pw.Divider(color: PdfColors.grey400),
       ],
     );
   }
 
-  pw.Widget _pdfFooter(pw.Context ctx) {
-    return pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      children: [
-        pw.Text(
-          'Generated: ${DateTime.now().toLocal().toString().split('.').first}',
-          style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+  pw.Widget _buildPdfTable() {
+    final headers = ['#', 'Name', 'Phone', 'Class', 'Batch', 'Schedule'];
+    final colWidths = <int, pw.TableColumnWidth>{
+      0: const pw.FixedColumnWidth(24),
+      1: const pw.FlexColumnWidth(2.5),
+      2: const pw.FlexColumnWidth(2),
+      3: const pw.FlexColumnWidth(1.5),
+      4: const pw.FlexColumnWidth(2),
+      5: const pw.FlexColumnWidth(2),
+    };
+    const cellPad = pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5);
+    final headerStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.white);
+
+    if (_entries.isEmpty) {
+      return pw.Center(
+        child: pw.Text(
+          'No students enrolled for $_selectedYear.',
+          style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey600),
         ),
-        pw.Text(
-          'Page ${ctx.pageNumber} of ${ctx.pagesCount}',
-          style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
-        ),
-      ],
-    );
-  }
+      );
+    }
 
-  pw.Widget _pdfSummary() {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(8),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.blue50,
-        borderRadius: pw.BorderRadius.circular(4),
-      ),
-      child: pw.Text(
-        'মোট ছাত্রছাত্রী: ${_entries.length} জন',
-        style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
-      ),
-    );
-  }
-
-  pw.Widget _pdfTable() {
-    // ignore: prefer_const_declarations
-    final headerStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold);
-    final cellPad = const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5);
-
-    final headers = ['#', 'নাম', 'ফোন', 'ক্লাস', 'ব্যাচ', 'সময়সূচী'];
-    final colWidths = [
-      const pw.FixedColumnWidth(24),
-      const pw.FlexColumnWidth(2.5),
-      const pw.FlexColumnWidth(2),
-      const pw.FlexColumnWidth(1.5),
-      const pw.FlexColumnWidth(2),
-      const pw.FlexColumnWidth(2),
-    ];
-
-    // Build rows — one student per row; multiple batches stacked with newlines
-    final dataRows = <pw.TableRow>[];
-
-    for (int i = 0; i < _entries.length; i++) {
-      final entry = _entries[i];
-
-      final classText = entry.batches
-          .map((b) => b.studentClass ?? '-')
-          .join('\n');
-      final batchText = entry.batches
-          .map((b) => b.batchName ?? '-')
-          .join('\n');
+    final data = _entries.asMap().entries.map((e) {
+      final index = e.key;
+      final entry = e.value;
+      final classText = entry.batches.map((b) => b.studentClass ?? '-').join('\n');
+      final batchText = entry.batches.map((b) => b.batchName ?? '-').join('\n');
       final scheduleText = entry.batches.map((b) {
         final parts = [b.scheduleDays, b.timeSlot]
             .where((s) => s != null && s.isNotEmpty)
@@ -196,50 +207,29 @@ class AnnualReportProvider with ChangeNotifier {
         return parts.isEmpty ? '-' : parts;
       }).join('\n');
 
-      final isEven = i % 2 == 0;
-      final bg = isEven ? PdfColors.white : PdfColors.grey100;
+      return ['${index + 1}', entry.studentName, entry.phone ?? '-', classText, batchText, scheduleText];
+    }).toList();
 
-      dataRows.add(
-        pw.TableRow(
-          decoration: pw.BoxDecoration(color: bg),
-          children: [
-            _cell('${i + 1}', cellPad),
-            _cell(entry.studentName, cellPad),
-            _cell(entry.phone ?? '-', cellPad),
-            _cell(classText, cellPad),
-            _cell(batchText, cellPad),
-            _cell(scheduleText, cellPad),
-          ],
-        ),
-      );
-    }
-
-    return pw.Table(
-      columnWidths: {
-        for (int i = 0; i < colWidths.length; i++) i: colWidths[i],
-      },
+    return pw.TableHelper.fromTextArray(
+      headers: headers,
+      data: data,
       border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-      children: [
-        // Header row
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.blue700),
-          children: headers
-              .map((h) => pw.Padding(
-                    padding: cellPad,
-                    child: pw.Text(h,
-                        style: headerStyle.copyWith(color: PdfColors.white)),
-                  ))
-              .toList(),
-        ),
-        ...dataRows,
-      ],
+      headerStyle: headerStyle,
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
+      cellStyle: const pw.TextStyle(fontSize: 9, color: PdfColors.black),
+      cellPadding: cellPad,
+      cellAlignments: {
+        0: pw.Alignment.center,
+        1: pw.Alignment.centerLeft,
+        2: pw.Alignment.centerLeft,
+        3: pw.Alignment.centerLeft,
+        4: pw.Alignment.centerLeft,
+        5: pw.Alignment.centerLeft,
+      },
+      oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey100),
+      columnWidths: colWidths,
     );
   }
 
-  pw.Widget _cell(String text, pw.EdgeInsets padding) {
-    return pw.Padding(
-      padding: padding,
-      child: pw.Text(text, style: const pw.TextStyle(fontSize: 9)),
-    );
-  }
+
 }

@@ -62,7 +62,7 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
       ),
       title: Consumer<AnnualReportProvider>(
         builder: (ctx, provider, child) => Text(
-          'বার্ষিক রিপোর্ট - ${provider.selectedYear}',
+          'Annual Report - ${provider.selectedYear}',
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -128,7 +128,7 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
         backgroundColor: _primary,
         disabledElevation: 0,
         icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
-        label: const Text('PDF Save',
+        label: const Text('Export PDF',
             style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
       ),
@@ -141,7 +141,7 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('PDF তৈরি করতে সমস্যা: $e')),
+        SnackBar(content: Text('Failed to create PDF: $e')),
       );
     }
   }
@@ -205,7 +205,7 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '$total জন ছাত্রছাত্রী',
+                '$total Students',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -214,7 +214,7 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-              '$year সালের রিপোর্ট',
+                'Report for $year',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withValues(alpha: 0.85),
@@ -355,7 +355,7 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text(
-                      '${entry.batches.length}টি ব্যাচে ভর্তি হয়েছিল',
+                      'Enrolled in ${entry.batches.length} batches',
                       style: TextStyle(
                         fontSize: 11,
                         color: _primary.withValues(alpha: 0.8),
@@ -412,13 +412,13 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
               children: [
                 _infoChip(
                   Icons.school_outlined,
-                  batch.batchName ?? 'ব্যাচ অজানা',
+                  batch.batchName ?? 'Unknown Batch',
                   const Color(0xFF1A73E8),
                   const Color(0xFFE8F0FE),
                 ),
                 _infoChip(
                   Icons.class_outlined,
-                  batch.studentClass ?? 'ক্লাস অজানা',
+                  batch.studentClass ?? 'Unknown Class',
                   const Color(0xFF2B9348),
                   const Color(0xFFE8F8EE),
                 ),
@@ -480,7 +480,7 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
               size: 80, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
-            '$year সালে কোনো ছাত্রছাত্রী ভর্তি হয়নি',
+            'No students enrolled in $year',
             style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
             textAlign: TextAlign.center,
           ),
@@ -498,7 +498,7 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
           children: [
             const Icon(Icons.error_outline, size: 60, color: Colors.red),
             const SizedBox(height: 12),
-            Text('সমস্যা হয়েছে:\n$message',
+            Text('An error occurred:\n$message',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.red)),
           ],

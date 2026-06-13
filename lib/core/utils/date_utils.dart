@@ -11,13 +11,25 @@ class DateUtilsHelper {
     return _isoFormat.format(date);
   }
 
-  // Parse from DB
-  static DateTime parseFromDb(String dateStr) {
-    // If string has T, parse as DateTime
-    if (dateStr.contains('T')) {
-      return parseDateTimeFromDb(dateStr);
+  // Parse from DB — accepts dynamic (String, int, or null) safely.
+  // SQLite can return dates as TEXT, INTEGER (unix epoch), or NULL.
+  static DateTime parseFromDb(dynamic raw) {
+    if (raw == null) return DateTime.now();
+    if (raw is int) {
+      // Unix epoch in milliseconds (rare but possible)
+      return DateTime.fromMillisecondsSinceEpoch(raw);
     }
-    return _isoFormat.parse(dateStr);
+    final dateStr = raw.toString().trim();
+    if (dateStr.isEmpty) return DateTime.now();
+    try {
+      if (dateStr.contains('T')) {
+        return parseDateTimeFromDb(dateStr);
+      }
+      return _isoFormat.parse(dateStr);
+    } catch (_) {
+      // Last-resort: try Dart's built-in parser
+      return DateTime.tryParse(dateStr) ?? DateTime.now();
+    }
   }
 
   // Format to store in DB with Time
@@ -25,9 +37,16 @@ class DateUtilsHelper {
     return _isoDateTimeFormat.format(date.toUtc());
   }
 
-  // Parse from DB with Time
-  static DateTime parseDateTimeFromDb(String dateStr) {
-    return _isoDateTimeFormat.parse(dateStr, true).toLocal();
+  // Parse from DB with Time — also accepts dynamic
+  static DateTime parseDateTimeFromDb(dynamic raw) {
+    if (raw == null) return DateTime.now();
+    final dateStr = raw.toString().trim();
+    if (dateStr.isEmpty) return DateTime.now();
+    try {
+      return _isoDateTimeFormat.parse(dateStr, true).toLocal();
+    } catch (_) {
+      return DateTime.tryParse(dateStr)?.toLocal() ?? DateTime.now();
+    }
   }
 
   // Format for UI Display
