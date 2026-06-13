@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../domain/entities/exam.dart';
 import '../../../../core/utils/date_utils.dart';
 
@@ -11,6 +13,7 @@ class ExamModel extends Exam {
     required super.totalMarks,
     required super.createdAt,
     super.batchName,
+    super.batchSnapshot,
   });
 
   factory ExamModel.fromEntity(Exam entity) {
@@ -23,10 +26,21 @@ class ExamModel extends Exam {
       totalMarks: entity.totalMarks,
       createdAt: entity.createdAt,
       batchName: entity.batchName,
+      batchSnapshot: entity.batchSnapshot,
     );
   }
 
   factory ExamModel.fromMap(Map<String, dynamic> map) {
+    Map<String, dynamic>? snapshot;
+    final raw = map['batch_snapshot'];
+    if (raw != null && raw is String && raw.isNotEmpty) {
+      try {
+        snapshot = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        // Ignore malformed JSON — snapshot stays null, UI falls back to batchName
+      }
+    }
+
     return ExamModel(
       id: map['id'],
       batchId: map['batch_id'],
@@ -36,6 +50,7 @@ class ExamModel extends Exam {
       totalMarks: (map['total_marks'] as num).toDouble(),
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
       batchName: map['batch_name'],
+      batchSnapshot: snapshot,
     );
   }
 
@@ -48,6 +63,7 @@ class ExamModel extends Exam {
       'exam_date': DateUtilsHelper.formatForDb(examDate),
       'total_marks': totalMarks,
       'created_at': DateUtilsHelper.formatForDb(createdAt),
+      'batch_snapshot': batchSnapshot != null ? jsonEncode(batchSnapshot) : null,
     };
   }
 }

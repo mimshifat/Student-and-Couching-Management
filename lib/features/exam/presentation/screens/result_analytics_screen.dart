@@ -652,7 +652,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
               children: [
                 Text(result.examTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
                 const SizedBox(height: 4),
-                Text('${result.batchName ?? 'Unknown Batch'} • ${result.examType}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                Text('${result.displayBatchName} • ${result.examType}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
                 const SizedBox(height: 4),
                 Text(dateStr, style: const TextStyle(fontSize: 12, color: Colors.black54)),
               ],

@@ -113,7 +113,7 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
                   _buildInfoCell(
                     icon: Icons.group_outlined,
                     label: 'Batch',
-                    value: widget.exam.batchName ?? 'Unknown',
+                    value: widget.exam.displayBatchName,
                     flex: 3,
                   ),
                   _buildVerticalDivider(),

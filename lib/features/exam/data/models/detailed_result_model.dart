@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../domain/entities/detailed_result.dart';
 import '../../../../core/utils/date_utils.dart';
 
@@ -14,24 +16,38 @@ class DetailedResultModel extends DetailedResult {
     required super.examType,
     required super.examDate,
     required super.totalMarks,
+    super.batchSnapshot,
     super.batchName,
     super.studentName,
     super.studentClass,
   });
 
   factory DetailedResultModel.fromMap(Map<String, dynamic> map) {
+    Map<String, dynamic>? snapshot;
+    final raw = map['batch_snapshot'];
+    if (raw != null && raw is String && raw.isNotEmpty) {
+      try {
+        snapshot = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        // Ignore malformed JSON — falls back to live batchName
+      }
+    }
+
     return DetailedResultModel(
       id: map['id'],
       examId: map['exam_id'],
       studentId: map['student_id'],
       batchId: map['batch_id'],
-      obtainedMarks: map['obtained_marks'] != null ? (map['obtained_marks'] as num).toDouble() : null,
+      obtainedMarks: map['obtained_marks'] != null
+          ? (map['obtained_marks'] as num).toDouble()
+          : null,
       isAbsent: map['is_absent'] == 1,
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
       examTitle: map['exam_title'] ?? '',
       examType: map['exam_type'] ?? '',
       examDate: DateUtilsHelper.parseFromDb(map['exam_date']),
       totalMarks: (map['total_marks'] as num).toDouble(),
+      batchSnapshot: snapshot,
       batchName: map['batch_name'],
       studentName: map['student_name'],
       studentClass: map['class_name'],

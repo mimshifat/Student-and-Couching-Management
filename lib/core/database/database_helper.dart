@@ -6,7 +6,7 @@ class DatabaseHelper {
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  static const int _databaseVersion = 21;
+  static const int _databaseVersion = 22;
 
   static Database? _database;
 
@@ -202,6 +202,36 @@ class DatabaseHelper {
         // Ignore if already exists
       }
     }
+    if (oldVersion < 22) {
+      // Add batch_snapshot column to exams
+      try {
+        await db.execute('ALTER TABLE exams ADD COLUMN batch_snapshot TEXT');
+      } catch (e) {
+        // Ignore if column already exists
+      }
+      // Backfill existing exams: fetch each exam's batch and build JSON snapshot
+      final exams = await db.query('exams', where: 'batch_snapshot IS NULL');
+      for (final exam in exams) {
+        final batchId = exam['batch_id'] as int?;
+        if (batchId == null) continue;
+        final batches = await db.query('batches', where: 'id = ?', whereArgs: [batchId]);
+        if (batches.isEmpty) continue;
+        final b = batches.first;
+        // Build JSON manually — avoids dependency on SQLite json_object()
+        final name = (b['name'] as String?)?.replaceAll('"', '\\"') ?? '';
+        final scheduleDays = (b['schedule_days'] as String?)?.replaceAll('"', '\\"') ?? '';
+        final timeSlot = (b['time_slot'] as String?)?.replaceAll('"', '\\"') ?? '';
+        final monthlyFee = b['monthly_fee'] ?? 0.0;
+        final description = (b['description'] as String?)?.replaceAll('"', '\\"') ?? '';
+        final snapshotJson = '{"name":"$name","schedule_days":"$scheduleDays","time_slot":"$timeSlot","monthly_fee":$monthlyFee,"description":"$description"}';
+        await db.update(
+          'exams',
+          {'batch_snapshot': snapshotJson},
+          where: 'id = ?',
+          whereArgs: [exam['id']],
+        );
+      }
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -277,6 +307,7 @@ class DatabaseHelper {
         exam_type TEXT NOT NULL,
         exam_date TEXT NOT NULL,
         total_marks REAL NOT NULL,
+        batch_snapshot TEXT,
         created_at TEXT NOT NULL,
         FOREIGN KEY (batch_id) REFERENCES batches (id) ON DELETE CASCADE
       )

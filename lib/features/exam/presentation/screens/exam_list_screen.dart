@@ -323,7 +323,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Batch: ${exam.batchName ?? 'Unknown'} • ${exam.examType}',
+                    'Batch: ${exam.displayBatchName} • ${exam.examType}',
                     style: const TextStyle(color: Colors.black54, fontSize: 13),
                   ),
                   const SizedBox(height: 4),
