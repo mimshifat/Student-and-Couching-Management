@@ -12,6 +12,7 @@ import 'features/routine/presentation/screens/routine_screen.dart';
 import 'core/widgets/app_drawer.dart';
 
 import 'features/backup/presentation/screens/backup_settings_screen.dart';
+import 'features/enrollment/presentation/screens/annual_report_screen.dart';
 import 'splash_screen.dart';
 
 class CoachingApp extends StatelessWidget {
@@ -31,6 +32,7 @@ class CoachingApp extends StatelessWidget {
         '/exams': (context) => const ExamListScreen(),
         '/routine': (context) => const RoutineScreen(),
         '/result-analytics': (context) => const ResultAnalyticsScreen(),
+        '/annual-report': (context) => const AnnualReportScreen(),
       },
     );
   }

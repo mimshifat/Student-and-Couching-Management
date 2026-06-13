@@ -126,4 +126,43 @@ class EnrollmentRepositoryImpl implements EnrollmentRepository {
     int count = sqflite.Sqflite.firstIntValue(result) ?? 0;
     return count > 0;
   }
+
+  /// Returns raw enrollment rows for [year].
+  /// Uses LEFT JOIN so soft-deleted students are still included.
+  /// Class, batch name, schedule, and time slot all come from snapshot columns
+  /// so edits/deletes to batches or student profiles do not alter history.
+  @override
+  Future<List<Map<String, dynamic>>> getEnrollmentsByYear(int year) async {
+    final db = await _dbHelper.database;
+    return await db.rawQuery('''
+      SELECT
+        e.student_id,
+        COALESCE(s.name, '[Deleted Student]') AS student_name,
+        s.phone,
+        e.student_class,
+        e.batch_name         AS batch_name_snapshot,
+        e.batch_schedule_days AS schedule_days,
+        e.batch_time_slot    AS time_slot
+      FROM $_tableName e
+      LEFT JOIN students s ON e.student_id = s.id
+      WHERE strftime('%Y', e.join_date) = ?
+      ORDER BY student_name ASC, e.join_date ASC
+    ''', [year.toString()]);
+  }
+
+  @override
+  Future<List<int>> getDistinctEnrollmentYears() async {
+    final db = await _dbHelper.database;
+    final rows = await db.rawQuery('''
+      SELECT DISTINCT strftime('%Y', join_date) AS year
+      FROM $_tableName
+      WHERE join_date IS NOT NULL
+      ORDER BY year DESC
+    ''');
+    return rows
+        .map((r) => int.tryParse(r['year'] as String? ?? '') ?? 0)
+        .where((y) => y > 0)
+        .toList();
+  }
 }
+

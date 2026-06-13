@@ -23,6 +23,8 @@ import 'features/notes/presentation/providers/note_provider.dart';
 import 'package:workmanager/workmanager.dart';
 import 'features/backup/data/repositories/backup_repository_impl.dart';
 import 'features/backup/presentation/providers/backup_provider.dart';
+import 'features/enrollment/presentation/providers/annual_report_provider.dart';
+import 'features/enrollment/data/repositories/enrollment_repository_impl.dart' show EnrollmentRepositoryImpl;
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -90,6 +92,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => RoutineProvider(RoutineRepositoryImpl())),
         ChangeNotifierProvider(create: (_) => NoteProvider(NoteRepositoryImpl())),
         ChangeNotifierProvider(create: (_) => BackupProvider(BackupRepositoryImpl())),
+        ChangeNotifierProvider(create: (_) => AnnualReportProvider(EnrollmentRepositoryImpl())),
       ],
       child: const CoachingApp(),
     ),

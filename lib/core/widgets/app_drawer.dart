@@ -75,6 +75,14 @@ class AppDrawer extends StatelessWidget {
               Navigator.pushNamed(context, '/backup');
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.bar_chart_rounded),
+            title: const Text('বার্ষিক রিপোর্ট'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/annual-report');
+            },
+          ),
         ],
       ),
     );
