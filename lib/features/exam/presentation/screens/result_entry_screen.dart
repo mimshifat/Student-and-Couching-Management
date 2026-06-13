@@ -20,6 +20,7 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
 
   // Persistent controllers keyed by studentId – avoids reset on rebuild
   final Map<int, TextEditingController> _marksControllers = {};
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -37,27 +38,91 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
     super.dispose();
   }
 
+  /// Formats a double mark for display: whole numbers show as "85" not "85.0".
+  String _formatMark(double? mark) {
+    if (mark == null) return '';
+    return mark == mark.truncateToDouble()
+        ? mark.toInt().toString()
+        : mark.toString();
+  }
+
   /// Returns (or creates) a controller for the given student.
-  /// Only initialises the text once – subsequent rebuilds leave it untouched.
+  /// Syncs text using double comparison so that typing "8" doesn't get
+  /// overwritten by "8.0" when a sibling rebuild (e.g. absent toggle) fires.
   TextEditingController _controllerFor(int studentId, double? obtainedMarks) {
+    final expectedText = _formatMark(obtainedMarks);
+
     if (!_marksControllers.containsKey(studentId)) {
       _marksControllers[studentId] =
-          TextEditingController(text: obtainedMarks?.toString() ?? '');
+          TextEditingController(text: expectedText);
+    } else {
+      final ctrl = _marksControllers[studentId]!;
+      // Compare as doubles, not strings — prevents "8" vs "8.0" false mismatch
+      // that would overwrite the field and jump the cursor mid-typing.
+      final ctrlValue = double.tryParse(ctrl.text);
+      if (ctrlValue != obtainedMarks) {
+        ctrl.text = expectedText;
+      }
     }
     return _marksControllers[studentId]!;
   }
 
+  /// Flushes every TextField value into the provider right before saving.
+  /// This is the authoritative sync — we read what the user actually sees
+  /// on screen, not what onChanged may or may not have captured.
+  /// Skips absent students so their isAbsent flag is never overridden.
+  void _commitControllerValues(ExamProvider provider) {
+    for (final entry in _marksControllers.entries) {
+      final studentId = entry.key;
+      // Never override an absent student's status with stale controller text.
+      final result = provider.currentResults
+          .where((r) => r.studentId == studentId)
+          .firstOrNull;
+      if (result == null || result.isAbsent) continue;
+
+      final text = entry.value.text.trim();
+      if (text.isEmpty) {
+        // User cleared the field → explicitly set marks to null
+        provider.clearResultMarksSilent(studentId);
+      } else {
+        final marks = double.tryParse(text);
+        if (marks != null && marks <= widget.exam.totalMarks) {
+          provider.updateResultMarksSilent(studentId, marks);
+        }
+      }
+    }
+  }
+
   void _saveResults() async {
+    if (_isSaving) return; // Prevent double-tap
+    setState(() => _isSaving = true);
+
     final provider = context.read<ExamProvider>();
-    final success = await provider.saveResults(widget.exam.id!);
-    if (success && mounted) {
+
+    try {
+      // Always flush controller text → provider before saving.
+      _commitControllerValues(provider);
+
+      final success = await provider.saveResults(widget.exam.id!);
+
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Results saved successfully')),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(provider.errorMessage ?? 'An error occurred')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Results saved successfully')),
-      );
-      Navigator.pop(context);
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(provider.errorMessage ?? 'An error occurred')),
+        SnackBar(content: Text('Error saving results: $e')),
       );
     }
   }
@@ -200,13 +265,21 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
                   child: SizedBox(
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _saveResults,
+                      onPressed: _isSaving ? null : _saveResults,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryNavy,
+                        disabledBackgroundColor: primaryNavy.withValues(alpha: 0.5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
-                      child: const Text('Save Result', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      child: _isSaving
+                          ? const SizedBox(
+                              height: 20, width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Save Result', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
                   ),
                 ),
@@ -272,7 +345,7 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
       child: Row(
         children: [
           Expanded(flex: 3, child: Text('Student', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87))),
-          Expanded(flex: 2, child: Center(child: Text('Marks (${widget.exam.totalMarks})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)))),
+          Expanded(flex: 2, child: Center(child: Text('Marks (${_formatMark(widget.exam.totalMarks)})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)))),
           Expanded(flex: 2, child: Center(child: Text('Status', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)))),
         ],
       ),
@@ -312,11 +385,29 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
                         border: InputBorder.none,
                       ),
                       onChanged: (val) {
-                        final marks = double.tryParse(val);
-                        if (marks != null) {
-                          // Silent update — no notifyListeners() so keyboard stays open
-                          provider.updateResultMarksSilent(result.studentId, marks);
+                        final text = val.trim();
+                        if (text.isEmpty) {
+                          // User cleared the field — set marks to null
+                          provider.clearResultMarksSilent(result.studentId);
+                          return;
                         }
+                        final marks = double.tryParse(text);
+                        if (marks == null) return;
+                        // Validate against totalMarks
+                        if (marks > widget.exam.totalMarks) {
+                          ScaffoldMessenger.of(context)
+                            ..clearSnackBars()
+                            ..showSnackBar(SnackBar(
+                              content: Text(
+                                'Marks cannot exceed ${_formatMark(widget.exam.totalMarks)}',
+                              ),
+                              backgroundColor: Colors.red.shade700,
+                              duration: const Duration(seconds: 2),
+                            ));
+                          return;
+                        }
+                        // Silent update — no notifyListeners() so keyboard stays open
+                        provider.updateResultMarksSilent(result.studentId, marks);
                       },
                     ),
               ),
@@ -327,8 +418,12 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
             child: Center(
               child: InkWell(
                 onTap: () {
-                  // Toggle absent status
-                  provider.updateResultAbsent(result.studentId, !result.isAbsent);
+                  final goingAbsent = !result.isAbsent;
+                  provider.updateResultAbsent(result.studentId, goingAbsent);
+                  // Clear controller in BOTH directions:
+                  //  → going absent: old marks text must not survive into _commitControllerValues
+                  //  → going present: start with blank so user enters fresh marks
+                  _marksControllers[result.studentId]?.text = '';
                 },
                 borderRadius: BorderRadius.circular(6),
                 child: Container(

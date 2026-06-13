@@ -184,7 +184,7 @@ class ExamProvider with ChangeNotifier {
       final existingResults = await _repository.getResultsForExam(exam.id!);
       
       if (existingResults.isNotEmpty) {
-        _currentResults = existingResults;
+        _currentResults = List<ExamResult>.from(existingResults);
       } else {
         // Generate blank results for active students
         final enrolled = await _enrollmentRepo.getStudentsByBatch(exam.batchId);
@@ -220,6 +220,16 @@ class ExamProvider with ChangeNotifier {
     if (idx != -1) {
       _currentResults[idx] = _currentResults[idx].copyWith(obtainedMarks: marks, isAbsent: false);
       // No notifyListeners() — keeps TextFields stable during typing
+    }
+  }
+
+  /// Clears marks to null in-memory WITHOUT triggering a UI rebuild.
+  /// Called when the user clears/empties a marks TextField.
+  void clearResultMarksSilent(int studentId) {
+    final idx = _currentResults.indexWhere((r) => r.studentId == studentId);
+    if (idx != -1) {
+      _currentResults[idx] = _currentResults[idx].copyWith(obtainedMarks: null);
+      // No notifyListeners() — keeps TextFields stable
     }
   }
 

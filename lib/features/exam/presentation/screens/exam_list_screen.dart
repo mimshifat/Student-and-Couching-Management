@@ -280,11 +280,12 @@ class _ExamListScreenState extends State<ExamListScreen> {
     final statusTextColor = isCompleted ? const Color(0xFF2B9348) : const Color(0xFF5A52B8);
 
     return InkWell(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => ResultEntryScreen(exam: exam)),
         );
+        if (mounted) _loadExams();
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
