@@ -177,6 +177,7 @@ class ExamProvider with ChangeNotifier {
   Future<void> prepareResultsForExam(Exam exam) async {
     _isLoading = true;
     _errorMessage = null;
+    _currentResults = []; // ← clear stale data from previous exam immediately
     notifyListeners();
 
     try {
@@ -209,6 +210,16 @@ class ExamProvider with ChangeNotifier {
     if (idx != -1) {
       _currentResults[idx] = _currentResults[idx].copyWith(obtainedMarks: marks, isAbsent: false);
       notifyListeners();
+    }
+  }
+
+  /// Updates marks in-memory WITHOUT triggering a UI rebuild.
+  /// Use this inside TextFields to avoid resetting the keyboard/scroll position.
+  void updateResultMarksSilent(int studentId, double marks) {
+    final idx = _currentResults.indexWhere((r) => r.studentId == studentId);
+    if (idx != -1) {
+      _currentResults[idx] = _currentResults[idx].copyWith(obtainedMarks: marks, isAbsent: false);
+      // No notifyListeners() — keeps TextFields stable during typing
     }
   }
 

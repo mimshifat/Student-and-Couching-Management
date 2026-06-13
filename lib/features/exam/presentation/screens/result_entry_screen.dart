@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../domain/entities/exam.dart';
 import '../providers/exam_provider.dart';
+import 'exam_form_screen.dart';
 
 class ResultEntryScreen extends StatefulWidget {
   final Exam exam;
@@ -17,12 +18,33 @@ class ResultEntryScreen extends StatefulWidget {
 class _ResultEntryScreenState extends State<ResultEntryScreen> {
   static const Color primaryNavy = Color(0xFF191A4E);
 
+  // Persistent controllers keyed by studentId – avoids reset on rebuild
+  final Map<int, TextEditingController> _marksControllers = {};
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ExamProvider>().prepareResultsForExam(widget.exam);
     });
+  }
+
+  @override
+  void dispose() {
+    for (final ctrl in _marksControllers.values) {
+      ctrl.dispose();
+    }
+    super.dispose();
+  }
+
+  /// Returns (or creates) a controller for the given student.
+  /// Only initialises the text once – subsequent rebuilds leave it untouched.
+  TextEditingController _controllerFor(int studentId, double? obtainedMarks) {
+    if (!_marksControllers.containsKey(studentId)) {
+      _marksControllers[studentId] =
+          TextEditingController(text: obtainedMarks?.toString() ?? '');
+    }
+    return _marksControllers[studentId]!;
   }
 
   void _saveResults() async {
@@ -57,25 +79,52 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white, size: 20),
             onPressed: () {
-              // Edit exam logic (if we want to wire it up later)
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ExamFormScreen(exam: widget.exam),
+                ),
+              );
             },
           ),
         ],
       ),
       body: Column(
         children: [
-          // Header Fields
+          // Compact Info Strip
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                _buildHeaderField('Exam', widget.exam.title, isDropdown: true),
-                const SizedBox(height: 12),
-                _buildHeaderField('Batch', widget.exam.batchName ?? 'Unknown', isDropdown: true),
-                const SizedBox(height: 12),
-                _buildHeaderField('Date', DateFormat('dd MMM yyyy').format(widget.exam.examDate)),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInfoCell(
+                    icon: Icons.assignment_outlined,
+                    label: 'Exam',
+                    value: widget.exam.title,
+                    flex: 3,
+                  ),
+                  _buildVerticalDivider(),
+                  _buildInfoCell(
+                    icon: Icons.group_outlined,
+                    label: 'Batch',
+                    value: widget.exam.batchName ?? 'Unknown',
+                    flex: 3,
+                  ),
+                  _buildVerticalDivider(),
+                  _buildInfoCell(
+                    icon: Icons.calendar_today_outlined,
+                    label: 'Date',
+                    value: DateFormat('dd MMM yyyy').format(widget.exam.examDate),
+                    flex: 2,
+                  ),
+                ],
+              ),
             ),
           ),
           
@@ -169,32 +218,51 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
     );
   }
 
-  Widget _buildHeaderField(String label, String value, {bool isDropdown = false}) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 60,
-          child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildInfoCell({required IconData icon, required String label, required String value, int flex = 1}) {
+    return Expanded(
+      flex: flex,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
               children: [
-                Text(value, style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500)),
-                if (isDropdown) const Icon(Icons.keyboard_arrow_down, color: Colors.black38, size: 20),
+                Icon(icon, size: 11, color: const Color(0xFF6B7280)),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF6B7280),
+                    letterSpacing: 0.4,
+                  ),
+                ),
               ],
             ),
-          ),
+            const SizedBox(height: 3),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111827),
+              ),
+              softWrap: true,
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildVerticalDivider() {
+    return Container(
+      width: 1,
+      color: const Color(0xFFE5E7EB),
+      margin: const EdgeInsets.symmetric(vertical: 4),
     );
   }
 
@@ -212,6 +280,8 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
   }
 
   Widget _buildTableRow(dynamic result, ExamProvider provider) {
+    final ctrl = _controllerFor(result.studentId, result.obtainedMarks);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -221,8 +291,7 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
             child: Text(
               result.studentName ?? 'Unknown',
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black87),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              softWrap: true,
             ),
           ),
           Expanded(
@@ -230,11 +299,10 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
             child: Center(
               child: SizedBox(
                 width: 60,
-                child: result.isAbsent 
+                child: result.isAbsent
                   ? const Center(child: Text('-', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)))
-                  : TextFormField(
-                      key: ValueKey(result.studentId), // preserve state on list rebuild
-                      initialValue: result.obtainedMarks?.toString() ?? '',
+                  : TextField(
+                      controller: ctrl,
                       textAlign: TextAlign.center,
                       keyboardType: TextInputType.number,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
@@ -246,7 +314,8 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
                       onChanged: (val) {
                         final marks = double.tryParse(val);
                         if (marks != null) {
-                          provider.updateResultMarks(result.studentId, marks);
+                          // Silent update — no notifyListeners() so keyboard stays open
+                          provider.updateResultMarksSilent(result.studentId, marks);
                         }
                       },
                     ),
