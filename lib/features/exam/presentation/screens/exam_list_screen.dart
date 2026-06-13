@@ -79,11 +79,12 @@ class _ExamListScreenState extends State<ExamListScreen> {
               decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
               child: const Icon(Icons.add, color: primaryNavy, size: 20),
             ),
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ExamFormScreen()),
               );
+              if (mounted) _loadExams();
             },
           ),
           const SizedBox(width: 8),
@@ -351,11 +352,12 @@ class _ExamListScreenState extends State<ExamListScreen> {
                 ),
                 const SizedBox(height: 12),
                 InkWell(
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => ExamFormScreen(exam: exam)),
                     );
+                    if (mounted) _loadExams();
                   },
                   borderRadius: BorderRadius.circular(8),
                   child: Container(

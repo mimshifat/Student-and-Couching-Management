@@ -33,6 +33,13 @@ class DetailedResultModel extends DetailedResult {
       }
     }
 
+    String? finalBatchName;
+    if (snapshot != null && snapshot['name'] != null) {
+      finalBatchName = snapshot['name'];
+    } else {
+      finalBatchName = map['live_batch_name'] ?? map['batch_name'];
+    }
+
     return DetailedResultModel(
       id: map['id'],
       examId: map['exam_id'],
@@ -48,7 +55,7 @@ class DetailedResultModel extends DetailedResult {
       examDate: DateUtilsHelper.parseFromDb(map['exam_date']),
       totalMarks: (map['total_marks'] as num).toDouble(),
       batchSnapshot: snapshot,
-      batchName: map['batch_name'],
+      batchName: finalBatchName,
       studentName: map['student_name'],
       studentClass: map['class_name'],
     );

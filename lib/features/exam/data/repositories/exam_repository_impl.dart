@@ -1,4 +1,4 @@
-
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart' as sqflite;
 import '../../domain/entities/exam.dart';
 import '../../domain/entities/result.dart';
@@ -67,10 +67,7 @@ class ExamRepositoryImpl implements ExamRepository {
   // ---------------------------------------------------------------------------
   static const String _examSelect = '''
     SELECT e.*,
-           COALESCE(
-             JSON_EXTRACT(e.batch_snapshot, '\$.name'),
-             b.name
-           ) AS batch_name
+           b.name AS live_batch_name
     FROM exams e
     LEFT JOIN batches b ON e.batch_id = b.id
   ''';
@@ -186,10 +183,7 @@ class ExamRepositoryImpl implements ExamRepository {
       SELECT r.*,
              e.title as exam_title, e.exam_type, e.exam_date, e.total_marks,
              e.batch_snapshot,
-             COALESCE(
-               JSON_EXTRACT(e.batch_snapshot, '\$.name'),
-               b.name
-             ) AS batch_name,
+             b.name AS live_batch_name,
              s.name as student_name, s.class_name
       FROM $_resultTable r
       JOIN $_examTable e ON r.exam_id = e.id
@@ -213,10 +207,7 @@ class ExamRepositoryImpl implements ExamRepository {
       SELECT r.*,
              e.title as exam_title, e.exam_type, e.exam_date, e.total_marks,
              e.batch_snapshot,
-             COALESCE(
-               JSON_EXTRACT(e.batch_snapshot, '\$.name'),
-               b.name
-             ) AS batch_name,
+             b.name AS live_batch_name,
              s.name as student_name, s.class_name
       FROM $_resultTable r
       JOIN $_examTable e ON r.exam_id = e.id
@@ -237,10 +228,7 @@ class ExamRepositoryImpl implements ExamRepository {
       SELECT r.*,
              e.title as exam_title, e.exam_type, e.exam_date, e.total_marks,
              e.batch_snapshot,
-             COALESCE(
-               JSON_EXTRACT(e.batch_snapshot, '\$.name'),
-               b.name
-             ) AS batch_name,
+             b.name AS live_batch_name,
              s.name as student_name, s.class_name
       FROM $_resultTable r
       JOIN $_examTable e ON r.exam_id = e.id
@@ -265,13 +253,8 @@ class ExamRepositoryImpl implements ExamRepository {
     final maps = await db.rawQuery('''
       SELECT
         r.batch_id,
-        COALESCE(
-          JSON_EXTRACT(
-            (SELECT e2.batch_snapshot FROM $_examTable e2 WHERE e2.id = r.exam_id LIMIT 1),
-            '\$.name'
-          ),
-          b.name
-        )                                                     AS batch_name,
+        MAX(b.name) AS live_batch_name,
+        (SELECT e2.batch_snapshot FROM $_examTable e2 WHERE e2.id = r.exam_id LIMIT 1) AS batch_snapshot,
         COUNT(r.id)                                           AS total_results,
         SUM(CASE WHEN r.is_absent = 1 OR r.obtained_marks IS NULL
                  THEN 1 ELSE 0 END)                          AS absent_count,
@@ -284,18 +267,31 @@ class ExamRepositoryImpl implements ExamRepository {
       JOIN $_examTable e ON r.exam_id = e.id
       LEFT JOIN batches b ON r.batch_id = b.id
       WHERE strftime('%Y', e.exam_date) = ? $batchFilter
-      GROUP BY r.batch_id, batch_name
-      ORDER BY batch_name ASC
+      GROUP BY r.batch_id
     ''', args);
 
-    return maps.map((m) => BatchSummary(
-          batchId: m['batch_id'] as int,
-          batchName: (m['batch_name'] as String?) ?? 'Unknown Batch',
-          totalResults: (m['total_results'] as int?) ?? 0,
-          absentCount: (m['absent_count'] as int?) ?? 0,
-          totalObtained: (m['total_obtained'] as num?)?.toDouble() ?? 0.0,
-          totalAvailable: (m['total_available'] as num?)?.toDouble() ?? 0.0,
-          uniqueStudents: (m['unique_students'] as int?) ?? 0,
-        )).toList();
+    var summaries = maps.map((m) {
+      String finalName = (m['live_batch_name'] as String?) ?? 'Unknown Batch';
+      final snapshotJson = m['batch_snapshot'] as String?;
+      if (snapshotJson != null && snapshotJson.isNotEmpty) {
+         try {
+           final map = jsonDecode(snapshotJson);
+           if (map['name'] != null) finalName = map['name'];
+         } catch (_) {}
+      }
+
+      return BatchSummary(
+        batchId: m['batch_id'] as int,
+        batchName: finalName,
+        totalResults: (m['total_results'] as int?) ?? 0,
+        absentCount: (m['absent_count'] as int?) ?? 0,
+        totalObtained: (m['total_obtained'] as num?)?.toDouble() ?? 0.0,
+        totalAvailable: (m['total_available'] as num?)?.toDouble() ?? 0.0,
+        uniqueStudents: (m['unique_students'] as int?) ?? 0,
+      );
+    }).toList();
+    
+    summaries.sort((a, b) => a.batchName.compareTo(b.batchName));
+    return summaries;
   }
 }
