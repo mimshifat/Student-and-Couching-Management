@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:sqflite/sqflite.dart' as sqflite;
+import 'package:sqflite/sqflite.dart';
 import '../../domain/entities/exam.dart';
 import '../../domain/entities/result.dart';
 import '../../domain/entities/detailed_result.dart';
@@ -19,7 +19,7 @@ class ExamRepositoryImpl implements ExamRepository {
   // Helper: build a batch snapshot map from the batches table
   // ---------------------------------------------------------------------------
   Future<Map<String, dynamic>?> _fetchBatchSnapshot(
-      sqflite.DatabaseExecutor db, int batchId) async {
+      DatabaseExecutor db, int batchId) async {
     final rows = await db.query('batches', where: 'id = ?', whereArgs: [batchId]);
     if (rows.isEmpty) return null;
     final b = rows.first;
@@ -38,7 +38,7 @@ class ExamRepositoryImpl implements ExamRepository {
     final snapshot = await _fetchBatchSnapshot(db, exam.batchId);
     final model = ExamModel.fromEntity(exam.copyWith(batchSnapshot: snapshot));
     return await db.insert(_examTable, model.toMap(),
-        conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override
@@ -122,16 +122,21 @@ class ExamRepositoryImpl implements ExamRepository {
   @override
   Future<void> saveResults(int examId, List<ExamResult> results) async {
     final db = await _dbHelper.database;
-    final batch = db.batch();
 
-    // Delete existing results for this exam to replace them
-    batch.delete(_resultTable, where: 'exam_id = ?', whereArgs: [examId]);
+    // Use an explicit transaction instead of Batch.
+    // batch.commit(noResult: true) silently swallows constraint errors;
+    // a transaction throws on any failure so callers see real errors.
+    await db.transaction((txn) async {
+      // 1. Remove all existing rows for this exam.
+      await txn.delete(_resultTable, where: 'exam_id = ?', whereArgs: [examId]);
 
-    for (var r in results) {
-      batch.insert(_resultTable, ResultModel.fromEntity(r).toMap());
-    }
-
-    await batch.commit(noResult: true);
+      // 2. Re-insert every result with the latest in-memory values.
+      //    'id' is stripped so the DB assigns a fresh ROWID.
+      for (final r in results) {
+        final map = ResultModel.fromEntity(r).toMap()..remove('id');
+        await txn.insert(_resultTable, map);
+      }
+    });
   }
 
   @override

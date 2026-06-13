@@ -1,3 +1,6 @@
+// Sentinel used by copyWith to distinguish "not passed" from explicit null.
+const Object _sentinel = Object();
+
 class ExamResult {
   final int? id;
   final int examId;
@@ -26,7 +29,7 @@ class ExamResult {
     int? examId,
     int? studentId,
     int? batchId,
-    double? obtainedMarks,
+    Object? obtainedMarks = _sentinel,
     bool? isAbsent,
     DateTime? createdAt,
     String? studentName,
@@ -36,7 +39,9 @@ class ExamResult {
       examId: examId ?? this.examId,
       studentId: studentId ?? this.studentId,
       batchId: batchId ?? this.batchId,
-      obtainedMarks: obtainedMarks ?? this.obtainedMarks,
+      obtainedMarks: obtainedMarks == _sentinel
+          ? this.obtainedMarks
+          : obtainedMarks as double?,
       isAbsent: isAbsent ?? this.isAbsent,
       createdAt: createdAt ?? this.createdAt,
       studentName: studentName ?? this.studentName,

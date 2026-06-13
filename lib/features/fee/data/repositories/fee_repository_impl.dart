@@ -200,14 +200,15 @@ class FeeRepositoryImpl implements FeeRepository {
 
           if (isActiveThisMonth) {
             final periods = inactivePeriodsByBatch[batchId] ?? [];
-            bool isLegacyInactive = batchActive[batchId] == false && periods.isEmpty;
+            final batch = batchLookup[batchId];
+            bool isDeleted = batch != null && batch['is_deleted'] == 1;
+            bool isLegacyInactive = batchActive[batchId] == false && periods.isEmpty && !isDeleted;
             
             // If it's a legacy inactive batch with no periods, just skip completely
             if (isLegacyInactive) {
                continue;
             }
 
-            final batch = batchLookup[batchId];
             if (batch != null) {
               String bName = (e['batch_name'] as String?) ?? (batch['name'] as String?) ?? 'Unknown';
               String bDays = (e['batch_schedule_days'] as String?) ?? (batch['schedule_days'] as String?) ?? '';
@@ -315,8 +316,18 @@ class FeeRepositoryImpl implements FeeRepository {
           final paidAmount = (existingRecord['paid_amount'] as num).toDouble();
           final currentTotalAmount = (existingRecord['total_amount'] as num).toDouble();
 
+          // Check if this batch is deleted — if so, preserve the fee record exactly
+          // as-is. The student still owes the money (or made a partial payment) and
+          // those amounts must remain visible even after the batch is removed.
+          final batch = batchLookup[batchId];
+          final bool isBatchDeleted = batch != null && batch['is_deleted'] == 1;
+
           if (totalBatchMonthlyFee == 0) {
-            if (paidAmount == 0) {
+            if (isBatchDeleted) {
+              // Batch was deleted — do NOT erase or zero the fee record.
+              // Leave total_amount and paid_amount untouched so due/partial
+              // amounts are still displayed correctly.
+            } else if (paidAmount == 0) {
               await db.delete(_feeTable, where: 'id = ?', whereArgs: [id]);
             } else if (currentTotalAmount != 0) {
               await db.update(
@@ -349,9 +360,22 @@ class FeeRepositoryImpl implements FeeRepository {
         }
       }
 
+      // Handle fee records whose batch_id was not visited in the loop above
+      // (e.g. orphaned records for batches the student no longer has any
+      // enrollment entry for). If the batch was deleted, preserve the record
+      // so outstanding dues and partial payments remain visible.
       for (var entry in existingRecordsByBatch.entries) {
         final id = entry.value['id'] as int;
         final paidAmount = (entry.value['paid_amount'] as num).toDouble();
+        final entryBatchId = entry.value['batch_id'] as int?;
+        final entryBatch = entryBatchId != null ? batchLookup[entryBatchId] : null;
+        final bool isOrphanBatchDeleted = entryBatch != null && entryBatch['is_deleted'] == 1;
+
+        if (isOrphanBatchDeleted) {
+          // Batch was deleted — preserve the fee record intact.
+          continue;
+        }
+
         if (paidAmount == 0) {
           await db.delete(_feeTable, where: 'id = ?', whereArgs: [id]);
         } else {

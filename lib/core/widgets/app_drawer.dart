@@ -31,8 +31,7 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.home),
             title: const Text('Home'),
             onTap: () {
-              Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, '/'); // Or pop to root
+              Navigator.popUntil(context, (route) => route.isFirst);
             },
           ),
           ListTile(
