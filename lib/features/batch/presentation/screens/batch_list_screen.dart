@@ -144,46 +144,7 @@ class _BatchListScreenState extends State<BatchListScreen> {
             itemCount: provider.batches.length,
             itemBuilder: (context, index) {
               final batch = provider.batches[index];
-              return Dismissible(
-                key: ValueKey(batch.id),
-                direction: DismissDirection.endToStart,
-                confirmDismiss: (_) => _confirmDelete(context, batch.name),
-                onDismissed: (_) async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final success = await provider.deleteBatch(batch.id!);
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        success
-                            ? '"${batch.name}" deleted.'
-                            : 'Failed to delete "${batch.name}".',
-                      ),
-                      backgroundColor: success ? const Color(0xFF2B9348) : Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      margin: const EdgeInsets.all(12),
-                    ),
-                  );
-                },
-                // Red delete background shown behind the card while swiping
-                background: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD32F2F),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.delete_outline, color: Colors.white, size: 28),
-                      SizedBox(height: 4),
-                      Text('Delete', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-                child: Opacity(
+              return Opacity(
                   opacity: batch.isActive ? 1.0 : 0.6,
                   child: AppCard(
                     onTap: () {
@@ -193,6 +154,26 @@ class _BatchListScreenState extends State<BatchListScreen> {
                           builder: (_) => BatchDetailScreen(batch: batch),
                         ),
                       );
+                    },
+                    onLongPress: () async {
+                      final confirmed = await _confirmDelete(context, batch.name);
+                      if (confirmed && context.mounted) {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final success = await provider.deleteBatch(batch.id!);
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              success
+                                  ? '"${batch.name}" deleted.'
+                                  : 'Failed to delete "${batch.name}".',
+                            ),
+                            backgroundColor: success ? const Color(0xFF2B9348) : Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            margin: const EdgeInsets.all(12),
+                          ),
+                        );
+                      }
                     },
                     child: Row(
                       children: [
@@ -272,7 +253,6 @@ class _BatchListScreenState extends State<BatchListScreen> {
                       ],
                     ),
                   ),
-                ),
               );
             },
           );
