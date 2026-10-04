@@ -6,7 +6,7 @@ abstract class BackupRepository {
   Future<void> updateSettings(BackupSettings settings);
   
   Future<File> getDatabaseFile();
-  Future<void> importDatabase(File file);
+  Future<void> importDatabase(File file, {String? expectedUid});
   
   Future<bool> sendBackupToTelegram(BackupSettings settings);
 }

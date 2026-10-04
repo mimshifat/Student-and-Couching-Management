@@ -1,12 +1,18 @@
+import 'dart:io';
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+
+import '../sync/sync_schema.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  static const int _databaseVersion = 22;
+  /// v23: cloud-sync infrastructure (sync_map, sync_outbox, triggers, ...).
+  static const int _databaseVersion = 23;
+  static int get databaseVersion => _databaseVersion;
 
   static Database? _database;
 
@@ -18,19 +24,49 @@ class DatabaseHelper {
 
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'coaching_app.db');
+    await _safetyCopyBeforeUpgrade(path);
     return await openDatabase(
       path,
       version: _databaseVersion,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
+      onOpen: _onOpen,
     );
+  }
+
+  /// Before a schema upgrade, keep an untouched copy of the existing database
+  /// file (`coaching_app.db.v<old>.bak`). Existing user data can always be
+  /// recovered even if a migration fails half-way.
+  Future<void> _safetyCopyBeforeUpgrade(String path) async {
+    try {
+      final file = File(path);
+      if (!await file.exists()) return;
+      final probe = await openDatabase(path, readOnly: true, singleInstance: false);
+      final int oldVersion;
+      try {
+        oldVersion = await probe.getVersion();
+      } finally {
+        await probe.close();
+      }
+      if (oldVersion <= 0 || oldVersion >= _databaseVersion) return;
+      final backup = File('$path.v$oldVersion.bak');
+      if (!await backup.exists()) {
+        await file.copy(backup.path);
+      }
+    } catch (_) {
+      // Never block app start because of the safety copy.
+    }
   }
 
   Future<void> _onConfigure(Database db) async {
     // Enable foreign keys
     await db.execute('PRAGMA foreign_keys = ON');
-    // Performance indexes — safe: IF NOT EXISTS, no version bump needed
+  }
+
+  Future<void> _onOpen(Database db) async {
+    // Performance indexes — safe: IF NOT EXISTS, no version bump needed.
+    // (Run in onOpen: in onConfigure the tables don't exist yet on a fresh install.)
     await db.execute('CREATE INDEX IF NOT EXISTS idx_results_student_id ON results(student_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_results_batch_id ON results(batch_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_exams_exam_date ON exams(exam_date)');
@@ -232,6 +268,12 @@ class DatabaseHelper {
         );
       }
     }
+    if (oldVersion < 23) {
+      // Cloud-sync infrastructure. Existing tables are not modified; every
+      // existing row gets a sync_id in sync_map. Nothing is uploaded until the
+      // database is bound to a signed-in account.
+      await SyncSchema.install(db);
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -402,6 +444,9 @@ class DatabaseHelper {
 
     // Create unique index for enrollments
     await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_enrollments_unique ON enrollments(student_id, batch_id) WHERE leave_date IS NULL');
+
+    // Cloud-sync infrastructure (v23+)
+    await SyncSchema.install(db);
   }
 
   Future<String> getDatabasePathStr() async {

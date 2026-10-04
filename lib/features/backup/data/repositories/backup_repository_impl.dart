@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:http/http.dart' as http;
 
 import '../../domain/entities/backup_settings.dart';
@@ -58,7 +57,7 @@ class BackupRepositoryImpl implements BackupRepository {
   }
 
   @override
-  Future<void> importDatabase(File importedFile) async {
+  Future<void> importDatabase(File importedFile, {String? expectedUid}) async {
     // Worst-case 1: File does not exist
     if (!await importedFile.exists()) {
       throw Exception('The selected file does not exist.');
@@ -102,26 +101,34 @@ class BackupRepositoryImpl implements BackupRepository {
       // Step 2: Copy the imported file to the database path
       await importedFile.copy(currentDbPath);
 
-      // Step 3: Validate the imported DB by opening it and testing a query
-      final db = await sqflite.openDatabase(currentDbPath);
-      try {
-        // Run a simple test to ensure key tables exist
-        await db.rawQuery("SELECT count(*) FROM sqlite_master WHERE type='table'");
-      } finally {
-        await db.close();
-      }
-
-      // Step 4: Re-initialize the app's DB connection with the new file
-      // DatabaseHelper will open fresh on next access
+      // Step 3: Re-initialize the app's DB connection with the new file
       _dbHelper.resetInstance();
 
-      // Step 5: Success - remove the backup
+      // Step 4: Access the database through DatabaseHelper.
+      // This will automatically run onUpgrade (migrating v22 to v23) if needed.
+      final db = await _dbHelper.database;
+      
+      // Run a simple test to ensure it's functional
+      await db.rawQuery("SELECT count(*) FROM sqlite_master WHERE type='table'");
+      
+      // Step 5: If an expected UID is provided, ensure this DB isn't already owned by someone else
+      if (expectedUid != null) {
+        final metas = await db.query('sync_meta', where: 'meta_key = ?', whereArgs: ['owner_uid']);
+        if (metas.isNotEmpty) {
+          final owner = metas.first['meta_value'] as String?;
+          if (owner != null && owner != expectedUid) {
+            throw Exception('ACCOUNT_MISMATCH');
+          }
+        }
+      }
+
+      // Step 6: Success - remove the backup
       final backupFile = File(backupPath);
       if (await backupFile.exists()) {
         await backupFile.delete();
       }
     } catch (e) {
-      // Worst-case 4: Import failed — restore original database
+      // Worst-case 4: Import or Migration failed — restore original database
       final backupFile = File(backupPath);
       if (await backupFile.exists()) {
         await backupFile.copy(currentDbPath);
@@ -129,7 +136,12 @@ class BackupRepositoryImpl implements BackupRepository {
       }
       // Re-init the DB connection to the restored original
       _dbHelper.resetInstance();
-      throw Exception('Import failed: The file may be an incompatible database. Your original data has been restored.\n\nDetails: $e');
+      
+      if (e.toString().contains('ACCOUNT_MISMATCH')) {
+        throw Exception('This database belongs to another account and cannot be imported.');
+      }
+      
+      throw Exception('Import failed: The file may be an incompatible database or the upgrade failed. Your original data has been restored.\n\nDetails: $e');
     }
   }
 

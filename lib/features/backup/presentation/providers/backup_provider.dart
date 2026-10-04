@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../../core/sync/session_manager.dart';
 import '../../domain/entities/backup_settings.dart';
 import '../../domain/repositories/backup_repository.dart';
 
@@ -99,9 +101,15 @@ class BackupProvider with ChangeNotifier {
       }
 
       File file = File(result.files.single.path!);
-      await _repository.importDatabase(file);
+      final currentUser = FirebaseAuth.instance.currentUser;
+      await _repository.importDatabase(file, expectedUid: currentUser?.uid);
 
-      // Import succeeded — trigger instant refresh of all providers
+      // Import succeeded — bind the newly imported DB to the current logged-in user
+      if (currentUser != null) {
+        await SessionManager().bindAccount(currentUser.uid);
+      }
+
+      // Trigger instant refresh of all providers
       onSuccess?.call();
       return 'success';
     } catch (e) {
