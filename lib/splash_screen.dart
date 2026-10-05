@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'app.dart';
+import 'features/license/presentation/providers/license_provider.dart';
+import 'features/license/presentation/screens/license_activation_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,6 +14,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -23,14 +27,34 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    // Navigate to the main app after a delay
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-        );
-      }
-    });
+    // Start license check and navigate after splash
+    _checkLicenseAndNavigate();
+  }
+
+  Future<void> _checkLicenseAndNavigate() async {
+    // Wait for splash animation to show
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    // Check license status
+    final licenseProvider = context.read<LicenseProvider>();
+    await licenseProvider.checkActivation();
+
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+
+    if (licenseProvider.status == LicenseStatus.activated) {
+      // License is valid — go to main app
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+      );
+    } else {
+      // No valid license — show activation screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const LicenseActivationScreen()),
+      );
+    }
   }
 
   @override
@@ -100,7 +124,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'mdshifat.official.05@gmail.com',
+                    'mimshifat5@gmail.com',
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: 12,

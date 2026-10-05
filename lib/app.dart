@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'features/student/presentation/screens/student_list_screen.dart';
 import 'features/batch/presentation/screens/batch_list_screen.dart';
@@ -13,6 +14,8 @@ import 'core/widgets/app_drawer.dart';
 
 import 'features/backup/presentation/screens/backup_settings_screen.dart';
 import 'features/enrollment/presentation/screens/annual_report_screen.dart';
+import 'features/license/presentation/providers/license_provider.dart';
+import 'features/license/presentation/screens/license_activation_screen.dart';
 import 'splash_screen.dart';
 
 class CoachingApp extends StatelessWidget {
@@ -48,6 +51,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
+  LicenseProvider? _licenseProvider;
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -56,6 +60,34 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const FeeOverviewScreen(),
     const BatchListScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen for license revocation while app is running
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _licenseProvider = context.read<LicenseProvider>();
+      _licenseProvider?.addListener(_onLicenseStatusChanged);
+    });
+  }
+
+  @override
+  void dispose() {
+    _licenseProvider?.removeListener(_onLicenseStatusChanged);
+    _licenseProvider = null;
+    super.dispose();
+  }
+
+  void _onLicenseStatusChanged() {
+    if (_licenseProvider?.status == LicenseStatus.notActivated && mounted) {
+      // License was revoked while app was running — redirect immediately
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LicenseActivationScreen()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,3 +109,4 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 }
+

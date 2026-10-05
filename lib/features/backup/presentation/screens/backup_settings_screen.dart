@@ -333,7 +333,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                              context: context,
                              builder: (_) => AlertDialog(
                                title: const Text('Developer Info'),
-                               content: const Text('Developed by: Md Mim Shifat\nEmail: mdshifat.official.05@gmail.com'),
+                               content: const Text('Developed by: Md Mim Shifat\nEmail: mimshifat5@gmail.com'),
                                actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
                              )
                            );
@@ -377,7 +377,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                           Icon(Icons.email, size: 16, color: Colors.grey.shade600),
                           const SizedBox(width: 8),
                           Text(
-                            'mdshifat.official.05@gmail.com',
+                            'mimshifat5@gmail.com',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 14,

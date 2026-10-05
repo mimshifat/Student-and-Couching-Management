@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // License collection rules
+    match /licenses/{licenseKey} {
+      // Anyone can read a license (needed for activation check)
+      allow read: if true;
+
+      // Allow updating ONLY activation fields, with strict constraints:
+      // 1. Can only modify: deviceId, userName, phoneNumber, activatedAt
+      // 2. Cannot touch: isActive, validUntil, createdAt, notes (admin-only fields)
+      // 3. deviceId can ONLY be set when it's currently empty (prevents hijacking)
+      // 4. Once deviceId is set, no further updates are allowed from the app
+      allow update: if
+        // Only these 4 fields can be changed
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['deviceId', 'userName', 'phoneNumber', 'activatedAt'])
+        &&
+        // deviceId must currently be empty (first-time activation only)
+        // This prevents a malicious user from clearing someone else's deviceId
+        (resource.data.deviceId == '' || resource.data.deviceId == null)
+        &&
+        // The new deviceId must not be empty (must actually be setting a device)
+        request.resource.data.deviceId is string
+        && request.resource.data.deviceId.size() > 0;
+
+      // Only admin (Firebase Console) can create or delete licenses
+      allow create, delete: if false;
+    }
+
+    // Block all other collections by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

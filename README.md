@@ -14,7 +14,8 @@ A comprehensive, offline-first Flutter application designed for teachers and coa
 *   **Robust Backup System**:
     *   **Auto-Backup**: Automatically sends a daily backup of your entire database to your personal Telegram via a bot. Runs reliably in the background using `WorkManager`, even when the app is closed.
     *   **Local Export/Import**: Export your SQLite database locally or import a `.db` file to restore your data. Includes worst-case scenario handling (corrupted file detection and automatic original DB rollback).
-*   **Fast & Offline**: Built entirely on top of SQLite, ensuring lighting-fast performance without the need for an internet connection (except for Telegram backups).
+*   **License Security System**: Device-bound license activation via Firebase. Prevents unauthorized sharing with secure Android ID binding. Works entirely offline after a one-time activation.
+*   **Fast & Offline**: Built entirely on top of SQLite, ensuring lighting-fast performance without the need for an internet connection (except for Telegram backups and initial license activation).
 
 ## 🛠️ Tech Stack
 
@@ -24,6 +25,7 @@ A comprehensive, offline-first Flutter application designed for teachers and coa
 *   **Background Tasks**: `workmanager`
 *   **Networking**: `http` (for Telegram API)
 *   **File Handling**: `file_picker`, `share_plus`
+*   **Security & Licensing**: `firebase_core`, `cloud_firestore`, `flutter_secure_storage`, `android_id`
 
 ## 📦 Installation & Setup
 
@@ -55,4 +57,4 @@ To enable automated background backups to your Telegram:
 ## 👨‍💻 Developed By
 
 **Md Mim Shifat**
-*   Email: mdshifat.official.05@gmail.com
+*   Email: mimshifat5@gmail.com

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'app.dart';
 import 'core/database/database_helper.dart';
 
@@ -25,6 +27,9 @@ import 'features/backup/data/repositories/backup_repository_impl.dart';
 import 'features/backup/presentation/providers/backup_provider.dart';
 import 'features/enrollment/presentation/providers/annual_report_provider.dart';
 import 'features/enrollment/data/repositories/enrollment_repository_impl.dart' show EnrollmentRepositoryImpl;
+
+import 'features/license/data/repositories/license_repository.dart';
+import 'features/license/presentation/providers/license_provider.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -62,6 +67,11 @@ void callbackDispatcher() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   // Initialize Database
   await DatabaseHelper().database;
 
@@ -84,6 +94,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => LicenseProvider(LicenseRepository())),
         ChangeNotifierProvider(create: (_) => StudentProvider(StudentRepositoryImpl())),
         ChangeNotifierProvider(create: (_) => BatchProvider(BatchRepositoryImpl())),
         ChangeNotifierProvider(create: (_) => EnrollmentProvider(EnrollmentRepositoryImpl())),
@@ -98,3 +109,4 @@ void main() async {
     ),
   );
 }
+
