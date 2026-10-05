@@ -9,6 +9,7 @@ class ResultModel extends ExamResult {
     required super.batchId,
     super.obtainedMarks,
     super.isAbsent = false,
+    super.hasPaid = false,
     required super.createdAt,
     super.studentName,
   });
@@ -21,6 +22,7 @@ class ResultModel extends ExamResult {
       batchId: entity.batchId,
       obtainedMarks: entity.obtainedMarks,
       isAbsent: entity.isAbsent,
+      hasPaid: entity.hasPaid,
       createdAt: entity.createdAt,
       studentName: entity.studentName,
     );
@@ -34,6 +36,7 @@ class ResultModel extends ExamResult {
       batchId: map['batch_id'],
       obtainedMarks: map['obtained_marks'] != null ? (map['obtained_marks'] as num).toDouble() : null,
       isAbsent: map['is_absent'] == 1,
+      hasPaid: map['has_paid'] == 1,
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
       studentName: map['student_name'],
     );
@@ -47,6 +50,7 @@ class ResultModel extends ExamResult {
       'batch_id': batchId,
       'obtained_marks': obtainedMarks,
       'is_absent': isAbsent ? 1 : 0,
+      'has_paid': hasPaid ? 1 : 0,
       'created_at': DateUtilsHelper.formatForDb(createdAt),
     };
   }

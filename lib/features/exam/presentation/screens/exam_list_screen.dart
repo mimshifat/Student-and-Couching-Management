@@ -23,15 +23,23 @@ class _ExamListScreenState extends State<ExamListScreen> {
   
   final int _currentYear = DateTime.now().year;
   late int _selectedYear;
-  int? _selectedMonth; // null means 'All Months'
+  late int _startMonth;  // 1-12, defaults to current month
+  late int _endMonth;    // 1-12, defaults to current month
   int? _selectedBatchId; // null means 'All Batches'
 
   static const Color primaryNavy = Color(0xFF191A4E);
+
+  static const List<String> _monthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
 
   @override
   void initState() {
     super.initState();
     _selectedYear = _currentYear;
+    _startMonth = DateTime.now().month;
+    _endMonth = DateTime.now().month;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadExams();
       context.read<BatchProvider>().loadBatches();
@@ -41,7 +49,8 @@ class _ExamListScreenState extends State<ExamListScreen> {
   void _loadExams() {
     context.read<ExamProvider>().loadFilteredExams(
       year: _selectedYear,
-      month: _selectedMonth,
+      startMonth: _startMonth,
+      endMonth: _endMonth,
       batchId: _selectedBatchId,
       searchQuery: _searchQuery,
     );
@@ -164,11 +173,6 @@ class _ExamListScreenState extends State<ExamListScreen> {
   }
 
   Widget _buildFiltersRow() {
-    final List<String> months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-
     // Generate last 5 years up to next year
     final List<int> years = List.generate(7, (index) => _currentYear - 5 + index).reversed.toList();
 
@@ -176,17 +180,13 @@ class _ExamListScreenState extends State<ExamListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         children: [
+          // Year + Month Range row
           Row(
             children: [
+              // Year dropdown
               Expanded(
-                flex: 1,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
+                flex: 3,
+                child: _buildDropdownContainer(
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<int>(
                       isExpanded: true,
@@ -202,30 +202,97 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
+              // From month
               Expanded(
-                flex: 1,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
+                flex: 3,
+                child: _buildDropdownContainer(
                   child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int?>(
+                    child: DropdownButton<int>(
                       isExpanded: true,
                       menuMaxHeight: 300,
-                      value: _selectedMonth,
-                      style: const TextStyle(fontSize: 13, color: Colors.black87),
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text('All Months')),
-                        ...List.generate(12, (index) => DropdownMenuItem(value: index + 1, child: Text(months[index]))),
-                      ],
+                      value: _startMonth,
+                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                      items: List.generate(12, (i) => DropdownMenuItem(
+                        value: i + 1,
+                        child: Text(_monthNames[i]),
+                      )),
                       onChanged: (val) {
-                        setState(() => _selectedMonth = val);
+                        if (val == null) return;
+                        setState(() {
+                          _startMonth = val;
+                          // Auto-adjust end month if it's now before start
+                          if (_endMonth < _startMonth) {
+                            _endMonth = _startMonth;
+                          }
+                        });
                         _loadExams();
                       },
+                    ),
+                  ),
+                ),
+              ),
+              // Arrow icon
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Icon(Icons.arrow_forward, size: 14, color: Colors.black38),
+              ),
+              // To month
+              Expanded(
+                flex: 3,
+                child: _buildDropdownContainer(
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      isExpanded: true,
+                      menuMaxHeight: 300,
+                      value: _endMonth,
+                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                      // Only show months >= startMonth
+                      items: List.generate(12 - _startMonth + 1, (i) => DropdownMenuItem(
+                        value: _startMonth + i,
+                        child: Text(_monthNames[_startMonth + i - 1]),
+                      )),
+                      onChanged: (val) {
+                        if (val == null) return;
+                        setState(() => _endMonth = val);
+                        _loadExams();
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // "All" chip to quickly reset to full year
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _startMonth = 1;
+                    _endMonth = 12;
+                  });
+                  _loadExams();
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: (_startMonth == 1 && _endMonth == 12)
+                        ? primaryNavy
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: (_startMonth == 1 && _endMonth == 12)
+                          ? primaryNavy
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Text(
+                    'All',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: (_startMonth == 1 && _endMonth == 12)
+                          ? Colors.white
+                          : Colors.black54,
                     ),
                   ),
                 ),
@@ -233,16 +300,11 @@ class _ExamListScreenState extends State<ExamListScreen> {
             ],
           ),
           const SizedBox(height: 8),
+          // Batch dropdown
           Consumer<BatchProvider>(
             builder: (context, batchProvider, _) {
               final batches = batchProvider.batches;
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
+              return _buildDropdownContainer(
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<int?>(
                     isExpanded: true,
@@ -264,6 +326,18 @@ class _ExamListScreenState extends State<ExamListScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDropdownContainer({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: child,
     );
   }
 
@@ -325,7 +399,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Batch: ${exam.displayBatchName} • ${exam.examType}',
+                    'Batch: ${exam.displayBatchName} • ${exam.examType}${exam.examFee != null && exam.examFee > 0 ? ' • Fee: ${exam.examFee == exam.examFee.truncateToDouble() ? exam.examFee.toInt() : exam.examFee}' : ''}',
                     style: const TextStyle(color: Colors.black54, fontSize: 13),
                   ),
                   const SizedBox(height: 4),

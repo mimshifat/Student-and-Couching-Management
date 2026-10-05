@@ -6,7 +6,7 @@ class DatabaseHelper {
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  static const int _databaseVersion = 22;
+  static const int _databaseVersion = 23;
 
   static Database? _database;
 
@@ -232,6 +232,18 @@ class DatabaseHelper {
         );
       }
     }
+    if (oldVersion < 23) {
+      try {
+        await db.execute('ALTER TABLE exams ADD COLUMN exam_fee REAL');
+      } catch (e) {
+        // ignore: empty_catches
+      }
+      try {
+        await db.execute('ALTER TABLE results ADD COLUMN has_paid INTEGER NOT NULL DEFAULT 0');
+      } catch (e) {
+        // ignore: empty_catches
+      }
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -307,6 +319,7 @@ class DatabaseHelper {
         exam_type TEXT NOT NULL,
         exam_date TEXT NOT NULL,
         total_marks REAL NOT NULL,
+        exam_fee REAL,
         batch_snapshot TEXT,
         created_at TEXT NOT NULL,
         FOREIGN KEY (batch_id) REFERENCES batches (id) ON DELETE CASCADE
@@ -321,6 +334,7 @@ class DatabaseHelper {
         batch_id INTEGER NOT NULL,
         obtained_marks REAL,
         is_absent INTEGER NOT NULL DEFAULT 0,
+        has_paid INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
         FOREIGN KEY (exam_id) REFERENCES exams (id) ON DELETE CASCADE,
         FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,

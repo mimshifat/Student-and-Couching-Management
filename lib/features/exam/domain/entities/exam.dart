@@ -5,6 +5,7 @@ class Exam {
   final String examType;
   final DateTime examDate;
   final double totalMarks;
+  final double? examFee;
   final DateTime createdAt;
 
   // For UI display (live join — fallback when snapshot is null)
@@ -20,6 +21,7 @@ class Exam {
     required this.examType,
     required this.examDate,
     required this.totalMarks,
+    this.examFee,
     required this.createdAt,
     this.batchName,
     this.batchSnapshot,
@@ -57,6 +59,7 @@ class Exam {
     String? examType,
     DateTime? examDate,
     double? totalMarks,
+    double? examFee,
     DateTime? createdAt,
     String? batchName,
     Map<String, dynamic>? batchSnapshot,
@@ -68,6 +71,7 @@ class Exam {
       examType: examType ?? this.examType,
       examDate: examDate ?? this.examDate,
       totalMarks: totalMarks ?? this.totalMarks,
+      examFee: examFee ?? this.examFee,
       createdAt: createdAt ?? this.createdAt,
       batchName: batchName ?? this.batchName,
       batchSnapshot: batchSnapshot ?? this.batchSnapshot,

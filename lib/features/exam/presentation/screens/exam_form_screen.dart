@@ -21,6 +21,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
   int? _selectedBatchId;
   late TextEditingController _titleCtrl;
   late TextEditingController _marksCtrl;
+  late TextEditingController _feeCtrl;
   DateTime _examDate = DateTime.now();
   String _selectedExamType = 'Monthly';
 
@@ -35,6 +36,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     _selectedBatchId = e?.batchId;
     _titleCtrl = TextEditingController(text: e?.title ?? '');
     _marksCtrl = TextEditingController(text: e?.totalMarks.toString() ?? '100.0');
+    _feeCtrl = TextEditingController(text: e?.examFee != null ? e!.examFee.toString() : '');
     if (e != null) {
       _examDate = e.examDate;
       _selectedExamType = _examTypes.contains(e.examType) ? e.examType : 'Other';
@@ -48,6 +50,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
   void dispose() {
     _titleCtrl.dispose();
     _marksCtrl.dispose();
+    _feeCtrl.dispose();
     super.dispose();
   }
 
@@ -67,6 +70,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
         examType: _selectedExamType,
         examDate: _examDate,
         totalMarks: double.tryParse(_marksCtrl.text.trim()) ?? 100.0,
+        examFee: double.tryParse(_feeCtrl.text.trim()),
         createdAt: widget.exam?.createdAt ?? DateTime.now(),
       );
 
@@ -177,6 +181,14 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 12),
+                      CustomFormWidgets.buildTextField(
+                        label: 'Exam Fee (Optional)',
+                        hint: 'Enter exam fee',
+                        icon: Icons.attach_money_outlined,
+                        controller: _feeCtrl,
+                        isNumber: true,
                       ),
                       const SizedBox(height: 12),
                       CustomFormWidgets.buildDatePicker(

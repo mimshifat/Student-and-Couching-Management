@@ -8,6 +8,7 @@ class ExamResult {
   final int batchId;
   final double? obtainedMarks;
   final bool isAbsent;
+  final bool hasPaid;
   final DateTime createdAt;
 
   // Transient for UI
@@ -20,6 +21,7 @@ class ExamResult {
     required this.batchId,
     this.obtainedMarks,
     this.isAbsent = false,
+    this.hasPaid = false,
     required this.createdAt,
     this.studentName,
   });
@@ -31,6 +33,7 @@ class ExamResult {
     int? batchId,
     Object? obtainedMarks = _sentinel,
     bool? isAbsent,
+    bool? hasPaid,
     DateTime? createdAt,
     String? studentName,
   }) {
@@ -43,6 +46,7 @@ class ExamResult {
           ? this.obtainedMarks
           : obtainedMarks as double?,
       isAbsent: isAbsent ?? this.isAbsent,
+      hasPaid: hasPaid ?? this.hasPaid,
       createdAt: createdAt ?? this.createdAt,
       studentName: studentName ?? this.studentName,
     );

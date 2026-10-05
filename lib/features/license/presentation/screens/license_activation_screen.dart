@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../app.dart';
 import '../providers/license_provider.dart';
+import '../../../../core/presentation/screens/guides_screen.dart';
 
 class LicenseActivationScreen extends StatefulWidget {
   const LicenseActivationScreen({super.key});
@@ -447,6 +448,37 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Guides Button
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => GuideDetailScreen(
+                            guide: GuidesListScreen.guides[2], // Index 2 is "Managing License & Devices"
+                          ),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.help_outline_rounded, color: AppTheme.primaryColor.withValues(alpha: 0.8), size: 20),
+                    label: Text(
+                      'Help & Troubleshooting',
+                      style: GoogleFonts.inter(
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.05),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),

@@ -11,6 +11,7 @@ class ExamModel extends Exam {
     required super.examType,
     required super.examDate,
     required super.totalMarks,
+    super.examFee,
     required super.createdAt,
     super.batchName,
     super.batchSnapshot,
@@ -24,6 +25,7 @@ class ExamModel extends Exam {
       examType: entity.examType,
       examDate: entity.examDate,
       totalMarks: entity.totalMarks,
+      examFee: entity.examFee,
       createdAt: entity.createdAt,
       batchName: entity.batchName,
       batchSnapshot: entity.batchSnapshot,
@@ -55,6 +57,7 @@ class ExamModel extends Exam {
       examType: map['exam_type'] ?? 'Monthly', // Fallback for old records
       examDate: DateUtilsHelper.parseFromDb(map['exam_date']),
       totalMarks: (map['total_marks'] as num).toDouble(),
+      examFee: map['exam_fee'] != null ? (map['exam_fee'] as num).toDouble() : null,
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
       batchName: finalBatchName,
       batchSnapshot: snapshot,
@@ -69,6 +72,7 @@ class ExamModel extends Exam {
       'exam_type': examType,
       'exam_date': DateUtilsHelper.formatForDb(examDate),
       'total_marks': totalMarks,
+      'exam_fee': examFee,
       'created_at': DateUtilsHelper.formatForDb(createdAt),
       'batch_snapshot': batchSnapshot != null ? jsonEncode(batchSnapshot) : null,
     };

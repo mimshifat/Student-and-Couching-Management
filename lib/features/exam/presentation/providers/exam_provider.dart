@@ -116,7 +116,7 @@ class ExamProvider with ChangeNotifier {
     }
   }
 
-  Future<void> loadFilteredExams({int? year, int? month, int? batchId, String? searchQuery}) async {
+  Future<void> loadFilteredExams({int? year, int? startMonth, int? endMonth, int? batchId, String? searchQuery}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -124,7 +124,8 @@ class ExamProvider with ChangeNotifier {
     try {
       _exams = await _repository.getFilteredExams(
         year: year,
-        month: month,
+        startMonth: startMonth,
+        endMonth: endMonth,
         batchId: batchId,
         searchQuery: searchQuery,
       );
@@ -240,6 +241,14 @@ class ExamProvider with ChangeNotifier {
         isAbsent: isAbsent, 
         obtainedMarks: isAbsent ? null : _currentResults[idx].obtainedMarks
       );
+      notifyListeners();
+    }
+  }
+
+  void updateResultHasPaid(int studentId, bool hasPaid) {
+    final idx = _currentResults.indexWhere((r) => r.studentId == studentId);
+    if (idx != -1) {
+      _currentResults[idx] = _currentResults[idx].copyWith(hasPaid: hasPaid);
       notifyListeners();
     }
   }

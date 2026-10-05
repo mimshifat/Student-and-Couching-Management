@@ -5,6 +5,7 @@ class DetailedResult {
   final int batchId;
   final double? obtainedMarks;
   final bool isAbsent;
+  final bool hasPaid;
   final DateTime createdAt;
 
   // From exams table
@@ -12,6 +13,7 @@ class DetailedResult {
   final String examType;
   final DateTime examDate;
   final double totalMarks;
+  final double? examFee;
 
   // Snapshot of batch info at the time of exam creation (preferred)
   final Map<String, dynamic>? batchSnapshot;
@@ -30,11 +32,13 @@ class DetailedResult {
     required this.batchId,
     this.obtainedMarks,
     this.isAbsent = false,
+    this.hasPaid = false,
     required this.createdAt,
     required this.examTitle,
     required this.examType,
     required this.examDate,
     required this.totalMarks,
+    this.examFee,
     this.batchSnapshot,
     this.batchName,
     this.studentName,

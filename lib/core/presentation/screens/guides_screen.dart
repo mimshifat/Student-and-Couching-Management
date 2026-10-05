@@ -33,7 +33,7 @@ class GuideStep {
 class GuidesListScreen extends StatelessWidget {
   const GuidesListScreen({super.key});
 
-  static final List<GuideItem> _guides = [
+  static final List<GuideItem> guides = [
     GuideItem(
       title: 'Telegram Auto Backup Setup',
       description: 'Learn how to automatically send daily database backups to your Telegram.',
@@ -114,14 +114,14 @@ class GuidesListScreen extends StatelessWidget {
           iconColor: Colors.green,
         ),
         GuideStep(
-          title: 'Changing Phones',
-          content: 'Your license is locked to your device for security. If you buy a new phone or factory reset, you will see a "Permission Denied" message.',
+          title: 'Changing Phones & Permission Denied',
+          content: 'Your license is locked to your device for security. If you buy a new phone or factory reset, you will see a "Permission Denied" or "Activation Blocked" error message.',
           icon: Icons.phonelink_erase,
           iconColor: Colors.red,
         ),
         GuideStep(
           title: 'How to switch devices',
-          content: 'Send a message to the developer on WhatsApp. They will reset your device lock in 10 seconds, and you can activate your new phone immediately.',
+          content: 'Send a message to the developer on WhatsApp at +88 01787 929436. They will reset your device lock in 10 seconds, and you can activate your new phone immediately.',
           icon: Icons.support_agent,
           iconColor: Colors.blue,
         ),
@@ -208,7 +208,7 @@ class GuidesListScreen extends StatelessWidget {
             ),
           ),
           
-          ..._guides.map((guide) {
+          ...guides.map((guide) {
             return Container(
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
@@ -280,7 +280,7 @@ class GuidesListScreen extends StatelessWidget {
               ),
             ),
           );
-          }).toList(),
+          }),
         ],
       ),
     );

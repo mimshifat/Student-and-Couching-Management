@@ -188,6 +188,15 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
                     value: DateFormat('dd MMM yyyy').format(widget.exam.examDate),
                     flex: 2,
                   ),
+                  if (widget.exam.examFee != null && widget.exam.examFee! > 0) ...[
+                    _buildVerticalDivider(),
+                    _buildInfoCell(
+                      icon: Icons.attach_money_outlined,
+                      label: 'Fee',
+                      value: _formatMark(widget.exam.examFee!),
+                      flex: 2,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -340,6 +349,7 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
   }
 
   Widget _buildTableHeader() {
+    final hasFee = widget.exam.examFee != null && widget.exam.examFee! > 0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
@@ -347,6 +357,8 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
           Expanded(flex: 3, child: Text('Student', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87))),
           Expanded(flex: 2, child: Center(child: Text('Marks (${_formatMark(widget.exam.totalMarks)})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)))),
           Expanded(flex: 2, child: Center(child: Text('Status', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)))),
+          if (hasFee)
+            Expanded(flex: 2, child: Center(child: Text('Paid', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)))),
         ],
       ),
     );
@@ -444,6 +456,21 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
               ),
             ),
           ),
+          if (widget.exam.examFee != null && widget.exam.examFee! > 0)
+            Expanded(
+              flex: 2,
+              child: Center(
+                child: Checkbox(
+                  value: result.hasPaid,
+                  onChanged: (val) {
+                    if (val != null) {
+                      provider.updateResultHasPaid(result.studentId, val);
+                    }
+                  },
+                  activeColor: primaryNavy,
+                ),
+              ),
+            ),
         ],
       ),
     );

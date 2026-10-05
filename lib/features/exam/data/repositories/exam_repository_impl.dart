@@ -89,7 +89,7 @@ class ExamRepositoryImpl implements ExamRepository {
 
   @override
   Future<List<Exam>> getFilteredExams(
-      {int? year, int? month, int? batchId, String? searchQuery}) async {
+      {int? year, int? startMonth, int? endMonth, int? batchId, String? searchQuery}) async {
     final db = await _dbHelper.database;
     final List<String> conditions = [];
     final List<Object?> args = [];
@@ -98,9 +98,16 @@ class ExamRepositoryImpl implements ExamRepository {
       conditions.add("strftime('%Y', e.exam_date) = ?");
       args.add(year.toString());
     }
-    if (month != null) {
+    if (startMonth != null && endMonth != null) {
+      // Month range filter
+      conditions.add("CAST(strftime('%m', e.exam_date) AS INTEGER) >= ?");
+      args.add(startMonth);
+      conditions.add("CAST(strftime('%m', e.exam_date) AS INTEGER) <= ?");
+      args.add(endMonth);
+    } else if (startMonth != null) {
+      // Single month filter
       conditions.add("strftime('%m', e.exam_date) = ?");
-      args.add(month.toString().padLeft(2, '0'));
+      args.add(startMonth.toString().padLeft(2, '0'));
     }
     if (batchId != null) {
       conditions.add('e.batch_id = ?');
@@ -187,7 +194,7 @@ class ExamRepositoryImpl implements ExamRepository {
     final maps = await db.rawQuery('''
       SELECT r.*,
              e.title as exam_title, e.exam_type, e.exam_date, e.total_marks,
-             e.batch_snapshot,
+             e.exam_fee, e.batch_snapshot,
              b.name AS live_batch_name,
              s.name as student_name, s.class_name
       FROM $_resultTable r
@@ -211,7 +218,7 @@ class ExamRepositoryImpl implements ExamRepository {
     final maps = await db.rawQuery('''
       SELECT r.*,
              e.title as exam_title, e.exam_type, e.exam_date, e.total_marks,
-             e.batch_snapshot,
+             e.exam_fee, e.batch_snapshot,
              b.name AS live_batch_name,
              s.name as student_name, s.class_name
       FROM $_resultTable r
@@ -232,7 +239,7 @@ class ExamRepositoryImpl implements ExamRepository {
     final maps = await db.rawQuery('''
       SELECT r.*,
              e.title as exam_title, e.exam_type, e.exam_date, e.total_marks,
-             e.batch_snapshot,
+             e.exam_fee, e.batch_snapshot,
              b.name AS live_batch_name,
              s.name as student_name, s.class_name
       FROM $_resultTable r

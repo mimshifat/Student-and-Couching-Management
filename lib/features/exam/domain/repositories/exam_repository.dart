@@ -9,7 +9,7 @@ abstract class ExamRepository {
   Future<int> deleteExam(int id);
   Future<List<Exam>> getExamsByBatch(int batchId);
   Future<List<Exam>> getAllExams();
-  Future<List<Exam>> getFilteredExams({int? year, int? month, int? batchId, String? searchQuery});
+  Future<List<Exam>> getFilteredExams({int? year, int? startMonth, int? endMonth, int? batchId, String? searchQuery});
   
   Future<void> saveResults(int examId, List<ExamResult> results);
   Future<List<ExamResult>> getResultsForExam(int examId);
