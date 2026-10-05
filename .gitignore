@@ -59,31 +59,5 @@ app.*.map.json
 # macOS related
 **/macos/Flutter/ephemeral/
 
-# Environment variables & Secrets
+# Environment variables
 *.env
-*.env.*
-
-# ========================================
-# 🔒 CRITICAL SECURITY & FIREBASE SECRETS
-# ========================================
-
-# Firebase / Google Services Configurations
-**/android/app/google-services.json
-**/ios/Runner/GoogleService-Info.plist
-**/macos/Runner/GoogleService-Info.plist
-**/lib/firebase_options.dart
-.firebaserc
-
-# Android Keystore and Signing Properties
-*.jks
-*.keystore
-**/android/key.properties
-**/android/app/key.properties
-
-# Service Account Keys (if ever downloaded)
-*-firebase-adminsdk-*.json
-client_secret_*.json
-
-# Credentials
-credentials.json
-token.json

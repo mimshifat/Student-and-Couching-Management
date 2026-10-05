@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
-import '../sync/sync_restore.dart';
-import '../../features/auth/presentation/providers/auth_provider.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -83,52 +80,6 @@ class AppDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/annual-report');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.cloud_download),
-            title: const Text('Restore from Cloud'),
-            onTap: () async {
-              Navigator.pop(context); // Close drawer
-              try {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => const Center(child: CircularProgressIndicator()),
-                );
-                final restore = SyncRestore();
-                await restore.restoreFromCloud();
-                if (context.mounted) {
-                  Navigator.pop(context); // Pop loading dialog
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Restore complete! Restarting app may be needed to see changes.')),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  Navigator.pop(context); // Pop loading dialog
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Restore failed: $e')),
-                  );
-                }
-              }
-            },
-          ),
-          const Divider(),
-          Consumer<AuthProvider>(
-            builder: (context, auth, _) {
-              if (auth.user == null) return const SizedBox.shrink();
-              return ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text('Logout', style: TextStyle(color: Colors.red)),
-                onTap: () async {
-                  await auth.signOut();
-                  if (context.mounted) {
-                    // Navigate back to the login screen by popping everything
-                    Navigator.popUntil(context, (route) => route.isFirst);
-                  }
-                },
-              );
             },
           ),
         ],
