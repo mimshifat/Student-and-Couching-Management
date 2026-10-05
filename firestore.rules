@@ -17,9 +17,12 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['deviceId', 'userName', 'phoneNumber', 'activatedAt'])
         &&
-        // deviceId must currently be empty (first-time activation only)
-        // This prevents a malicious user from clearing someone else's deviceId
-        (resource.data.deviceId == '' || resource.data.deviceId == null)
+        // License must be active
+        resource.data.get('isActive', false) == true
+        &&
+        // deviceId must currently be empty OR it must be the exact same device ID (reinstallation)
+        // This prevents a malicious user from stealing someone else's deviceId, but allows reinstalling
+        (resource.data.get('deviceId', '') == '' || resource.data.get('deviceId', '') == request.resource.data.deviceId)
         &&
         // The new deviceId must not be empty (must actually be setting a device)
         request.resource.data.deviceId is string

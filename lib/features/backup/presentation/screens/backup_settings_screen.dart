@@ -6,6 +6,7 @@ import '../../../student/presentation/providers/student_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../fee/presentation/providers/fee_provider.dart';
 import '../../../notes/presentation/providers/note_provider.dart';
+import '../../../../core/presentation/screens/guides_screen.dart';
 
 class BackupSettingsScreen extends StatefulWidget {
   const BackupSettingsScreen({super.key});
@@ -322,6 +323,20 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                   ),
                   child: Column(
                     children: [
+                      _buildListTile(
+                        icon: Icons.menu_book_rounded,
+                        iconColor: Colors.teal,
+                        iconBgColor: Colors.teal.shade50,
+                        title: 'Setup Guides & Tutorials',
+                        subtitle: 'Learn how to setup Telegram, restore backups, etc.',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const GuidesListScreen()),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1, indent: 64),
                       _buildListTile(
                         icon: Icons.help_outline,
                         iconColor: const Color(0xFF1976D2),

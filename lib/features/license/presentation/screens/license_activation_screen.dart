@@ -143,13 +143,13 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
           child: SlideTransition(
             position: _slideAnimation,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               child: Column(
                 children: [
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 16),
                   // Header Icon
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       gradient: AppTheme.primaryGradient,
                       shape: BoxShape.circle,
@@ -163,21 +163,21 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                     ),
                     child: const Icon(
                       Icons.verified_user_rounded,
-                      size: 48,
+                      size: 42,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                   // Title
                   Text(
                     'Activate License',
                     style: GoogleFonts.outfit(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimaryColor,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     'Enter your details and license key to activate the app on this device.',
                     textAlign: TextAlign.center,
@@ -187,7 +187,7 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 20),
 
                   // Form
                   Form(
@@ -207,7 +207,7 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
 
                         // Phone Field
                         _buildTextField(
@@ -226,7 +226,7 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
 
                         // License Key Field
                         _buildTextField(
@@ -249,7 +249,7 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   // Error Message
                   Consumer<LicenseProvider>(
@@ -294,7 +294,7 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                     },
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   // Activate Button
                   Consumer<LicenseProvider>(
@@ -303,7 +303,7 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                           provider.status == LicenseStatus.activating;
                       return SizedBox(
                         width: double.infinity,
-                        height: 56,
+                        height: 50,
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: isLoading
@@ -368,11 +368,11 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                     },
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
 
                   // Info note
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: AppTheme.primaryColor.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
@@ -403,7 +403,7 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Developer contact
                   Text(
@@ -450,7 +450,7 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -473,7 +473,7 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          padding: const EdgeInsets.only(left: 4, bottom: 4),
           child: Text(
             label,
             style: GoogleFonts.inter(
@@ -506,7 +506,7 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
             filled: true,
             fillColor: Colors.white,
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,

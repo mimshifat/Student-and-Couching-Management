@@ -232,7 +232,7 @@ class LicenseRepository {
       if (e.code == 'permission-denied' || e.code == 'PERMISSION_DENIED') {
         return const ActivationResult(
           success: false,
-          message: 'Permission denied. Please contact the developer.',
+          message: 'Activation blocked. This key may be invalid, disabled, or locked to another device. Please contact support.',
         );
       }
       return ActivationResult(
