@@ -399,7 +399,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Batch: ${exam.displayBatchName} • ${exam.examType}${exam.examFee != null && exam.examFee > 0 ? ' • Fee: ${exam.examFee == exam.examFee.truncateToDouble() ? exam.examFee.toInt() : exam.examFee}' : ''}',
+                    'Batch: ${exam.displayBatchName} • ${exam.examType}${exam.examFee != null && exam.examFee > 0 ? ' • Fee: ৳${exam.examFee == exam.examFee.truncateToDouble() ? exam.examFee.toInt() : exam.examFee}' : ''}',
                     style: const TextStyle(color: Colors.black54, fontSize: 13),
                   ),
                   const SizedBox(height: 4),

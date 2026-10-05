@@ -191,9 +191,9 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
                   if (widget.exam.examFee != null && widget.exam.examFee! > 0) ...[
                     _buildVerticalDivider(),
                     _buildInfoCell(
-                      icon: Icons.attach_money_outlined,
+                      icon: Icons.payments_outlined,
                       label: 'Fee',
-                      value: _formatMark(widget.exam.examFee!),
+                      value: '৳ ${_formatMark(widget.exam.examFee!)}',
                       flex: 2,
                     ),
                   ],
@@ -217,7 +217,7 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
                 }
 
                 return Container(
-                  margin: const EdgeInsets.all(20),
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -351,14 +351,36 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
   Widget _buildTableHeader() {
     final hasFee = widget.exam.examFee != null && widget.exam.examFee! > 0;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Row(
         children: [
-          Expanded(flex: 3, child: Text('Student', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87))),
-          Expanded(flex: 2, child: Center(child: Text('Marks (${_formatMark(widget.exam.totalMarks)})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)))),
-          Expanded(flex: 2, child: Center(child: Text('Status', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)))),
+          Expanded(
+            flex: 3, 
+            child: Text('Student', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87))
+          ),
+          Expanded(
+            flex: 2, 
+            child: Center(
+              child: Text(
+                'Marks\n(${_formatMark(widget.exam.totalMarks)})', 
+                textAlign: TextAlign.center, 
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)
+              )
+            )
+          ),
+          Expanded(
+            flex: 2, 
+            child: Center(
+              child: Text('Status', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87))
+            )
+          ),
           if (hasFee)
-            Expanded(flex: 2, child: Center(child: Text('Paid', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)))),
+            Expanded(
+              flex: 2, 
+              child: Center(
+                child: Text('Paid', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87))
+              )
+            ),
         ],
       ),
     );
@@ -368,7 +390,7 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
     final ctrl = _controllerFor(result.studentId, result.obtainedMarks);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
           Expanded(
@@ -382,8 +404,14 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
           Expanded(
             flex: 2,
             child: Center(
-              child: SizedBox(
+              child: Container(
                 width: 60,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
                 child: result.isAbsent
                   ? const Center(child: Text('-', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)))
                   : TextField(

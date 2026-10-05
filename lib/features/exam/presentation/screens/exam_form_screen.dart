@@ -186,7 +186,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                       CustomFormWidgets.buildTextField(
                         label: 'Exam Fee (Optional)',
                         hint: 'Enter exam fee',
-                        icon: Icons.attach_money_outlined,
+                        prefixText: '৳',
                         controller: _feeCtrl,
                         isNumber: true,
                       ),

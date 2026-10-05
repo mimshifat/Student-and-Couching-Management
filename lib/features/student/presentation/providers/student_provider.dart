@@ -23,6 +23,11 @@ class StudentProvider with ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  // Store current filters to refresh summaries after insert/update/delete
+  String? _currentClassName;
+  int? _currentBatchId;
+  String? _currentSearchQuery;
+
   StudentProvider(this._repository) {
     loadStudents();
   }
@@ -32,6 +37,10 @@ class StudentProvider with ChangeNotifier {
     int? batchId,
     String? searchQuery,
   }) async {
+    _currentClassName = className;
+    _currentBatchId = batchId;
+    _currentSearchQuery = searchQuery;
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -124,6 +133,11 @@ class StudentProvider with ChangeNotifier {
     try {
       final id = await _repository.insertStudent(student);
       await loadStudents();
+      await loadStudentSummaries(
+        className: _currentClassName,
+        batchId: _currentBatchId,
+        searchQuery: _currentSearchQuery,
+      );
       return id;
     } catch (e) {
       _errorMessage = e.toString();
@@ -136,6 +150,11 @@ class StudentProvider with ChangeNotifier {
     try {
       await _repository.updateStudent(student);
       await loadStudents();
+      await loadStudentSummaries(
+        className: _currentClassName,
+        batchId: _currentBatchId,
+        searchQuery: _currentSearchQuery,
+      );
       return true;
     } catch (e) {
       _errorMessage = e.toString();
@@ -148,6 +167,11 @@ class StudentProvider with ChangeNotifier {
     try {
       await _repository.deleteStudent(id);
       await loadStudents();
+      await loadStudentSummaries(
+        className: _currentClassName,
+        batchId: _currentBatchId,
+        searchQuery: _currentSearchQuery,
+      );
       return true;
     } catch (e) {
       _errorMessage = e.toString();
