@@ -5,7 +5,7 @@ import '../../../features/student/domain/entities/student.dart';
 import '../../../features/fee/domain/entities/fee_record.dart';
 
 class PdfExportHelper {
-  static Future<void> exportStudentReport(Student student, List<FeeRecord> feeRecords) async {
+  static Future<void> exportStudentReport(Student student, List<FeeRecord> feeRecords, String instituteName) async {
     final pdf = pw.Document();
 
     pdf.addPage(
@@ -15,6 +15,8 @@ class PdfExportHelper {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
+              pw.Text(instituteName, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 22, color: PdfColors.blue900), maxLines: 2),
+              pw.SizedBox(height: 8),
               pw.Header(level: 0, child: pw.Text('Student Report: ${student.name}')),
               pw.SizedBox(height: 16),
               pw.Text('Personal Information', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),

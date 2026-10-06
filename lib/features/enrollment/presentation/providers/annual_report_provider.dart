@@ -55,7 +55,7 @@ class AnnualReportProvider with ChangeNotifier {
   }
 
   /// Exports the annual report as a PDF using the system print/save dialog.
-  Future<void> exportToPdf() async {
+  Future<void> exportToPdf({required String instituteName}) async {
     final doc = pw.Document();
 
     final reportTitle = 'Annual Student Enrollment Report - $_selectedYear';
@@ -66,7 +66,7 @@ class AnnualReportProvider with ChangeNotifier {
         margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
           return [
-            _buildPdfHeader(reportTitle),
+            _buildPdfHeader(instituteName, reportTitle),
             pw.SizedBox(height: 20),
             _buildPdfTable(),
           ];
@@ -131,19 +131,29 @@ class AnnualReportProvider with ChangeNotifier {
 
   // ── PDF builder helpers ───────────────────────────────────────────────────
 
-  pw.Widget _buildPdfHeader(String title) {
+  pw.Widget _buildPdfHeader(String instituteName, String title) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          title,
+          instituteName,
           style: pw.TextStyle(
-            fontSize: 24,
+            fontSize: 22,
             fontWeight: pw.FontWeight.bold,
             color: PdfColors.blue900,
           ),
+          maxLines: 2,
         ),
-        pw.SizedBox(height: 10),
+        pw.SizedBox(height: 4),
+        pw.Text(
+          title,
+          style: pw.TextStyle(
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.grey800,
+          ),
+        ),
+        pw.SizedBox(height: 12),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [

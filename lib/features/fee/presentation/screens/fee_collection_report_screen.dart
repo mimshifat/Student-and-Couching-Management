@@ -5,6 +5,7 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 
 import '../providers/fee_provider.dart';
 import '../utils/fee_report_pdf_generator.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 
 class FeeCollectionReportScreen extends StatefulWidget {
   const FeeCollectionReportScreen({super.key});
@@ -44,10 +45,13 @@ class _FeeCollectionReportScreenState extends State<FeeCollectionReportScreen> {
   }
 
   void _exportPdf() {
+    final profile = context.read<ProfileProvider>().profile;
+    final instituteName = profile?.instituteName ?? 'Institute Profile Not Found';
     FeeReportPdfGenerator.generateAndPrintReport(
       month: _selectedMonth,
       year: _selectedYear,
       transactions: _transactions,
+      instituteName: instituteName,
     );
   }
 

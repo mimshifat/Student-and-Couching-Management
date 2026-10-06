@@ -31,6 +31,9 @@ import 'features/enrollment/data/repositories/enrollment_repository_impl.dart' s
 import 'features/license/data/repositories/license_repository.dart';
 import 'features/license/presentation/providers/license_provider.dart';
 
+import 'features/profile/data/repositories/profile_repository_impl.dart';
+import 'features/profile/presentation/providers/profile_provider.dart';
+
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
@@ -91,12 +94,13 @@ void main() async {
     existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
   );
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => LicenseProvider(LicenseRepository())),
-        ChangeNotifierProvider(create: (_) => StudentProvider(StudentRepositoryImpl())),
-        ChangeNotifierProvider(create: (_) => BatchProvider(BatchRepositoryImpl())),
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => LicenseProvider(LicenseRepository())),
+          ChangeNotifierProvider(create: (_) => ProfileProvider(ProfileRepositoryImpl())),
+          ChangeNotifierProvider(create: (_) => StudentProvider(StudentRepositoryImpl())),
+          ChangeNotifierProvider(create: (_) => BatchProvider(BatchRepositoryImpl())),
         ChangeNotifierProvider(create: (_) => EnrollmentProvider(EnrollmentRepositoryImpl())),
         ChangeNotifierProvider(create: (_) => ExamProvider(ExamRepositoryImpl(), EnrollmentRepositoryImpl())),
         ChangeNotifierProvider(create: (_) => FeeProvider(FeeRepositoryImpl(), StudentRepositoryImpl())),

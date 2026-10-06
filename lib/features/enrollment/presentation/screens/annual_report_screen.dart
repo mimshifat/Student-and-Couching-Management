@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../domain/entities/annual_report_entry.dart';
 import '../providers/annual_report_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 
 class AnnualReportScreen extends StatefulWidget {
   const AnnualReportScreen({super.key});
@@ -148,7 +149,9 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
 
   Future<void> _exportPdf(AnnualReportProvider provider) async {
     try {
-      await provider.exportToPdf();
+      final profile = context.read<ProfileProvider>().profile;
+      final instituteName = profile?.instituteName ?? 'Institute Profile Not Found';
+      await provider.exportToPdf(instituteName: instituteName);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

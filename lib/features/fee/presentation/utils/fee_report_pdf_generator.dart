@@ -8,6 +8,7 @@ class FeeReportPdfGenerator {
     required int month,
     required int year,
     required List<Map<String, dynamic>> transactions,
+    required String instituteName,
   }) async {
     final doc = pw.Document();
     
@@ -25,7 +26,7 @@ class FeeReportPdfGenerator {
         margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
           return [
-            _buildHeader(reportTitle, monthName, year, transactions.length, totalCollected),
+            _buildHeader(instituteName, reportTitle, monthName, year, transactions.length, totalCollected),
             pw.SizedBox(height: 20),
             _buildTransactionTable(transactions),
           ];
@@ -39,15 +40,21 @@ class FeeReportPdfGenerator {
     );
   }
 
-  static pw.Widget _buildHeader(String title, String monthName, int year, int studentCount, double totalCollected) {
+  static pw.Widget _buildHeader(String instituteName, String title, String monthName, int year, int studentCount, double totalCollected) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          title,
-          style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900),
+          instituteName,
+          style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900),
+          maxLines: 2,
         ),
-        pw.SizedBox(height: 10),
+        pw.SizedBox(height: 4),
+        pw.Text(
+          title,
+          style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800),
+        ),
+        pw.SizedBox(height: 12),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [

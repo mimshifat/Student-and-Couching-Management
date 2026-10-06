@@ -5,6 +5,7 @@ import '../providers/fee_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
 import '../../../student/presentation/providers/student_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 import 'fee_payment_screen.dart';
 import 'fee_collection_report_screen.dart';
 import '../../../../core/widgets/app_drawer.dart';
@@ -453,7 +454,13 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                             if (!context.mounted) return;
                             if (phone != null && phone.isNotEmpty) {
                               final studentName = r.studentName ?? 'Student';
-                              final message = '[CSA]\nDear $studentName, your fee payment of Tk. ${r.paidAmount.toStringAsFixed(0)} for $monthName ${r.year} has been received. Thank you!\n-Abdus Samad';
+                              final profile = context.read<ProfileProvider>().profile;
+                              final shortName = profile?.instituteShortName ?? profile?.instituteName ?? 'Institute';
+                              final ownerName = profile?.ownerName ?? 'Admin';
+                              String batchPart = (r.batchDetailsSnapshot != null && r.batchDetailsSnapshot!.isNotEmpty)
+                                  ? ' (Batch: ${r.batchDetailsSnapshot})'
+                                  : '';
+                              final message = '[$shortName]\nDear $studentName, your fee payment of Tk. ${r.paidAmount.toStringAsFixed(0)} for $monthName ${r.year}$batchPart has been received. Thank you!\n-$ownerName';
                               final uri = Uri.parse('sms:$phone?body=${Uri.encodeComponent(message)}');
                               if (await canLaunchUrl(uri)) {
                                 await launchUrl(uri);

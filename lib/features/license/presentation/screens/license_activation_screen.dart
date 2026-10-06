@@ -6,6 +6,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../app.dart';
 import '../providers/license_provider.dart';
 import '../../../../core/presentation/screens/guides_screen.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../profile/presentation/screens/profile_setup_screen.dart';
 
 class LicenseActivationScreen extends StatefulWidget {
   const LicenseActivationScreen({super.key});
@@ -126,8 +128,13 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
       await Future.delayed(const Duration(milliseconds: 800));
 
       if (mounted) {
+        final profileProvider = context.read<ProfileProvider>();
+        final hasProfile = profileProvider.profile != null;
+
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+          MaterialPageRoute(
+            builder: (_) => hasProfile ? const MainNavigationScreen() : const ProfileSetupScreen(),
+          ),
           (route) => false,
         );
       }

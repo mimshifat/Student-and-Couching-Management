@@ -9,6 +9,7 @@ import '../../../student/domain/entities/student.dart';
 import '../../domain/entities/detailed_result.dart';
 import '../../../../core/widgets/searchable_dropdown.dart';
 import '../../../../core/widgets/app_drawer.dart';
+import '../../../../core/utils/number_format_extension.dart';
 
 class ResultAnalyticsScreen extends StatefulWidget {
   const ResultAnalyticsScreen({super.key});
@@ -285,7 +286,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildBannerStat('Total Results', totalResults.toString()),
-                      _buildBannerStat('Avg Score', '${overallAvg.toStringAsFixed(1)}%'),
+                      _buildBannerStat('Avg Score', '${overallAvg.toCleanString()}%'),
                       _buildBannerStat('Absent', totalAbsents.toString()),
                       _buildBannerStat('Batches', summaries.length.toString()),
                     ],
@@ -344,7 +345,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              '${b.avgPercent.toStringAsFixed(1)}%',
+                              '${b.avgPercent.toCleanString()}%',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: bColor),
                             ),
                           ),
@@ -365,7 +366,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                         children: [
                           _buildBatchStatPill(Icons.assignment_turned_in, '${b.totalResults} Results', const Color(0xFF1A73E8)),
                           const SizedBox(width: 8),
-                          _buildBatchStatPill(Icons.show_chart, '${b.totalObtained.toStringAsFixed(0)}/${b.totalAvailable.toStringAsFixed(0)} pts', const Color(0xFF2B9348)),
+                          _buildBatchStatPill(Icons.show_chart, '${b.totalObtained.toCleanString()}/${b.totalAvailable.toCleanString()} Marks', const Color(0xFF2B9348)),
                           const SizedBox(width: 8),
                           _buildBatchStatPill(Icons.person_off, '${b.absentCount} Absent', const Color(0xFFD32F2F)),
                         ],
@@ -498,9 +499,9 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
               children: [
                 Expanded(child: _buildStatCard('Exams', totalExams.toString(), Icons.assignment, const Color(0xFF1A73E8))),
                 const SizedBox(width: 8),
-                Expanded(child: _buildStatCard('Average', '${overallAverage.toStringAsFixed(1)}%', Icons.show_chart, const Color(0xFF2B9348))),
+                Expanded(child: _buildStatCard('Average', '${overallAverage.toCleanString()}%', Icons.show_chart, const Color(0xFF2B9348))),
                 const SizedBox(width: 8),
-                Expanded(child: _buildStatCard('Highest', '${maxPercentage.toStringAsFixed(0)}%', Icons.arrow_upward, const Color(0xFFF57C00))),
+                Expanded(child: _buildStatCard('Highest', '${maxPercentage.toCleanString()}%', Icons.arrow_upward, const Color(0xFFF57C00))),
                 const SizedBox(width: 8),
                 Expanded(child: _buildStatCard('Absent', absents.toString(), Icons.person_off, const Color(0xFFD32F2F))),
               ],
@@ -539,7 +540,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                     children: [
                       const Text('Overall Performance', style: TextStyle(color: Colors.black54, fontSize: 12)),
                       Text(
-                        '${totalMarksObtained.toStringAsFixed(1)} / ${totalMarksAvailable.toStringAsFixed(1)}',
+                        '${totalMarksObtained.toCleanString()} / ${totalMarksAvailable.toCleanString()}',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF191A4E)),
                       ),
                     ],
@@ -559,7 +560,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '${overallAverage.toStringAsFixed(2)}%',
+                          '${overallAverage.toCleanString(maxDecimals: 2)}%',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -623,7 +624,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
         statusColor = const Color(0xFFD32F2F); // Red
         statusIcon = Icons.warning;
       }
-      statusText = '${result.obtainedMarks?.toStringAsFixed(1)} / ${result.totalMarks.toStringAsFixed(0)}';
+      statusText = '${result.obtainedMarks?.toCleanString()} / ${result.totalMarks.toCleanString()}';
     }
 
     return Container(
@@ -673,7 +674,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                  child: Text('${percentage!.toStringAsFixed(1)}%', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: statusColor)),
+                  child: Text('${percentage!.toCleanString()}%', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: statusColor)),
                 ),
               ]
             ],

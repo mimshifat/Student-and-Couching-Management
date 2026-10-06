@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'app.dart';
 import 'features/license/presentation/providers/license_provider.dart';
 import 'features/license/presentation/screens/license_activation_screen.dart';
+import 'features/profile/presentation/providers/profile_provider.dart';
+import 'features/profile/presentation/screens/profile_setup_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -45,10 +47,23 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _hasNavigated = true;
 
     if (licenseProvider.status == LicenseStatus.activated) {
-      // License is valid — go to main app
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-      );
+      // License is valid — check profile
+      final profileProvider = context.read<ProfileProvider>();
+      // Wait for it to load if it's still loading initially
+      while (profileProvider.isLoading) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (!mounted) return;
+      }
+      
+      if (profileProvider.profile != null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const ProfileSetupScreen()),
+        );
+      }
     } else {
       // No valid license — show activation screen
       Navigator.of(context).pushReplacement(

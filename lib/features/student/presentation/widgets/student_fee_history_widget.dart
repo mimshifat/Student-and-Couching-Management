@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../fee/presentation/providers/fee_provider.dart';
 import '../../../fee/presentation/screens/fee_payment_screen.dart';
 import '../providers/student_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 
 class StudentFeeHistoryWidget extends StatefulWidget {
   final int studentId;
@@ -323,7 +324,13 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                                     if (!context.mounted) return;
                                     if (phone != null && phone.isNotEmpty) {
                                       final studentName = record.studentName ?? 'Student';
-                                      final message = '[CSA]\nDear $studentName, your fee payment of Tk. ${record.paidAmount.toStringAsFixed(0)} for $monthName ${record.year} has been received. Thank you!\n-Abdus Samad';
+                                      final profile = context.read<ProfileProvider>().profile;
+                                      final shortName = profile?.instituteShortName ?? profile?.instituteName ?? 'Institute';
+                                      final ownerName = profile?.ownerName ?? 'Admin';
+                                      String batchPart = (record.batchDetailsSnapshot != null && record.batchDetailsSnapshot!.isNotEmpty)
+                                          ? ' (Batch: ${record.batchDetailsSnapshot})'
+                                          : '';
+                                      final message = '[$shortName]\nDear $studentName, your fee payment of Tk. ${record.paidAmount.toStringAsFixed(0)} for $monthName ${record.year}$batchPart has been received. Thank you!\n-$ownerName';
                                       final uri = Uri.parse('sms:$phone?body=${Uri.encodeComponent(message)}');
                                       if (await canLaunchUrl(uri)) {
                                         await launchUrl(uri);

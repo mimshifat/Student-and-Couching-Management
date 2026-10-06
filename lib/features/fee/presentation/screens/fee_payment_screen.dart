@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../domain/entities/fee_record.dart';
 import '../providers/fee_provider.dart';
 import '../../../student/presentation/providers/student_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../../core/widgets/custom_form_widgets.dart';
 class FeePaymentScreen extends StatefulWidget {
   final int studentId;
@@ -90,12 +91,18 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
     if (success && mounted) {
       if (newPayment > 0) {
         final students = context.read<StudentProvider>().students;
+        final profile = context.read<ProfileProvider>().profile;
+        final shortName = profile?.instituteShortName ?? profile?.instituteName ?? 'Institute';
+        final ownerName = profile?.ownerName ?? 'Admin';
         final studentIdx = students.indexWhere((s) => s.id == widget.studentId);
         if (studentIdx >= 0) {
           final student = students[studentIdx];
           if (student.phone != null && student.phone!.isNotEmpty) {
             final monthName = DateFormat('MMMM').format(DateTime(widget.feeRecord.year, widget.feeRecord.month));
-            final message = '[CSA]\nDear ${student.name}, your fee payment of Tk. ${newPayment.toStringAsFixed(0)} for $monthName ${widget.feeRecord.year} has been received. Thank you!\n-Abdus Samad';
+            String batchPart = (widget.feeRecord.batchDetailsSnapshot != null && widget.feeRecord.batchDetailsSnapshot!.isNotEmpty)
+                ? ' (Batch: ${widget.feeRecord.batchDetailsSnapshot})'
+                : '';
+            final message = '[$shortName]\nDear ${student.name}, your fee payment of Tk. ${newPayment.toStringAsFixed(0)} for $monthName ${widget.feeRecord.year}$batchPart has been received. Thank you!\n-$ownerName';
             final uri = Uri.parse('sms:${student.phone}?body=${Uri.encodeComponent(message)}');
             if (await canLaunchUrl(uri)) {
               await launchUrl(uri);

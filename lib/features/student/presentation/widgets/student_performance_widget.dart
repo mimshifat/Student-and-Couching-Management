@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../exam/domain/entities/detailed_result.dart';
 import '../../../exam/data/repositories/exam_repository_impl.dart';
+import '../../../../core/utils/number_format_extension.dart';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Colour palette shared across all charts
@@ -288,8 +289,8 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _bannerStat('Average', '${s.average.toStringAsFixed(1)}%'),
-              _bannerStat('Highest', '${s.highest.toStringAsFixed(0)}%'),
+              _bannerStat('Average', '${s.average.toCleanString()}%'),
+              _bannerStat('Highest', '${s.highest.toCleanString()}%'),
               _bannerStat('Exams', s.total.toString()),
               _bannerStat('Absents', s.absents.toString()),
             ],
@@ -307,7 +308,7 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
           ),
           const SizedBox(height: 6),
           Text(
-            '${s.totalObtained.toStringAsFixed(1)} / ${s.totalAvailable.toStringAsFixed(1)} marks total',
+            '${s.totalObtained.toCleanString()} / ${s.totalAvailable.toCleanString()} marks total',
             style: const TextStyle(color: Colors.white60, fontSize: 11),
           ),
         ],
@@ -335,16 +336,16 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
     return Row(
       children: [
         Expanded(
-            child: _statCard('Lowest', '${s.lowest.toStringAsFixed(0)}%',
+            child: _statCard('Lowest', '${s.lowest.toCleanString()}%',
                 Icons.arrow_downward, _red)),
         const SizedBox(width: 8),
         Expanded(
-            child: _statCard('Scored', s.totalObtained.toStringAsFixed(0),
+            child: _statCard('Scored', s.totalObtained.toCleanString(),
                 Icons.grade, _indigo)),
         const SizedBox(width: 8),
         Expanded(
             child: _statCard('Available',
-                s.totalAvailable.toStringAsFixed(0), Icons.book, _orange)),
+                s.totalAvailable.toCleanString(), Icons.book, _orange)),
       ],
     );
   }
@@ -454,7 +455,7 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
       final pct = r.isAbsent || r.obtainedMarks == null
           ? 0.0
           : (r.obtainedMarks! / r.totalMarks) * 100;
-      spots.add(FlSpot(i.toDouble(), double.parse(pct.toStringAsFixed(1))));
+      spots.add(FlSpot(i.toDouble(), double.parse(pct.toCleanString())));
     }
 
     return _cardShell(
@@ -573,7 +574,7 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
                     return LineTooltipItem(
                       absent
                           ? '${r.examTitle}\nAbsent'
-                          : '${r.examTitle}\n${s.y.toStringAsFixed(1)}%',
+                          : '${r.examTitle}\n${s.y.toCleanString()}%',
                       TextStyle(
                         color: absent ? _red : Colors.white,
                         fontWeight: FontWeight.bold,
@@ -617,7 +618,7 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
         ),
     ];
 
-    final presentPct = (present / s.total * 100).toStringAsFixed(0);
+    final presentPct = (present / s.total * 100).toCleanString();
 
     return _cardShell(
       child: Row(
@@ -641,7 +642,7 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
                 _legend(_green, 'Present ($present)', '$presentPct%'),
                 const SizedBox(height: 12),
                 _legend(_red, 'Absent (${s.absents})',
-                    '${(s.absents / s.total * 100).toStringAsFixed(0)}%'),
+                    '${(s.absents / s.total * 100).toCleanString()}%'),
                 const SizedBox(height: 16),
                 Text('Attendance rate',
                     style:
@@ -713,7 +714,7 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
             statusIcon = Icons.warning;
           }
           statusText =
-              '${r.obtainedMarks!.toStringAsFixed(1)}/${r.totalMarks.toStringAsFixed(0)}';
+              '${r.obtainedMarks!.toCleanString()}/${r.totalMarks.toCleanString()}';
         }
 
         return Container(
@@ -783,7 +784,7 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
                       decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6)),
-                      child: Text('${pct.toStringAsFixed(1)}%',
+                      child: Text('${pct.toCleanString()}%',
                           style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 11,

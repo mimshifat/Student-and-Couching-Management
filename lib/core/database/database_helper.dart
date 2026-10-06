@@ -6,7 +6,7 @@ class DatabaseHelper {
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  static const int _databaseVersion = 23;
+  static const int _databaseVersion = 25;
 
   static Database? _database;
 
@@ -244,6 +244,27 @@ class DatabaseHelper {
         // ignore: empty_catches
       }
     }
+    if (oldVersion < 24) {
+      await db.execute('''
+        CREATE TABLE institute_profile (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          institute_name TEXT NOT NULL,
+          institute_short_name TEXT,
+          owner_name TEXT NOT NULL,
+          phone TEXT,
+          address TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+    }
+    if (oldVersion < 25) {
+      try {
+        await db.execute('ALTER TABLE institute_profile ADD COLUMN institute_short_name TEXT');
+      } catch (e) {
+        // Ignore if already exists
+      }
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -412,6 +433,19 @@ class DatabaseHelper {
     // Insert default row for backup_settings
     await db.execute('''
       INSERT INTO backup_settings (id, auto_backup_enabled) VALUES (1, 0)
+    ''');
+
+    await db.execute('''
+      CREATE TABLE institute_profile (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        institute_name TEXT NOT NULL,
+        institute_short_name TEXT,
+        owner_name TEXT NOT NULL,
+        phone TEXT,
+        address TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
     ''');
 
     // Create unique index for enrollments

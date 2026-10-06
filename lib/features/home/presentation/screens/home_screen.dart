@@ -7,6 +7,7 @@ import '../../../student/presentation/providers/student_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../exam/presentation/providers/exam_provider.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 
 import '../../../student/presentation/screens/student_form_screen.dart';
 import '../../../student/presentation/screens/student_list_screen.dart';
@@ -114,11 +115,16 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${_getGreeting()}, Teacher! 👋',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Consumer<ProfileProvider>(
+                  builder: (context, profileProvider, child) {
+                    final ownerName = profileProvider.profile?.ownerName ?? 'Teacher';
+                    return Text(
+                      '${_getGreeting()}, $ownerName! 👋',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  },
                 ),
                 const SizedBox(height: 4),
                 Text(
