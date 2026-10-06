@@ -452,9 +452,9 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
     final spots = <FlSpot>[];
     for (int i = 0; i < sorted.length; i++) {
       final r = sorted[i];
-      final pct = r.isAbsent || r.obtainedMarks == null
-          ? 0.0
-          : (r.obtainedMarks! / r.totalMarks) * 100;
+      if (r.isAbsent || r.obtainedMarks == null) continue;
+      
+      final pct = (r.obtainedMarks! / r.totalMarks) * 100;
       spots.add(FlSpot(i.toDouble(), double.parse(pct.toCleanString())));
     }
 
@@ -525,11 +525,9 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
                 dotData: FlDotData(
                   show: true,
                   getDotPainter: (spot, p1, p2, idx) {
-                    final r = sorted[idx];
-                    final absent = r.isAbsent || r.obtainedMarks == null;
                     return FlDotCirclePainter(
                       radius: 5,
-                      color: absent ? _red : _indigo,
+                      color: _indigo,
                       strokeWidth: 2,
                       strokeColor: Colors.white,
                     );
@@ -570,13 +568,10 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
                     final idx = s.x.toInt();
                     if (idx < 0 || idx >= sorted.length) return null;
                     final r = sorted[idx];
-                    final absent = r.isAbsent || r.obtainedMarks == null;
                     return LineTooltipItem(
-                      absent
-                          ? '${r.examTitle}\nAbsent'
-                          : '${r.examTitle}\n${s.y.toCleanString()}%',
-                      TextStyle(
-                        color: absent ? _red : Colors.white,
+                      '${r.examTitle}\n${s.y.toCleanString()}%',
+                      const TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
                       ),

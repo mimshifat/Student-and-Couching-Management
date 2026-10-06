@@ -267,6 +267,7 @@ class ExamRepositoryImpl implements ExamRepository {
         r.batch_id,
         MAX(b.name) AS live_batch_name,
         (SELECT e2.batch_snapshot FROM $_examTable e2 WHERE e2.id = r.exam_id LIMIT 1) AS batch_snapshot,
+        COUNT(DISTINCT r.exam_id)                             AS total_exams,
         COUNT(r.id)                                           AS total_results,
         SUM(CASE WHEN r.is_absent = 1 OR r.obtained_marks IS NULL
                  THEN 1 ELSE 0 END)                          AS absent_count,
@@ -296,6 +297,7 @@ class ExamRepositoryImpl implements ExamRepository {
         batchId: m['batch_id'] as int,
         batchName: finalName,
         totalResults: (m['total_results'] as int?) ?? 0,
+        totalExams: (m['total_exams'] as int?) ?? 0,
         absentCount: (m['absent_count'] as int?) ?? 0,
         totalObtained: (m['total_obtained'] as num?)?.toDouble() ?? 0.0,
         totalAvailable: (m['total_available'] as num?)?.toDouble() ?? 0.0,

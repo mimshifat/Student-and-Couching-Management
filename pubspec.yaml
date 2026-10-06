@@ -56,6 +56,10 @@ dependencies:
   device_info_plus: ^11.3.3
   flutter_secure_storage: ^9.2.4
   android_id: ^0.5.2+1
+  package_info_plus: ^9.0.1
+  dio: ^5.11.1
+  open_filex: ^4.7.0
+  firebase_messaging: ^15.2.10
 
 dev_dependencies:
   flutter_test:

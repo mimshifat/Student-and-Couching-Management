@@ -240,7 +240,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
     }
 
     // Overall stats computed from already-aggregated BatchSummary objects — O(n batches) not O(n results)
-    final totalResults = summaries.fold(0, (s, b) => s + b.totalResults);
+    final totalExams = summaries.fold(0, (s, b) => s + b.totalExams);
     final totalAbsents = summaries.fold(0, (s, b) => s + b.absentCount);
     final totalObtained = summaries.fold(0.0, (s, b) => s + b.totalObtained);
     final totalAvailable = summaries.fold(0.0, (s, b) => s + b.totalAvailable);
@@ -285,9 +285,9 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildBannerStat('Total Results', totalResults.toString()),
+                      _buildBannerStat('Total Exams', totalExams.toString()),
                       _buildBannerStat('Avg Score', '${overallAvg.toCleanString()}%'),
-                      _buildBannerStat('Absent', totalAbsents.toString()),
+                      _buildBannerStat('Absents', totalAbsents.toString()),
                       _buildBannerStat('Batches', summaries.length.toString()),
                     ],
                   ),
@@ -334,7 +334,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(b.batchName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
-                                Text('${b.uniqueStudents} students • ${b.totalResults} results', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                Text('${b.uniqueStudents} students • ${b.totalExams} exams', style: const TextStyle(fontSize: 12, color: Colors.black54)),
                               ],
                             ),
                           ),
@@ -364,11 +364,11 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          _buildBatchStatPill(Icons.assignment_turned_in, '${b.totalResults} Results', const Color(0xFF1A73E8)),
+                          _buildBatchStatPill(Icons.assignment, '${b.totalExams} Exams', const Color(0xFF1A73E8)),
                           const SizedBox(width: 8),
-                          _buildBatchStatPill(Icons.show_chart, '${b.totalObtained.toCleanString()}/${b.totalAvailable.toCleanString()} Marks', const Color(0xFF2B9348)),
+                          _buildBatchStatPill(Icons.group, '${b.uniqueStudents} Students', const Color(0xFF2B9348)),
                           const SizedBox(width: 8),
-                          _buildBatchStatPill(Icons.person_off, '${b.absentCount} Absent', const Color(0xFFD32F2F)),
+                          _buildBatchStatPill(Icons.person_off, '${b.absentCount} Absents', const Color(0xFFD32F2F)),
                         ],
                       ),
                     ],
@@ -443,7 +443,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
       } else {
         totalMarksAvailable += r.totalMarks;
         totalMarksObtained += r.obtainedMarks!;
-        final pct = (r.obtainedMarks! / r.totalMarks) * 100;
+        final pct = r.totalMarks > 0 ? (r.obtainedMarks! / r.totalMarks) * 100 : 0.0;
         if (pct > maxPercentage) maxPercentage = pct;
         if (pct < minPercentage) minPercentage = pct;
         hasValidMarks = true;

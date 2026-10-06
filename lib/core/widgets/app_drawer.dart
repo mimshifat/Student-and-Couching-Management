@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../utils/app_updater.dart';
 import '../../features/profile/presentation/providers/profile_provider.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -109,12 +110,19 @@ class AppDrawer extends StatelessWidget {
             title: const Text('Institute Profile'),
             onTap: () {
               Navigator.pop(context);
-              // Instead of creating a new Edit screen, we can reuse ProfileSetupScreen
-              // by passing some context or it will just prefill its fields if we read from provider
-              // Actually, I'll create an Edit profile screen or just navigate to ProfileSetupScreen 
-              // Wait, ProfileSetupScreen has PopScope(canPop:false), which would prevent back button if reused directly!
-              // I should navigate to a dedicated Edit screen, or just create it here inline.
               Navigator.push(context, MaterialPageRoute(builder: (_) => const _EditProfileScreen()));
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.system_update_alt),
+            title: const Text('Check for Updates'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Checking for updates...')),
+              );
+              AppUpdater.checkForUpdates(context, force: true);
             },
           ),
         ],

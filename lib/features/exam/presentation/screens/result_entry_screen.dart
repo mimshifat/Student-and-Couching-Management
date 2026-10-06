@@ -86,7 +86,7 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
         provider.clearResultMarksSilent(studentId);
       } else {
         final marks = double.tryParse(text);
-        if (marks != null && marks <= widget.exam.totalMarks) {
+        if (marks != null && marks >= 0 && marks <= widget.exam.totalMarks) {
           provider.updateResultMarksSilent(studentId, marks);
         }
       }
@@ -433,13 +433,13 @@ class _ResultEntryScreenState extends State<ResultEntryScreen> {
                         }
                         final marks = double.tryParse(text);
                         if (marks == null) return;
-                        // Validate against totalMarks
-                        if (marks > widget.exam.totalMarks) {
+                        // Validate against totalMarks and negatives
+                        if (marks < 0 || marks > widget.exam.totalMarks) {
                           ScaffoldMessenger.of(context)
                             ..clearSnackBars()
                             ..showSnackBar(SnackBar(
                               content: Text(
-                                'Marks cannot exceed ${_formatMark(widget.exam.totalMarks)}',
+                                marks < 0 ? 'Marks cannot be negative' : 'Marks cannot exceed ${_formatMark(widget.exam.totalMarks)}',
                               ),
                               backgroundColor: Colors.red.shade700,
                               duration: const Duration(seconds: 2),

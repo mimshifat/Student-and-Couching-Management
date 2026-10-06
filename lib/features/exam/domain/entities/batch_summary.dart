@@ -4,6 +4,7 @@ class BatchSummary {
   final int batchId;
   final String batchName;
   final int totalResults;
+  final int totalExams;
   final int absentCount;
   final double totalObtained;
   final double totalAvailable;
@@ -13,6 +14,7 @@ class BatchSummary {
     required this.batchId,
     required this.batchName,
     required this.totalResults,
+    required this.totalExams,
     required this.absentCount,
     required this.totalObtained,
     required this.totalAvailable,

@@ -16,6 +16,7 @@ import '../../../exam/presentation/screens/exam_list_screen.dart';
 import '../../../routine/presentation/screens/routine_screen.dart';
 
 import '../../../../core/widgets/app_drawer.dart';
+import '../../../../core/utils/app_updater.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppUpdater.checkForUpdates(context);
       context.read<StudentProvider>().loadStudents();
       context.read<BatchProvider>().loadBatches();
       context.read<ExamProvider>().loadAllExams();
