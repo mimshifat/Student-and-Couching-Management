@@ -60,7 +60,7 @@ class StudentRepositoryImpl implements StudentRepository {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       _tableName,
-      where: 'id = ? AND deleted_at IS NULL',
+      where: 'id = ?',
       whereArgs: [id],
     );
 
@@ -186,6 +186,21 @@ class StudentRepositoryImpl implements StudentRepository {
   }
 
   @override
+  Future<List<Student>> getStudentsEverEnrolledInBatch(int batchId) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT DISTINCT s.* FROM students s
+      INNER JOIN enrollments e ON s.id = e.student_id
+      WHERE e.batch_id = ? AND s.deleted_at IS NULL
+      ORDER BY s.name ASC
+    ''', [batchId]);
+
+    return List.generate(maps.length, (i) {
+      return StudentModel.fromMap(maps[i]);
+    });
+  }
+
+  @override
   Future<List<String>> getDistinctClassNames() async {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
@@ -211,7 +226,7 @@ class StudentRepositoryImpl implements StudentRepository {
     final maps = await db.query(
       _tableName,
       columns: ['phone'],
-      where: 'id = ? AND deleted_at IS NULL',
+      where: 'id = ?',
       whereArgs: [id],
       limit: 1,
     );

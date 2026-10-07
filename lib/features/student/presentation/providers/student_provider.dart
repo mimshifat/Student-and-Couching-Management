@@ -129,6 +129,21 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
+  Future<void> loadStudentsEverEnrolledInBatch(int batchId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _students = await _repository.getStudentsEverEnrolledInBatch(batchId);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<int?> addStudent(Student student) async {
     try {
       final id = await _repository.insertStudent(student);

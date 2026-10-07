@@ -138,7 +138,9 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                                 child: Text(b.name, style: const TextStyle(fontSize: 14)),
                               );
                             }).toList(),
-                            onChanged: (val) => setState(() => _selectedBatchId = val),
+                            onChanged: widget.exam == null 
+                                ? (val) => setState(() => _selectedBatchId = val)
+                                : null,
                             validator: (val) => val == null ? 'Required' : null,
                           );
                         },
@@ -177,7 +179,12 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                               icon: Icons.score_outlined,
                               controller: _marksCtrl,
                               isNumber: true,
-                              validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                              validator: (val) {
+                                if (val == null || val.trim().isEmpty) return 'Required';
+                                final marks = double.tryParse(val.trim());
+                                if (marks == null || marks <= 0) return 'Must be > 0';
+                                return null;
+                              },
                             ),
                           ),
                         ],

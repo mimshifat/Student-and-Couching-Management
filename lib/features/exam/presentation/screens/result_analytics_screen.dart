@@ -62,7 +62,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
     if (batchId == null) {
       context.read<StudentProvider>().loadStudents();
     } else {
-      context.read<StudentProvider>().loadStudentsByBatch(batchId);
+      context.read<StudentProvider>().loadStudentsEverEnrolledInBatch(batchId);
     }
     // Use efficient aggregate query
     context.read<ExamProvider>().loadBatchSummaries(batchId, _selectedYear);
@@ -334,7 +334,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(b.batchName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
-                                Text('${b.uniqueStudents} students • ${b.totalExams} exams', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                Text('${b.uniqueStudents} participants • ${b.totalExams} exams', style: const TextStyle(fontSize: 12, color: Colors.black54)),
                               ],
                             ),
                           ),
@@ -366,7 +366,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                         children: [
                           _buildBatchStatPill(Icons.assignment, '${b.totalExams} Exams', const Color(0xFF1A73E8)),
                           const SizedBox(width: 8),
-                          _buildBatchStatPill(Icons.group, '${b.uniqueStudents} Students', const Color(0xFF2B9348)),
+                          _buildBatchStatPill(Icons.group, '${b.uniqueStudents} Tested', const Color(0xFF2B9348)),
                           const SizedBox(width: 8),
                           _buildBatchStatPill(Icons.person_off, '${b.absentCount} Absents', const Color(0xFFD32F2F)),
                         ],

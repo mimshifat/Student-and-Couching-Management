@@ -18,6 +18,7 @@ abstract class StudentRepository {
     String? searchQuery,
   });
   Future<List<Student>> getStudentsByBatch(int batchId);
+  Future<List<Student>> getStudentsEverEnrolledInBatch(int batchId);
 
   /// Returns distinct non-null class names — much cheaper than loading all students.
   Future<List<String>> getDistinctClassNames();

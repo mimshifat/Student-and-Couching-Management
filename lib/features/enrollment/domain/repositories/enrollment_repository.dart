@@ -9,6 +9,7 @@ abstract class EnrollmentRepository {
   Future<List<Enrollment>> getEnrollmentHistory(int studentId);
   Future<List<Enrollment>> getAllEnrollments();
   Future<List<Enrollment>> getStudentsByBatch(int batchId);
+  Future<List<Enrollment>> getStudentsEnrolledOnDate(int batchId, DateTime date);
   Future<bool> isStudentActive(int studentId);
 
   /// Returns raw enrollment rows for [year], LEFT-JOINed with students so that

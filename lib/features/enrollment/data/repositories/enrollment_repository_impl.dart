@@ -115,6 +115,23 @@ class EnrollmentRepositoryImpl implements EnrollmentRepository {
   }
 
   @override
+  Future<List<Enrollment>> getStudentsEnrolledOnDate(int batchId, DateTime date) async {
+    final db = await _dbHelper.database;
+    final dateStr = DateUtilsHelper.formatForDb(date);
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT DISTINCT e.student_id, e.*, s.name as student_name 
+      FROM $_tableName e 
+      JOIN students s ON e.student_id = s.id 
+      WHERE e.batch_id = ? 
+        AND date(e.join_date) <= date(?)
+        AND (e.leave_date IS NULL OR date(e.leave_date) >= date(?))
+      ORDER BY s.name ASC
+    ''', [batchId, dateStr, dateStr]);
+
+    return List.generate(maps.length, (i) => EnrollmentModel.fromMap(maps[i]));
+  }
+
+  @override
   Future<bool> isStudentActive(int studentId) async {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> result = await db.rawQuery('''

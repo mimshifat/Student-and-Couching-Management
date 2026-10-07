@@ -199,7 +199,7 @@ class CustomFormWidgets {
     required IconData icon,
     required T? value,
     required List<DropdownMenuItem<T>> items,
-    required Function(T?) onChanged,
+    required void Function(T?)? onChanged,
     String? Function(T?)? validator,
   }) {
     return Column(

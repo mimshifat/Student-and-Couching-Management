@@ -39,6 +39,8 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_enrollments_student_id ON enrollments(student_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_fee_records_student_year ON fee_records(student_id, year)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_students_deleted_at ON students(deleted_at)');
+    // Ensure no duplicate results for same student in same exam
+    await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_results_unique_student_exam ON results(exam_id, student_id)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -368,7 +370,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         student_id INTEGER NOT NULL,
         student_class TEXT,
-        batch_id INTEGER,
+        batch_id INTEGER REFERENCES batches(id) ON DELETE SET NULL,
         batch_details_snapshot TEXT,
         month INTEGER NOT NULL,
         year INTEGER NOT NULL,

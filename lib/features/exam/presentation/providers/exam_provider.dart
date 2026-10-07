@@ -183,21 +183,38 @@ class ExamProvider with ChangeNotifier {
 
     try {
       final existingResults = await _repository.getResultsForExam(exam.id!);
+      final enrolled = await _enrollmentRepo.getStudentsEnrolledOnDate(exam.batchId, exam.examDate);
       
-      if (existingResults.isNotEmpty) {
-        _currentResults = List<ExamResult>.from(existingResults);
-      } else {
-        // Generate blank results for active students
-        final enrolled = await _enrollmentRepo.getStudentsByBatch(exam.batchId);
-        _currentResults = enrolled.map((e) => ExamResult(
-          examId: exam.id!,
-          studentId: e.studentId,
-          batchId: exam.batchId,
-          createdAt: DateTime.now(),
-          studentName: e.studentName,
-          isAbsent: false,
-        )).toList();
+      final enrolledStudentIds = enrolled.map((e) => e.studentId).toSet();
+      
+      _currentResults = [];
+      for (final result in existingResults) {
+        // Keep result if they are still enrolled OR if they have actual data
+        if (enrolledStudentIds.contains(result.studentId) || 
+            result.obtainedMarks != null || 
+            result.isAbsent || 
+            result.hasPaid) {
+          _currentResults.add(result);
+        }
       }
+      
+      final existingStudentIds = _currentResults.map((r) => r.studentId).toSet();
+
+      for (final student in enrolled) {
+        if (!existingStudentIds.contains(student.studentId)) {
+          _currentResults.add(ExamResult(
+            examId: exam.id!,
+            studentId: student.studentId,
+            batchId: exam.batchId,
+            createdAt: DateTime.now(),
+            studentName: student.studentName,
+            isAbsent: false,
+          ));
+        }
+      }
+
+      // Sort by student name to maintain a consistent order
+      _currentResults.sort((a, b) => (a.studentName ?? '').compareTo(b.studentName ?? ''));
     } catch (e) {
       _errorMessage = e.toString();
     } finally {

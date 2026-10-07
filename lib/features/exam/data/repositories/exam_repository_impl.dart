@@ -47,12 +47,16 @@ class ExamRepositoryImpl implements ExamRepository {
     // Re-snapshot when batch changes or when snapshot is missing
     final snapshot = await _fetchBatchSnapshot(db, exam.batchId);
     final model = ExamModel.fromEntity(exam.copyWith(batchSnapshot: snapshot));
-    return await db.update(
+    final result = await db.update(
       _examTable,
       model.toMap(),
       where: 'id = ?',
       whereArgs: [model.id],
     );
+
+    // (Removed automatic score capping to prevent silent data loss)
+
+    return result;
   }
 
   @override
@@ -134,14 +138,24 @@ class ExamRepositoryImpl implements ExamRepository {
     // batch.commit(noResult: true) silently swallows constraint errors;
     // a transaction throws on any failure so callers see real errors.
     await db.transaction((txn) async {
-      // 1. Remove all existing rows for this exam.
-      await txn.delete(_resultTable, where: 'exam_id = ?', whereArgs: [examId]);
-
-      // 2. Re-insert every result with the latest in-memory values.
-      //    'id' is stripped so the DB assigns a fresh ROWID.
+      final existingDbResults = await txn.query(_resultTable, columns: ['id'], where: 'exam_id = ?', whereArgs: [examId]);
+      final existingIds = existingDbResults.map((m) => m['id'] as int).toSet();
+      
+      final newIds = results.map((r) => r.id).where((id) => id != null).cast<int>().toSet();
+      
+      final idsToDelete = existingIds.difference(newIds);
+      if (idsToDelete.isNotEmpty) {
+        await txn.delete(_resultTable, where: 'id IN (${idsToDelete.join(',')})');
+      }
+      
       for (final r in results) {
-        final map = ResultModel.fromEntity(r).toMap()..remove('id');
-        await txn.insert(_resultTable, map);
+        final map = ResultModel.fromEntity(r).toMap();
+        if (r.id == null) {
+          map.remove('id');
+          await txn.insert(_resultTable, map);
+        } else {
+          await txn.update(_resultTable, map, where: 'id = ?', whereArgs: [r.id]);
+        }
       }
     });
   }
@@ -269,8 +283,7 @@ class ExamRepositoryImpl implements ExamRepository {
         (SELECT e2.batch_snapshot FROM $_examTable e2 WHERE e2.id = r.exam_id LIMIT 1) AS batch_snapshot,
         COUNT(DISTINCT r.exam_id)                             AS total_exams,
         COUNT(r.id)                                           AS total_results,
-        SUM(CASE WHEN r.is_absent = 1 OR r.obtained_marks IS NULL
-                 THEN 1 ELSE 0 END)                          AS absent_count,
+        SUM(CASE WHEN r.is_absent = 1 THEN 1 ELSE 0 END) AS absent_count,
         COALESCE(SUM(CASE WHEN r.is_absent = 0 AND r.obtained_marks IS NOT NULL
                           THEN r.obtained_marks ELSE 0 END), 0) AS total_obtained,
         COALESCE(SUM(CASE WHEN r.is_absent = 0 AND r.obtained_marks IS NOT NULL
