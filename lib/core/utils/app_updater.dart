@@ -78,6 +78,7 @@ class AppUpdater {
         // 3. Compare versions
         if (latestBuildNumber > currentBuildNumber && context.mounted) {
           _hasCheckedThisSession = true; // Mark as checked so we don't spam them
+          if (force) ScaffoldMessenger.of(context).hideCurrentSnackBar();
           _showUpdateDialog(
             context,
             latestVersion,
@@ -86,13 +87,25 @@ class AppUpdater {
             isMandatory,
           );
         } else if (force && context.mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Your app is up to date! 🎉')),
+            const SnackBar(content: Text('Your app is already up to date! 🎉')),
           );
         }
+      } else if (force && context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Your app is already up to date! 🎉')),
+        );
       }
     } catch (e) {
       debugPrint("Error checking for updates: $e");
+      if (force && context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Update check failed: ${e.toString().split(']').last.trim()}')),
+        );
+      }
     }
   }
 

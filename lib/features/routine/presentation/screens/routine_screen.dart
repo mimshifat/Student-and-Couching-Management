@@ -103,6 +103,11 @@ class _RoutineScreenState extends State<RoutineScreen> {
         ),
         title: const Text('Routine', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.home, color: Colors.white),
+            onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+            tooltip: 'Home',
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Center(

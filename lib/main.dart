@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+
 import 'firebase_options.dart';
 import 'app.dart';
 import 'core/database/database_helper.dart';
@@ -76,15 +76,6 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // Initialize Firebase Cloud Messaging (Push Notifications) safely
-  try {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission(alert: true, badge: true, sound: true);
-    await messaging.subscribeToTopic('app_updates');
-  } catch (e) {
-    debugPrint("FCM Error (Likely no Google Play Services): $e");
-  }
 
   // Set up the initial Firestore Document for App Updates (Runs in background so it never freezes startup)
   AppUpdater.createInitialDocument().catchError((e) => debugPrint("Firestore Setup Error: $e"));

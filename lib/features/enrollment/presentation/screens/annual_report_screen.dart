@@ -71,6 +71,11 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
         ),
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.home, color: _textDark),
+          onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+          tooltip: 'Home',
+        ),
         Consumer<AnnualReportProvider>(
           builder: (ctx, provider, child) => Padding(
             padding: const EdgeInsets.only(right: 16),

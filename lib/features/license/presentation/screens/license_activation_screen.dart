@@ -210,7 +210,13 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                           icon: Icons.person_rounded,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Please enter your name';
+                              return 'Please enter your full name';
+                            }
+                            if (value.trim().length < 3) {
+                              return 'Name must be at least 3 characters long';
+                            }
+                            if (!RegExp(r"^[a-zA-Z\s\.\-]+$").hasMatch(value.trim())) {
+                              return 'Name can only contain letters and spaces';
                             }
                             return null;
                           },
@@ -228,8 +234,9 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                             if (value == null || value.trim().isEmpty) {
                               return 'Please enter your phone number';
                             }
-                            if (value.trim().length < 10) {
-                              return 'Please enter a valid phone number';
+                            // Validates standard 11-digit phone number starting with 01
+                            if (!RegExp(r"^01[3-9]\d{8}$").hasMatch(value.trim())) {
+                              return 'Please enter a valid 11-digit phone number (e.g., 017...)';
                             }
                             return null;
                           },
@@ -247,8 +254,9 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
                             if (value == null || value.trim().isEmpty) {
                               return 'Please enter your license key';
                             }
-                            if (value.trim().length < 8) {
-                              return 'License key must be at least 8 characters';
+                            // Assuming format like XXXX-XXXX-XXXX (at least 12 characters)
+                            if (value.trim().length < 12) {
+                              return 'License key is too short. (Format: XXXX-XXXX-XXXX)';
                             }
                             return null;
                           },

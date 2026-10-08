@@ -237,6 +237,13 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+            tooltip: 'Home',
+          ),
+        ],
       ),
       body: Consumer<BackupProvider>(
         builder: (context, provider, child) {

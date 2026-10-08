@@ -53,6 +53,11 @@ class _NoteListScreenState extends State<NoteListScreen> {
         title: const Text('Notes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
+            icon: const Icon(Icons.home, color: Colors.white),
+            onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+            tooltip: 'Home',
+          ),
+          IconButton(
             icon: Container(
               padding: const EdgeInsets.all(4),
               decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),

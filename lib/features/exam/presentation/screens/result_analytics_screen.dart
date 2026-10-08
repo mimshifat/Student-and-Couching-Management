@@ -86,6 +86,13 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
           },
         ),
         title: const Text('Result Analytics', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home, color: Colors.white),
+            onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+            tooltip: 'Home',
+          ),
+        ],
       ),
       body: Consumer3<StudentProvider, BatchProvider, ExamProvider>(
         builder: (context, studentProvider, batchProvider, examProvider, child) {

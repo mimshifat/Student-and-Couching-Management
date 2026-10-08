@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
-
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../exam/presentation/providers/exam_provider.dart';
@@ -51,6 +51,16 @@ class _HomeScreenState extends State<HomeScreen> {
       context.read<BatchProvider>().loadBatches();
       context.read<ExamProvider>().loadAllExams();
       context.read<EnrollmentProvider>().loadEnrollments();
+
+      // Ask for notification permissions on the Home Screen (Best Practice UX)
+      try {
+        final messaging = FirebaseMessaging.instance;
+        messaging.requestPermission(alert: true, badge: true, sound: true).then((_) {
+          messaging.subscribeToTopic('app_updates');
+        });
+      } catch (e) {
+        debugPrint("FCM Error (Likely no Google Play Services): $e");
+      }
     });
   }
 
@@ -121,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (context, profileProvider, child) {
                     final ownerName = profileProvider.profile?.ownerName ?? 'Teacher';
                     return Text(
-                      '${_getGreeting()}, $ownerName! 👋',
+                      '${_getGreeting()}, $ownerName!\u00A0👋',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
