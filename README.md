@@ -63,10 +63,12 @@ To release a new update to your users automatically:
 3. **Build the APK:** Run `flutter build apk --release`.
 4. **Rename and Copy:** Go to `build/app/outputs/flutter-apk/`, rename `app-release.apk` to `app-update.bin`, and copy it to the `public/` folder.
 5. **Upload to Firebase Hosting:** Run `firebase deploy --only hosting` to upload the APK.
-6. **Update Firestore:** Run the automated PowerShell script to push your `payload.json` to Firestore:
+6. **Update Firestore:** Run the automated PowerShell script to push your `payload.json` to Firestore. (Use the `Bypass` flag to avoid Windows execution policy errors):
    ```powershell
-   .\deploy_ota.ps1
+   powershell -ExecutionPolicy Bypass -Command ".\deploy_ota.ps1"
    ```
+   
+   *Troubleshooting Note*: If `firebase deploy` fails with "cannot be loaded because running scripts is disabled", run it via Command Prompt: `cmd.exe /c "firebase deploy --only hosting"`. If `deploy_ota.ps1` gives a token error, try running `cmd.exe /c "firebase projects:list"` to refresh your session!
    
 Your users will automatically receive the update prompt the next time they open the app!
 

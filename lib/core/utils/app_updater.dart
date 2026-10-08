@@ -6,6 +6,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 class AppUpdater {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -217,6 +219,36 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
   Future<void> _startDownload() async {
     if (_isDownloading) return; // Prevent user from double-clicking the button rapidly
+
+    if (Platform.isAndroid) {
+      if (await Permission.requestInstallPackages.isDenied) {
+        await Permission.requestInstallPackages.request();
+      }
+      var androidInfo = await DeviceInfoPlugin().androidInfo;
+      if (androidInfo.version.sdkInt >= 30) {
+        if (!await Permission.manageExternalStorage.isGranted) {
+          final status = await Permission.manageExternalStorage.request();
+          if (!status.isGranted) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please grant "All files access" to install the update.')));
+              setState(() => _isDownloading = false);
+            }
+            return;
+          }
+        }
+      } else {
+        if (!await Permission.storage.isGranted) {
+          final status = await Permission.storage.request();
+          if (!status.isGranted) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Storage permission is required to update.')));
+              setState(() => _isDownloading = false);
+            }
+            return;
+          }
+        }
+      }
+    }
 
     setState(() {
       _isDownloading = true;

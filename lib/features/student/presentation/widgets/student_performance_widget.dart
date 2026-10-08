@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
+import '../../../exam/domain/entities/exam.dart';
 import '../../../exam/domain/entities/detailed_result.dart';
 import '../../../exam/data/repositories/exam_repository_impl.dart';
+import '../../../exam/presentation/screens/result_entry_screen.dart';
 import '../../../../core/utils/number_format_extension.dart';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -712,83 +714,106 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
               '${r.obtainedMarks!.toCleanString()}/${r.totalMarks.toCleanString()}';
         }
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.shade200),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2))
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4F8),
-                    borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.assignment, color: _navy, size: 22),
+        return InkWell(
+          onTap: () async {
+            final exam = Exam(
+              id: r.examId,
+              batchId: r.batchId,
+              title: r.examTitle,
+              examType: r.examType,
+              examDate: r.examDate,
+              totalMarks: r.totalMarks,
+              createdAt: DateTime.now(), // dummy for navigation
+              batchName: r.displayBatchName,
+            );
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ResultEntryScreen(exam: exam),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(r.examTitle,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Colors.black87)),
-                    const SizedBox(height: 3),
-                    Text(
-                        '${r.displayBatchName} • ${r.examType}',
-                        style:
-                            const TextStyle(fontSize: 11, color: Colors.black45)),
-                    Text(
-                        DateFormat('dd MMM yyyy').format(r.examDate),
-                        style:
-                            const TextStyle(fontSize: 11, color: Colors.black38)),
-                  ],
+            );
+            // Refresh results when coming back
+            _loadResults();
+          },
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2))
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                      color: const Color(0xFFF0F4F8),
+                      borderRadius: BorderRadius.circular(12)),
+                  child: const Icon(Icons.assignment, color: _navy, size: 22),
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Row(
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(statusText,
-                          style: TextStyle(
+                      Text(r.examTitle,
+                          style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: statusColor)),
-                      const SizedBox(width: 4),
-                      Icon(statusIcon, color: statusColor, size: 15),
+                              fontSize: 14,
+                              color: Colors.black87)),
+                      const SizedBox(height: 3),
+                      Text(
+                          '${r.displayBatchName} • ${r.examType}',
+                          style:
+                              const TextStyle(fontSize: 11, color: Colors.black45)),
+                      Text(
+                          DateFormat('dd MMM yyyy').format(r.examDate),
+                          style:
+                              const TextStyle(fontSize: 11, color: Colors.black38)),
                     ],
                   ),
-                  if (!absent) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                          color: statusColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6)),
-                      child: Text('${pct.toCleanString()}%',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: statusColor)),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(
+                      children: [
+                        Text(statusText,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: statusColor)),
+                        const SizedBox(width: 4),
+                        Icon(statusIcon, color: statusColor, size: 15),
+                      ],
                     ),
+                    if (!absent) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6)),
+                        child: Text('${pct.toCleanString()}%',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                                color: statusColor)),
+                      ),
+                    ],
                   ],
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         );
       }).toList(),

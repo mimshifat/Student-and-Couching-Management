@@ -11,6 +11,10 @@ class PdfReportService {
     required Student student,
     required List<DetailedResult> results,
     required String periodLabel,
+    String? instituteName,
+    String? ownerName,
+    String? ownerPhone,
+    String? batchName,
   }) async {
     final pdf = pw.Document();
 
@@ -20,14 +24,14 @@ class PdfReportService {
         margin: const pw.EdgeInsets.all(32),
         build: (context) {
           return [
-            _buildHeader(periodLabel),
-            pw.SizedBox(height: 20),
-            _buildStudentInfo(student),
-            pw.SizedBox(height: 20),
+            _buildHeader(periodLabel, instituteName: instituteName, ownerName: ownerName, ownerPhone: ownerPhone),
+            pw.SizedBox(height: 12),
+            _buildStudentInfo(student, batchName: batchName),
+            pw.SizedBox(height: 12),
             _buildResultsTable(results),
-            pw.SizedBox(height: 20),
+            pw.SizedBox(height: 12),
             _buildSummary(results),
-            pw.SizedBox(height: 50),
+            pw.SizedBox(height: 40),
             _buildSignatures(),
           ];
         },
@@ -41,6 +45,9 @@ class PdfReportService {
     required String batchName,
     required Map<Student, List<DetailedResult>> studentResultsMap,
     required String periodLabel,
+    String? instituteName,
+    String? ownerName,
+    String? ownerPhone,
   }) async {
     final pdf = pw.Document();
 
@@ -54,14 +61,14 @@ class PdfReportService {
           margin: const pw.EdgeInsets.all(32),
           build: (context) {
             return [
-              _buildHeader(periodLabel),
-              pw.SizedBox(height: 20),
+              _buildHeader(periodLabel, instituteName: instituteName, ownerName: ownerName, ownerPhone: ownerPhone),
+              pw.SizedBox(height: 12),
               _buildStudentInfo(student, batchName: batchName),
-              pw.SizedBox(height: 20),
+              pw.SizedBox(height: 12),
               _buildResultsTable(results),
-              pw.SizedBox(height: 20),
+              pw.SizedBox(height: 12),
               _buildSummary(results),
-              pw.SizedBox(height: 50),
+              pw.SizedBox(height: 40),
               _buildSignatures(),
             ];
           },
@@ -72,15 +79,30 @@ class PdfReportService {
     return pdf.save();
   }
 
-  static pw.Widget _buildHeader(String periodLabel) {
+  static pw.Widget _buildHeader(String periodLabel, {String? instituteName, String? ownerName, String? ownerPhone}) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.center,
       children: [
-        pw.Text('STUDENT PROGRESS REPORT', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo900)),
-        pw.SizedBox(height: 8),
-        pw.Text('Report Period: $periodLabel', style: pw.TextStyle(fontSize: 14, color: PdfColors.grey700)),
-        pw.SizedBox(height: 16),
-        pw.Divider(thickness: 2, color: PdfColors.indigo900),
+        if (instituteName != null && instituteName.isNotEmpty) ...[
+          pw.Text(instituteName, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo900), textAlign: pw.TextAlign.center),
+          pw.SizedBox(height: 2),
+        ],
+        if ((ownerName != null && ownerName.isNotEmpty) || (ownerPhone != null && ownerPhone.isNotEmpty)) ...[
+          pw.Text(
+            [
+              if (ownerName != null && ownerName.isNotEmpty) ownerName,
+              if (ownerPhone != null && ownerPhone.isNotEmpty) 'Mobile: $ownerPhone'
+            ].join(' | '),
+            style: pw.TextStyle(fontSize: 10, color: PdfColors.grey800),
+            textAlign: pw.TextAlign.center,
+          ),
+          pw.SizedBox(height: 8),
+        ],
+        pw.Text('STUDENT PROGRESS REPORT', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: (instituteName != null && instituteName.isNotEmpty) ? PdfColors.indigo700 : PdfColors.indigo900)),
+        pw.SizedBox(height: 4),
+        pw.Text('Report Period: $periodLabel', style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+        pw.SizedBox(height: 12),
+        pw.Divider(thickness: 1.5, color: PdfColors.indigo900),
       ],
     );
   }
@@ -96,17 +118,19 @@ class PdfReportService {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Expanded(
+            flex: 5,
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 _infoRow('Name:', student.name),
-                if (student.rollNumber != null) _infoRow('Roll No:', student.rollNumber.toString()),
                 if (student.className != null && student.className!.isNotEmpty) _infoRow('Class:', student.className!),
               ],
             ),
           ),
-          if (batchName != null)
+          if (batchName != null && batchName.isNotEmpty) ...[
+            pw.SizedBox(width: 12),
             pw.Expanded(
+              flex: 4,
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
@@ -114,6 +138,7 @@ class PdfReportService {
                 ],
               ),
             ),
+          ]
         ],
       ),
     );
@@ -125,8 +150,8 @@ class PdfReportService {
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.SizedBox(width: 60, child: pw.Text(label, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12))),
-          pw.Expanded(child: pw.Text(value, style: const pw.TextStyle(fontSize: 12))),
+          pw.SizedBox(width: 45, child: pw.Text(label, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
+          pw.Expanded(child: pw.Text(value, style: const pw.TextStyle(fontSize: 10))),
         ],
       ),
     );
@@ -166,9 +191,9 @@ class PdfReportService {
         4: pw.Alignment.centerRight,
         5: pw.Alignment.centerRight,
       },
-      cellStyle: const pw.TextStyle(fontSize: 10),
-      headerHeight: 24,
-      cellHeight: 20,
+      cellStyle: const pw.TextStyle(fontSize: 9),
+      headerHeight: 22,
+      cellHeight: 18,
     );
   }
 

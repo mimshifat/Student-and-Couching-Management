@@ -276,14 +276,16 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   });
                   _loadExams();
                 },
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  height: 40,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     color: (_startMonth == 1 && _endMonth == 12)
                         ? primaryNavy
                         : Colors.white,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: (_startMonth == 1 && _endMonth == 12)
                           ? primaryNavy
@@ -293,7 +295,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   child: Text(
                     'All',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: (_startMonth == 1 && _endMonth == 12)
                           ? Colors.white
@@ -336,6 +338,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
 
   Widget _buildDropdownContainer({required Widget child}) {
     return Container(
+      height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: Colors.white,

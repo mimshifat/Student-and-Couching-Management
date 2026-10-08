@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../providers/exam_provider.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../student/domain/entities/student.dart';
 import '../../domain/entities/detailed_result.dart';
 import '../../../../core/widgets/searchable_dropdown.dart';
@@ -24,7 +25,7 @@ class ResultAnalyticsScreen extends StatefulWidget {
 
 class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
   late int _selectedYear;
-  int? _startMonth;
+  int? _startMonth = 1;
   int? _endMonth = DateTime.now().month;
   
   int? _selectedBatchId;
@@ -155,7 +156,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
   Widget _buildDropdown<T>({required T value, required List<DropdownMenuItem<T>> items, required void Function(T?) onChanged}) {
     return Container(
       height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: const Color(0xFFF0F4F8),
         borderRadius: BorderRadius.circular(8),
@@ -186,15 +187,11 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
           // Time Filters
           Row(
             children: [
-              const Icon(Icons.access_time, color: Color(0xFF191A4E), size: 20),
-              const SizedBox(width: 8),
-              const Text('Period:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-              const SizedBox(width: 16),
               Expanded(
                 flex: 2,
                 child: _buildDropdown<int>(
                   value: _selectedYear,
-                  items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList(),
+                  items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString(), style: const TextStyle(fontSize: 13)))).toList(),
                   onChanged: (val) {
                     if (val != null) {
                       setState(() => _selectedYear = val);
@@ -203,28 +200,28 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                   },
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 flex: 3,
                 child: _buildDropdown<int?>(
                   value: _startMonth,
                   items: [
-                    DropdownMenuItem(value: null, child: Text('$_selectedYear (Whole Year)')),
-                    ...months.map((m) => DropdownMenuItem(value: m, child: Text(DateFormat('MMMM').format(DateTime(2000, m))))),
+                    const DropdownMenuItem(value: null, child: Text('All Months', style: TextStyle(fontSize: 13))),
+                    ...months.map((m) => DropdownMenuItem(value: m, child: Text(DateFormat('MMM').format(DateTime(2000, m)), style: const TextStyle(fontSize: 13)))),
                   ],
                   onChanged: (val) {
                     _onStartMonthChanged(val);
                   },
                 ),
               ),
-              const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('to')),
+              const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text('to', style: TextStyle(fontSize: 13))),
               Expanded(
                 flex: 3,
                 child: _buildDropdown<int?>(
                   value: _endMonth,
                   items: [
-                    DropdownMenuItem(value: null, child: Text(_startMonth == null ? '$_selectedYear (Whole Year)' : 'Same Month')),
-                    ...months.where((m) => _startMonth == null || m >= _startMonth!).map((m) => DropdownMenuItem(value: m, child: Text(DateFormat('MMMM').format(DateTime(2000, m))))),
+                    const DropdownMenuItem(value: null, child: Text('End', style: TextStyle(fontSize: 13))),
+                    ...months.where((m) => _startMonth == null || m >= _startMonth!).map((m) => DropdownMenuItem(value: m, child: Text(DateFormat('MMM').format(DateTime(2000, m)), style: const TextStyle(fontSize: 13)))),
                   ],
                   onChanged: (val) {
                     _onEndMonthChanged(val);
@@ -383,10 +380,14 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                               grouped[s] = allResults.where((r) => r.studentId == s.id).toList();
                             }
                             
+                            final profile = context.read<ProfileProvider>().profile;
                             final pdfBytes = await PdfReportService.generateBatchReport(
                               batchName: summaries.isNotEmpty ? summaries.first.batchName : "Unknown Batch",
                               studentResultsMap: grouped,
                               periodLabel: _currentPeriodLabel,
+                              instituteName: profile?.instituteName,
+                              ownerName: profile?.ownerName,
+                              ownerPhone: profile?.phone,
                             );
                             
                             if (!mounted) return;
@@ -655,10 +656,18 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                 ),
                 ElevatedButton.icon(
                   onPressed: () async {
+                    final profile = context.read<ProfileProvider>().profile;
+                    final batchName = _selectedBatchId != null 
+                        ? context.read<BatchProvider>().batches.firstWhere((b) => b.id == _selectedBatchId).name 
+                        : null;
                     final pdfBytes = await PdfReportService.generateStudentReport(
                       student: _selectedStudent!,
                       results: yearResults,
                       periodLabel: _currentPeriodLabel,
+                      instituteName: profile?.instituteName,
+                      ownerName: profile?.ownerName,
+                      ownerPhone: profile?.phone,
+                      batchName: batchName,
                     );
                     await Printing.layoutPdf(
                       onLayout: (PdfPageFormat format) async => pdfBytes,
