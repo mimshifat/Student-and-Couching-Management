@@ -69,11 +69,26 @@ class AppUpdater {
 
       if (doc.exists) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        int latestBuildNumber = data['build_number'] ?? 0;
-        String latestVersion = data['latest_version'] ?? '';
-        String downloadUrl = data['apk_download_url'] ?? '';
-        bool isMandatory = data['is_mandatory'] ?? false;
-        String releaseNotes = data['release_notes'] ?? '';
+        
+        // Safely parse Firestore data (prevents crashes if admin accidentally types a String instead of a Number)
+        int latestBuildNumber = 0;
+        if (data['build_number'] is int) {
+          latestBuildNumber = data['build_number'];
+        } else if (data['build_number'] is String) {
+          latestBuildNumber = int.tryParse(data['build_number']) ?? 0;
+        }
+
+        String latestVersion = data['latest_version']?.toString() ?? '';
+        String downloadUrl = data['apk_download_url']?.toString() ?? '';
+        
+        bool isMandatory = false;
+        if (data['is_mandatory'] is bool) {
+          isMandatory = data['is_mandatory'];
+        } else if (data['is_mandatory'] is String) {
+          isMandatory = data['is_mandatory'].toString().toLowerCase() == 'true';
+        }
+
+        String releaseNotes = data['release_notes']?.toString() ?? '';
 
         // 3. Compare versions
         if (latestBuildNumber > currentBuildNumber && context.mounted) {
@@ -151,7 +166,54 @@ class UpdateDialog extends StatefulWidget {
 
 class _UpdateDialogState extends State<UpdateDialog> {
   bool _isDownloading = false;
+  bool _isDownloaded = false;
   double _progress = 0.0;
+
+  String? _apkFilePath;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfAlreadyDownloaded();
+  }
+
+  Future<void> _checkIfAlreadyDownloaded() async {
+    List<Directory>? externalDirs = await getExternalCacheDirectories();
+    Directory tempDir = (externalDirs != null && externalDirs.isNotEmpty)
+        ? externalDirs.first
+        : await getTemporaryDirectory();
+    String safeVersion = widget.version.replaceAll(RegExp(r'[^a-zA-Z0-9.]'), '_');
+    String finalPath = '${tempDir.path}/update_v$safeVersion.apk';
+    _apkFilePath = finalPath;
+    
+    File finalFile = File(finalPath);
+    if (await finalFile.exists()) {
+      int size = await finalFile.length();
+      if (size < 5000000) { // < 5MB means it's corrupted/incomplete
+        try { await finalFile.delete(); } catch (_) {}
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          _isDownloaded = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _forceRedownload() async {
+    if (_apkFilePath != null) {
+      File f = File(_apkFilePath!);
+      try {
+        if (await f.exists()) await f.delete();
+      } catch (_) {}
+    }
+    setState(() {
+      _isDownloaded = false;
+      _progress = 0.0;
+    });
+    _startDownload();
+  }
 
   Future<void> _startDownload() async {
     if (_isDownloading) return; // Prevent user from double-clicking the button rapidly
@@ -168,7 +230,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
           ? externalDirs.first
           : await getTemporaryDirectory();
           
-      String finalPath = '${tempDir.path}/update_v${widget.version}.apk';
+      String safeVersion = widget.version.replaceAll(RegExp(r'[^a-zA-Z0-9.]'), '_');
+      String finalPath = '${tempDir.path}/update_v$safeVersion.apk';
       String downloadingPath = '$finalPath.download';
 
       File finalFile = File(finalPath);
@@ -179,17 +242,28 @@ class _UpdateDialogState extends State<UpdateDialog> {
           setState(() {
             _progress = 1.0;
             _isDownloading = false;
+            _isDownloaded = true;
           });
         }
-        await OpenFilex.open(finalPath);
+        final result = await OpenFilex.open(
+          finalPath,
+          type: 'application/vnd.android.package-archive',
+        );
+        if (result.type != ResultType.done && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to open installer: ${result.message}')),
+          );
+        }
         return;
       }
 
       // Delete any old corrupted partial downloads
       File downloadingFile = File(downloadingPath);
-      if (await downloadingFile.exists()) {
-        await downloadingFile.delete();
-      }
+      try {
+        if (await downloadingFile.exists()) {
+          await downloadingFile.delete();
+        }
+      } catch (_) {}
 
       // Download the APK with timeouts to prevent hanging
       Dio dio = Dio(BaseOptions(
@@ -200,9 +274,14 @@ class _UpdateDialogState extends State<UpdateDialog> {
         widget.downloadUrl,
         downloadingPath,
         onReceiveProgress: (received, total) {
-          if (total != -1 && mounted) {
+          if (mounted) {
             setState(() {
-              _progress = received / total;
+              if (total > 0) {
+                _progress = received / total;
+              } else {
+                // If total is -1 (unknown length) or 0, just show indeterminate progress
+                _progress = -1.0; 
+              }
             });
           }
         },
@@ -214,12 +293,20 @@ class _UpdateDialogState extends State<UpdateDialog> {
       if (mounted) {
         setState(() {
           _isDownloading = false;
+          _isDownloaded = true;
         });
       }
 
-      // Open and install the downloaded APK
-      final result = await OpenFilex.open(finalPath);
+      final result = await OpenFilex.open(
+        finalPath,
+        type: 'application/vnd.android.package-archive',
+      );
       debugPrint("Install status: ${result.message}");
+      if (result.type != ResultType.done && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to open installer: ${result.message}')),
+        );
+      }
 
     } catch (e) {
       if (mounted) {
@@ -239,7 +326,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !widget.isMandatory && !_isDownloading,
+      canPop: !widget.isMandatory && !_isDownloading && !_isDownloaded,
       child: AlertDialog(
         title: Text('Update Available (v${widget.version})'),
       content: Column(
@@ -253,23 +340,28 @@ class _UpdateDialogState extends State<UpdateDialog> {
           if (_isDownloading)
             Column(
               children: [
-                LinearProgressIndicator(value: _progress),
+                LinearProgressIndicator(value: _progress >= 0 ? _progress : null),
                 const SizedBox(height: 8),
-                Text('${(_progress * 100).toStringAsFixed(0)}% downloaded'),
+                Text(_progress >= 0 ? '${(_progress * 100).toStringAsFixed(0)}% downloaded' : 'Downloading...'),
               ],
             ),
         ],
       ),
       actions: [
-        if (!widget.isMandatory && !_isDownloading)
+        if (!widget.isMandatory && !_isDownloading && !_isDownloaded)
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Later'),
           ),
+        if (_isDownloaded && !_isDownloading)
+          TextButton(
+            onPressed: _forceRedownload,
+            child: const Text('Redownload', style: TextStyle(color: Colors.red)),
+          ),
         if (!_isDownloading)
           ElevatedButton(
             onPressed: _startDownload,
-            child: const Text('Update Now'),
+            child: Text(_isDownloaded ? 'Install Now' : 'Update Now'),
           ),
       ],
     ));

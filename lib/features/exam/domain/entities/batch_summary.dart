@@ -8,7 +8,8 @@ class BatchSummary {
   final int absentCount;
   final double totalObtained;
   final double totalAvailable;
-  final int uniqueStudents;
+  final int totalStudents;
+  final int presentStudents;
 
   const BatchSummary({
     required this.batchId,
@@ -18,11 +19,13 @@ class BatchSummary {
     required this.absentCount,
     required this.totalObtained,
     required this.totalAvailable,
-    required this.uniqueStudents,
+    required this.totalStudents,
+    required this.presentStudents,
   });
 
   double get avgPercent =>
       totalAvailable > 0 ? (totalObtained / totalAvailable) * 100 : 0.0;
 
-  int get presentCount => totalResults - absentCount;
+  double get attendanceRate =>
+      totalResults > 0 ? ((totalResults - absentCount) / totalResults) * 100 : 0.0;
 }

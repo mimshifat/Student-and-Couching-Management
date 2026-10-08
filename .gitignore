@@ -82,3 +82,12 @@ firebase-debug.*.log
 50_secure_licenses.txt
 generate_keys.dart
 upload_keys.dart
+payload.json
+
+# Firebase CLI and Hosting
+.firebase/
+public/*.apk
+public/*.bin
+public/*.zip
+analyze_output.txt
+deploy_ota.ps1

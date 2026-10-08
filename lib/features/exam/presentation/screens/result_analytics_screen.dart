@@ -11,6 +11,10 @@ import '../../../../core/widgets/searchable_dropdown.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/utils/number_format_extension.dart';
 
+import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
+import '../../../../core/utils/pdf_report_service.dart';
+
 class ResultAnalyticsScreen extends StatefulWidget {
   const ResultAnalyticsScreen({super.key});
 
@@ -20,6 +24,9 @@ class ResultAnalyticsScreen extends StatefulWidget {
 
 class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
   late int _selectedYear;
+  int? _startMonth;
+  int? _endMonth = DateTime.now().month;
+  
   int? _selectedBatchId;
   Student? _selectedStudent;
 
@@ -30,28 +37,56 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<StudentProvider>().loadStudents();
       context.read<BatchProvider>().loadBatches();
-      // Use efficient aggregate query instead of loading all raw rows
-      context.read<ExamProvider>().loadBatchSummaries(null, _selectedYear);
+      _loadData();
     });
+  }
+
+  void _loadData() {
+    context.read<ExamProvider>().loadBatchSummaries(_selectedBatchId, year: _selectedYear, startMonth: _startMonth, endMonth: _endMonth);
+    if (_selectedStudent?.id != null) {
+      context.read<ExamProvider>().loadDetailedResultsFiltered(_selectedStudent!.id!, year: _selectedYear, startMonth: _startMonth, endMonth: _endMonth);
+    }
+  }
+
+  String get _currentPeriodLabel {
+    if (_startMonth == null && _endMonth == null) {
+      return _selectedYear.toString();
+    } else if (_startMonth == null && _endMonth != null) {
+      return '${DateFormat('MMM').format(DateTime(2000, _endMonth!))} $_selectedYear';
+    } else if (_endMonth == null || _startMonth == _endMonth) {
+      return '${DateFormat('MMM').format(DateTime(2000, _startMonth!))} $_selectedYear';
+    } else {
+      return '${DateFormat('MMM').format(DateTime(2000, _startMonth!))} - ${DateFormat('MMM').format(DateTime(2000, _endMonth!))} $_selectedYear';
+    }
   }
 
   void _onStudentSelected(Student? student) {
     setState(() {
       _selectedStudent = student;
     });
-    if (student != null && student.id != null) {
-      // Use year-filtered DB query — no Dart .where() loop
-      context.read<ExamProvider>().loadDetailedResultsByYear(student.id!, _selectedYear);
+    if (student != null) {
+      _loadData();
     }
   }
 
-  void _onYearChanged(int year) {
-    setState(() => _selectedYear = year);
-    // Reload data for the new year at DB level
-    context.read<ExamProvider>().loadBatchSummaries(_selectedBatchId, year);
-    if (_selectedStudent?.id != null) {
-      context.read<ExamProvider>().loadDetailedResultsByYear(_selectedStudent!.id!, year);
-    }
+  void _onStartMonthChanged(int? month) {
+    setState(() {
+      _startMonth = month;
+      if (month != null && _endMonth != null && _endMonth! < month) {
+        _endMonth = month;
+      }
+    });
+    _loadData();
+  }
+
+  void _onEndMonthChanged(int? month) {
+    setState(() {
+      _endMonth = month;
+      if (month != null && _startMonth != null && _startMonth! > month) {
+        _startMonth = month;
+      }
+    });
+    _loadData();
   }
 
   void _onBatchChanged(int? batchId) {
@@ -64,8 +99,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
     } else {
       context.read<StudentProvider>().loadStudentsEverEnrolledInBatch(batchId);
     }
-    // Use efficient aggregate query
-    context.read<ExamProvider>().loadBatchSummaries(batchId, _selectedYear);
+    _loadData();
   }
 
   @override
@@ -118,9 +152,30 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
     );
   }
 
+  Widget _buildDropdown<T>({required T value, required List<DropdownMenuItem<T>> items, required void Function(T?) onChanged}) {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F4F8),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          isExpanded: true,
+          value: value,
+          items: items,
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
   Widget _buildFilterSection(List<dynamic> batches, List<Student> students) {
     final currentYear = DateTime.now().year;
     final years = List.generate(10, (index) => currentYear - 5 + index).reversed.toList();
+    final months = List.generate(12, (index) => index + 1);
 
     return Container(
       color: Colors.white,
@@ -128,32 +183,52 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Year Selection
+          // Time Filters
           Row(
             children: [
-              const Icon(Icons.calendar_month, color: Color(0xFF191A4E), size: 20),
+              const Icon(Icons.access_time, color: Color(0xFF191A4E), size: 20),
               const SizedBox(width: 8),
-              const Text('Academic Year:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              const Text('Period:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
               const SizedBox(width: 16),
               Expanded(
-                child: Container(
-                  height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4F8),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int>(
-                      isExpanded: true,
-                      value: _selectedYear,
-                      items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList(),
-                      onChanged: (val) {
-                        if (val != null) _onYearChanged(val);
-                      },
-                    ),
-                  ),
+                flex: 2,
+                child: _buildDropdown<int>(
+                  value: _selectedYear,
+                  items: years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _selectedYear = val);
+                      _loadData();
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 3,
+                child: _buildDropdown<int?>(
+                  value: _startMonth,
+                  items: [
+                    DropdownMenuItem(value: null, child: Text('$_selectedYear (Whole Year)')),
+                    ...months.map((m) => DropdownMenuItem(value: m, child: Text(DateFormat('MMMM').format(DateTime(2000, m))))),
+                  ],
+                  onChanged: (val) {
+                    _onStartMonthChanged(val);
+                  },
+                ),
+              ),
+              const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('to')),
+              Expanded(
+                flex: 3,
+                child: _buildDropdown<int?>(
+                  value: _endMonth,
+                  items: [
+                    DropdownMenuItem(value: null, child: Text(_startMonth == null ? '$_selectedYear (Whole Year)' : 'Same Month')),
+                    ...months.where((m) => _startMonth == null || m >= _startMonth!).map((m) => DropdownMenuItem(value: m, child: Text(DateFormat('MMMM').format(DateTime(2000, m))))),
+                  ],
+                  onChanged: (val) {
+                    _onEndMonthChanged(val);
+                  },
                 ),
               ),
             ],
@@ -255,7 +330,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
 
     final bannerLabel = _selectedBatchId == null
         ? 'All Batches — $_selectedYear'
-        : '${summaries.first.batchName} — $_selectedYear';
+        : '${summaries.isNotEmpty ? summaries.first.batchName : "Selected Batch"} — $_selectedYear';
 
     return Expanded(
       child: SingleChildScrollView(
@@ -282,10 +357,55 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.analytics, color: Colors.white70, size: 18),
-                      const SizedBox(width: 8),
-                      Text(bannerLabel, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                      Row(
+                        children: [
+                          const Icon(Icons.analytics, color: Colors.white70, size: 18),
+                          const SizedBox(width: 8),
+                          Text(bannerLabel, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                        ],
+                      ),
+                      if (_selectedBatchId != null)
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+                            
+                            await examProvider.loadDetailedResultsByBatch(_selectedBatchId, year: _selectedYear, startMonth: _startMonth, endMonth: _endMonth);
+                            
+                            if (!mounted) return;
+
+                            final allResults = examProvider.batchSummaryResults;
+                            final students = context.read<StudentProvider>().students;
+                            
+                            Map<Student, List<DetailedResult>> grouped = {};
+                            for (var s in students) {
+                              grouped[s] = allResults.where((r) => r.studentId == s.id).toList();
+                            }
+                            
+                            final pdfBytes = await PdfReportService.generateBatchReport(
+                              batchName: summaries.isNotEmpty ? summaries.first.batchName : "Unknown Batch",
+                              studentResultsMap: grouped,
+                              periodLabel: _currentPeriodLabel,
+                            );
+                            
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            
+                            await Printing.layoutPdf(
+                              onLayout: (PdfPageFormat format) async => pdfBytes,
+                              name: '${summaries.isNotEmpty ? summaries.first.batchName : "Unknown_Batch"}_Report.pdf',
+                            );
+                          },
+                          icon: const Icon(Icons.print, size: 14),
+                          label: const Text('Print All', style: TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF191A4E),
+                            minimumSize: Size.zero,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -328,55 +448,97 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF0F4F8),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(Icons.group, color: Color(0xFF191A4E), size: 22),
+                            child: const Icon(Icons.group, color: Color(0xFF191A4E), size: 20),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(b.batchName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
-                                Text('${b.uniqueStudents} participants • ${b.totalExams} exams', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                Text(
+                                  b.batchName, 
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 8,
+                                  runSpacing: 2,
+                                  children: [
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.people_outline, size: 14, color: Colors.black54),
+                                        const SizedBox(width: 4),
+                                        Text('${b.totalStudents} Students', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                      ],
+                                    ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.assignment_outlined, size: 14, color: Colors.black54),
+                                        const SizedBox(width: 4),
+                                        Text('${b.totalExams} Exams', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: bColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Text(
-                              '${b.avgPercent.toCleanString()}%',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: bColor),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '${b.avgPercent.toCleanString()}%',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: bColor, height: 1.1),
+                                ),
+                                Text(
+                                  'Avg Score',
+                                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 10, color: bColor, height: 1.1),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: (b.avgPercent / 100).clamp(0.0, 1.0),
-                          minHeight: 6,
+                          minHeight: 5,
                           backgroundColor: Colors.grey.shade100,
                           valueColor: AlwaysStoppedAnimation<Color>(bColor),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _buildBatchStatPill(Icons.assignment, '${b.totalExams} Exams', const Color(0xFF1A73E8)),
-                          const SizedBox(width: 8),
-                          _buildBatchStatPill(Icons.group, '${b.uniqueStudents} Tested', const Color(0xFF2B9348)),
-                          const SizedBox(width: 8),
-                          _buildBatchStatPill(Icons.person_off, '${b.absentCount} Absents', const Color(0xFFD32F2F)),
-                        ],
+                      const SizedBox(height: 10),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildBatchStatPill(Icons.fact_check, '${b.attendanceRate.toCleanString()}% Attendance', const Color(0xFF1A73E8)),
+                            const SizedBox(width: 8),
+                            _buildBatchStatPill(Icons.how_to_reg, '${b.presentStudents} Present', const Color(0xFF2B9348)),
+                            const SizedBox(width: 8),
+                            _buildBatchStatPill(Icons.person_off, '${b.absentCount} Absent', const Color(0xFFD32F2F)),
+                            const SizedBox(width: 8),
+                            _buildBatchStatPill(Icons.military_tech, '${b.totalAvailable.toCleanString()} Marks', const Color(0xFFF57C00)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -407,6 +569,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 4),
@@ -428,7 +591,7 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
             children: [
               Icon(Icons.analytics_outlined, size: 64, color: Colors.grey.shade400),
               const SizedBox(height: 16),
-              Text('No exams found for $_selectedYear', style: const TextStyle(color: Colors.black54, fontSize: 16)),
+              Text('No exams found for this period', style: const TextStyle(color: Colors.black54, fontSize: 16)),
             ],
           ),
         ),
@@ -490,10 +653,26 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: const Color(0xFF191A4E), borderRadius: BorderRadius.circular(12)),
-                  child: Text('Year $_selectedYear', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final pdfBytes = await PdfReportService.generateStudentReport(
+                      student: _selectedStudent!,
+                      results: yearResults,
+                      periodLabel: _currentPeriodLabel,
+                    );
+                    await Printing.layoutPdf(
+                      onLayout: (PdfPageFormat format) async => pdfBytes,
+                      name: '${_selectedStudent!.name}_Report.pdf',
+                    );
+                  },
+                  icon: const Icon(Icons.print, size: 16),
+                  label: const Text('Print', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF191A4E),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
                 ),
               ],
             ),
@@ -658,9 +837,19 @@ class _ResultAnalyticsScreenState extends State<ResultAnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(result.examTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
+                Text(
+                  result.examTitle, 
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 4),
-                Text('${result.displayBatchName} • ${result.examType}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                Text(
+                  '${result.displayBatchName} • ${result.examType}', 
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 4),
                 Text(dateStr, style: const TextStyle(fontSize: 12, color: Colors.black54)),
               ],

@@ -112,6 +112,9 @@ class ExamRepositoryImpl implements ExamRepository {
       // Single month filter
       conditions.add("strftime('%m', e.exam_date) = ?");
       args.add(startMonth.toString().padLeft(2, '0'));
+    } else if (endMonth != null) {
+      conditions.add("strftime('%m', e.exam_date) = ?");
+      args.add(endMonth.toString().padLeft(2, '0'));
     }
     if (batchId != null) {
       conditions.add('e.batch_id = ?');
@@ -224,10 +227,33 @@ class ExamRepositoryImpl implements ExamRepository {
 
   @override
   Future<List<DetailedResult>> getDetailedResultsByBatch(
-      int? batchId) async {
+      int? batchId, {int? year, int? startMonth, int? endMonth}) async {
     final db = await _dbHelper.database;
-    final whereClause = batchId != null ? 'WHERE r.batch_id = ?' : '';
-    final List<Object?> args = batchId != null ? [batchId] : [];
+    final List<String> conditions = [];
+    final List<Object?> args = [];
+
+    if (batchId != null) {
+      conditions.add('r.batch_id = ?');
+      args.add(batchId);
+    }
+    if (year != null) {
+      conditions.add("strftime('%Y', e.exam_date) = ?");
+      args.add(year.toString());
+    }
+    if (startMonth != null && endMonth != null) {
+      conditions.add("CAST(strftime('%m', e.exam_date) AS INTEGER) >= ?");
+      args.add(startMonth);
+      conditions.add("CAST(strftime('%m', e.exam_date) AS INTEGER) <= ?");
+      args.add(endMonth);
+    } else if (startMonth != null) {
+      conditions.add("strftime('%m', e.exam_date) = ?");
+      args.add(startMonth.toString().padLeft(2, '0'));
+    } else if (endMonth != null) {
+      conditions.add("strftime('%m', e.exam_date) = ?");
+      args.add(endMonth.toString().padLeft(2, '0'));
+    }
+
+    final whereClause = conditions.isNotEmpty ? 'WHERE ${conditions.join(' AND ')}' : '';
 
     final maps = await db.rawQuery('''
       SELECT r.*,
@@ -247,9 +273,31 @@ class ExamRepositoryImpl implements ExamRepository {
   }
 
   @override
-  Future<List<DetailedResult>> getDetailedResultsForStudentByYear(
-      int studentId, int year) async {
+  Future<List<DetailedResult>> getDetailedResultsForStudentFiltered(
+      int studentId, {int? year, int? startMonth, int? endMonth}) async {
     final db = await _dbHelper.database;
+    final List<String> conditions = ['r.student_id = ?'];
+    final List<Object?> args = [studentId];
+
+    if (year != null) {
+      conditions.add("strftime('%Y', e.exam_date) = ?");
+      args.add(year.toString());
+    }
+    if (startMonth != null && endMonth != null) {
+      conditions.add("CAST(strftime('%m', e.exam_date) AS INTEGER) >= ?");
+      args.add(startMonth);
+      conditions.add("CAST(strftime('%m', e.exam_date) AS INTEGER) <= ?");
+      args.add(endMonth);
+    } else if (startMonth != null) {
+      conditions.add("strftime('%m', e.exam_date) = ?");
+      args.add(startMonth.toString().padLeft(2, '0'));
+    } else if (endMonth != null) {
+      conditions.add("strftime('%m', e.exam_date) = ?");
+      args.add(endMonth.toString().padLeft(2, '0'));
+    }
+
+    final whereClause = conditions.join(' AND ');
+
     final maps = await db.rawQuery('''
       SELECT r.*,
              e.title as exam_title, e.exam_type, e.exam_date, e.total_marks,
@@ -260,21 +308,42 @@ class ExamRepositoryImpl implements ExamRepository {
       JOIN $_examTable e ON r.exam_id = e.id
       LEFT JOIN batches b ON r.batch_id = b.id
       LEFT JOIN students s ON r.student_id = s.id
-      WHERE r.student_id = ? AND strftime('%Y', e.exam_date) = ?
+      WHERE $whereClause
       ORDER BY e.exam_date DESC
-    ''', [studentId, year.toString()]);
+    ''', args);
 
     return maps.map((m) => DetailedResultModel.fromMap(m)).toList();
   }
 
   @override
-  Future<List<BatchSummary>> getBatchSummaries(int? batchId, int year) async {
+  Future<List<BatchSummary>> getBatchSummaries(int? batchId, {int? year, int? startMonth, int? endMonth}) async {
     final db = await _dbHelper.database;
-    final batchFilter = batchId != null ? 'AND r.batch_id = ?' : '';
-    final List<Object?> args = [
-      year.toString(),
-      ...?(batchId != null ? [batchId] : null),
-    ];
+    final List<String> conditions = [];
+    final List<Object?> args = [];
+
+    if (year != null) {
+      conditions.add("strftime('%Y', e.exam_date) = ?");
+      args.add(year.toString());
+    }
+    if (startMonth != null && endMonth != null) {
+      conditions.add("CAST(strftime('%m', e.exam_date) AS INTEGER) >= ?");
+      args.add(startMonth);
+      conditions.add("CAST(strftime('%m', e.exam_date) AS INTEGER) <= ?");
+      args.add(endMonth);
+    } else if (startMonth != null) {
+      conditions.add("strftime('%m', e.exam_date) = ?");
+      args.add(startMonth.toString().padLeft(2, '0'));
+    } else if (endMonth != null) {
+      conditions.add("strftime('%m', e.exam_date) = ?");
+      args.add(endMonth.toString().padLeft(2, '0'));
+    }
+    
+    if (batchId != null) {
+      conditions.add('r.batch_id = ?');
+      args.add(batchId);
+    }
+    
+    final whereClause = conditions.isNotEmpty ? 'WHERE ${conditions.join(' AND ')}' : '';
 
     final maps = await db.rawQuery('''
       SELECT
@@ -288,11 +357,12 @@ class ExamRepositoryImpl implements ExamRepository {
                           THEN r.obtained_marks ELSE 0 END), 0) AS total_obtained,
         COALESCE(SUM(CASE WHEN r.is_absent = 0 AND r.obtained_marks IS NOT NULL
                           THEN e.total_marks ELSE 0 END), 0) AS total_available,
-        COUNT(DISTINCT r.student_id)                          AS unique_students
+        COUNT(DISTINCT r.student_id)                          AS total_students,
+        COUNT(DISTINCT CASE WHEN r.is_absent = 0 THEN r.student_id END) AS present_students
       FROM $_resultTable r
       JOIN $_examTable e ON r.exam_id = e.id
       LEFT JOIN batches b ON r.batch_id = b.id
-      WHERE strftime('%Y', e.exam_date) = ? $batchFilter
+      $whereClause
       GROUP BY r.batch_id
     ''', args);
 
@@ -314,7 +384,8 @@ class ExamRepositoryImpl implements ExamRepository {
         absentCount: (m['absent_count'] as int?) ?? 0,
         totalObtained: (m['total_obtained'] as num?)?.toDouble() ?? 0.0,
         totalAvailable: (m['total_available'] as num?)?.toDouble() ?? 0.0,
-        uniqueStudents: (m['unique_students'] as int?) ?? 0,
+        totalStudents: (m['total_students'] as int?) ?? 0,
+        presentStudents: (m['present_students'] as int?) ?? 0,
       );
     }).toList();
     

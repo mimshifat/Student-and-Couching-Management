@@ -32,6 +32,12 @@ service cloud.firestore {
       allow create, delete: if false;
     }
 
+    // App updates collection - Anyone can read to check for updates
+    match /app_updates/{document} {
+      allow read: if true;
+      allow write: if false; // Only admin can update this
+    }
+
     // Block all other collections by default
     match /{document=**} {
       allow read, write: if false;

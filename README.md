@@ -14,6 +14,7 @@ A comprehensive, offline-first Flutter application designed for teachers and coa
 *   **Robust Backup System**:
     *   **Auto-Backup**: Automatically sends a daily backup of your entire database to your personal Telegram via a bot. Runs reliably in the background using `WorkManager`, even when the app is closed.
     *   **Local Export/Import**: Export your SQLite database locally or import a `.db` file to restore your data. Includes worst-case scenario handling (corrupted file detection and automatic original DB rollback).
+*   **OTA (Over-The-Air) Updates**: Seamless in-app update mechanism via Firebase Firestore. Users get a prompt to download and install new versions directly from the app.
 *   **License Security System**: Device-bound license activation via Firebase. Prevents unauthorized sharing with secure Android ID binding. Works entirely offline after a one-time activation.
 *   **Fast & Offline**: Built entirely on top of SQLite, ensuring lighting-fast performance without the need for an internet connection (except for Telegram backups and initial license activation).
 
@@ -53,6 +54,21 @@ To enable automated background backups to your Telegram:
 3. Create a Private Channel or Group, and add your bot as an Administrator.
 4. Get the **Chat ID** of that channel/group (You can use tools like `@RawDataBot` to find the Chat ID, which usually starts with `-100`).
 5. Open the app, go to **Backup & Restore**, enter your Bot Token and Chat ID, and enable Auto-Backup.
+
+## 🔄 OTA Updates Setup
+
+To release a new update to your users automatically:
+1. **Update Version:** Bump your version in `pubspec.yaml` (e.g. from `1.0.1` to `1.0.2`).
+2. **Update Payload:** Open `payload.json` and update `latest_version`, `build_number`, and `release_notes`.
+3. **Build the APK:** Run `flutter build apk --release`.
+4. **Rename and Copy:** Go to `build/app/outputs/flutter-apk/`, rename `app-release.apk` to `app-update.bin`, and copy it to the `public/` folder.
+5. **Upload to Firebase Hosting:** Run `firebase deploy --only hosting` to upload the APK.
+6. **Update Firestore:** Run the automated PowerShell script to push your `payload.json` to Firestore:
+   ```powershell
+   .\deploy_ota.ps1
+   ```
+   
+Your users will automatically receive the update prompt the next time they open the app!
 
 ## 👨‍💻 Developed By
 

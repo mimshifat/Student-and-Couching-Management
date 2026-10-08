@@ -47,13 +47,14 @@ class ExamProvider with ChangeNotifier {
   List<DetailedResult> _batchSummaryResults = [];
   List<DetailedResult> get batchSummaryResults => _batchSummaryResults;
 
-  Future<void> loadDetailedResultsByBatch(int? batchId) async {
+  Future<void> loadDetailedResultsByBatch(int? batchId, {int? year, int? startMonth, int? endMonth}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _batchSummaryResults = await _repository.getDetailedResultsByBatch(batchId);
+      _batchSummaryResults = await _repository.getDetailedResultsByBatch(
+          batchId, year: year, startMonth: startMonth, endMonth: endMonth);
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -67,14 +68,15 @@ class ExamProvider with ChangeNotifier {
   List<DetailedResult> _yearFilteredResults = [];
   List<DetailedResult> get yearFilteredResults => _yearFilteredResults;
 
-  /// Loads student results filtered by year at DB level — no in-memory loop.
-  Future<void> loadDetailedResultsByYear(int studentId, int year) async {
+  /// Loads student results filtered by time at DB level — no in-memory loop.
+  Future<void> loadDetailedResultsFiltered(int studentId, {int? year, int? startMonth, int? endMonth}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
       _yearFilteredResults =
-          await _repository.getDetailedResultsForStudentByYear(studentId, year);
+          await _repository.getDetailedResultsForStudentFiltered(
+              studentId, year: year, startMonth: startMonth, endMonth: endMonth);
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -87,12 +89,13 @@ class ExamProvider with ChangeNotifier {
   List<BatchSummary> get batchSummaries => _batchSummaries;
 
   /// Loads one aggregate row per batch — avoids loading thousands of raw rows.
-  Future<void> loadBatchSummaries(int? batchId, int year) async {
+  Future<void> loadBatchSummaries(int? batchId, {int? year, int? startMonth, int? endMonth}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      _batchSummaries = await _repository.getBatchSummaries(batchId, year);
+      _batchSummaries = await _repository.getBatchSummaries(
+          batchId, year: year, startMonth: startMonth, endMonth: endMonth);
     } catch (e) {
       _errorMessage = e.toString();
     } finally {

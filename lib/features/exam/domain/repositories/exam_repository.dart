@@ -17,12 +17,12 @@ abstract class ExamRepository {
   Future<List<ExamResult>> getResultsForStudentAndBatch(int studentId, int batchId);
   
   Future<List<DetailedResult>> getDetailedResultsForStudent(int studentId);
-  Future<List<DetailedResult>> getDetailedResultsByBatch(int? batchId);
+  Future<List<DetailedResult>> getDetailedResultsByBatch(int? batchId, {int? year, int? startMonth, int? endMonth});
 
-  // --- Performance-optimised queries (year filtered at DB level) ---
-  /// Returns detailed results for a student filtered by year in SQL (no in-memory loop).
-  Future<List<DetailedResult>> getDetailedResultsForStudentByYear(int studentId, int year);
+  // --- Performance-optimised queries (year/month filtered at DB level) ---
+  /// Returns detailed results for a student filtered by time in SQL (no in-memory loop).
+  Future<List<DetailedResult>> getDetailedResultsForStudentFiltered(int studentId, {int? year, int? startMonth, int? endMonth});
 
   /// Returns one aggregate row per batch — avoids loading thousands of raw rows.
-  Future<List<BatchSummary>> getBatchSummaries(int? batchId, int year);
+  Future<List<BatchSummary>> getBatchSummaries(int? batchId, {int? year, int? startMonth, int? endMonth});
 }
