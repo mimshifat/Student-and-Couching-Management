@@ -28,7 +28,7 @@ class PdfReportService {
             pw.SizedBox(height: 12),
             _buildStudentInfo(student, batchName: batchName),
             pw.SizedBox(height: 12),
-            _buildResultsTable(results),
+            _buildResultsTable(results, showBatchColumn: batchName == null || batchName.isEmpty),
             pw.SizedBox(height: 12),
             _buildSummary(results),
             pw.SizedBox(height: 40),
@@ -65,7 +65,7 @@ class PdfReportService {
               pw.SizedBox(height: 12),
               _buildStudentInfo(student, batchName: batchName),
               pw.SizedBox(height: 12),
-              _buildResultsTable(results),
+              _buildResultsTable(results, showBatchColumn: false),
               pw.SizedBox(height: 12),
               _buildSummary(results),
               pw.SizedBox(height: 40),
@@ -157,36 +157,52 @@ class PdfReportService {
     );
   }
 
-  static pw.Widget _buildResultsTable(List<DetailedResult> results) {
+  static pw.Widget _buildResultsTable(List<DetailedResult> results, {bool showBatchColumn = false}) {
     if (results.isEmpty) {
       return pw.Center(child: pw.Text('No exams taken in this period.'));
     }
 
     final dateFormat = DateFormat('dd MMM yyyy');
 
+    List<String> headers = ['Date', 'Exam Title', 'Type', 'Obtained Marks', 'Total Marks', 'Percentage'];
+    if (showBatchColumn) {
+      headers.insert(1, 'Batch');
+    }
+
     return pw.TableHelper.fromTextArray(
       context: null,
-      headers: ['Date', 'Exam Title', 'Type', 'Total Marks', 'Obtained Marks', 'Percentage'],
+      headers: headers,
       data: results.map((r) {
         String obtainedStr = r.isAbsent ? 'Absent' : (r.obtainedMarks?.toCleanString() ?? '-');
         String percentageStr = '-';
         if (!r.isAbsent && r.obtainedMarks != null && r.totalMarks > 0) {
           percentageStr = '${((r.obtainedMarks! / r.totalMarks) * 100).toCleanString()}%';
         }
-        return [
+        
+        List<String> row = [
           dateFormat.format(r.examDate),
           r.examTitle,
           r.examType,
-          r.totalMarks.toCleanString(),
           obtainedStr,
+          r.totalMarks.toCleanString(),
           percentageStr,
         ];
+        
+        if (showBatchColumn) {
+          row.insert(1, r.displayBatchName);
+        }
+        
+        return row;
       }).toList(),
       headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.indigo900),
       rowDecoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.5))),
       cellAlignment: pw.Alignment.centerLeft,
-      cellAlignments: {
+      cellAlignments: showBatchColumn ? {
+        4: pw.Alignment.centerRight,
+        5: pw.Alignment.centerRight,
+        6: pw.Alignment.centerRight,
+      } : {
         3: pw.Alignment.centerRight,
         4: pw.Alignment.centerRight,
         5: pw.Alignment.centerRight,
@@ -194,6 +210,22 @@ class PdfReportService {
       cellStyle: const pw.TextStyle(fontSize: 9),
       headerHeight: 22,
       cellHeight: 18,
+      columnWidths: showBatchColumn ? {
+        0: const pw.FixedColumnWidth(60), // Date
+        1: const pw.FlexColumnWidth(2),   // Batch
+        2: const pw.FlexColumnWidth(2.5), // Exam Title
+        3: const pw.FlexColumnWidth(1.5), // Type
+        4: const pw.FlexColumnWidth(1.5), // Obtained
+        5: const pw.FlexColumnWidth(1.5), // Total
+        6: const pw.FlexColumnWidth(1.5), // Percentage
+      } : {
+        0: const pw.FixedColumnWidth(60), // Date
+        1: const pw.FlexColumnWidth(3.5), // Exam Title
+        2: const pw.FlexColumnWidth(1.5), // Type
+        3: const pw.FlexColumnWidth(1.5), // Obtained
+        4: const pw.FlexColumnWidth(1.5), // Total
+        5: const pw.FlexColumnWidth(1.5), // Percentage
+      },
     );
   }
 
