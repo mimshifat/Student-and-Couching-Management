@@ -6,7 +6,9 @@ import '../providers/routine_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../batch/domain/entities/batch.dart';
 import 'routine_form_screen.dart';
+import '../../utils/routine_pdf_export_helper.dart';
 import '../../../../core/widgets/app_drawer.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 
 class RoutineScreen extends StatefulWidget {
   final Batch? initialBatch;
@@ -20,8 +22,6 @@ class RoutineScreen extends StatefulWidget {
 class _RoutineScreenState extends State<RoutineScreen> {
   static const Color primaryNavy = Color(0xFF191A4E);
   Batch? _selectedBatch;
-  String _selectedPeriod = 'This Week';
-  final List<String> _periods = ['This Week', 'Next Week', 'This Month'];
   
   bool _isBatchWise = true;
   String _selectedDay = 'Sunday';
@@ -108,6 +108,24 @@ class _RoutineScreenState extends State<RoutineScreen> {
             onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
             tooltip: 'Home',
           ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+            tooltip: 'Export Routine to PDF',
+            onPressed: () async {
+              final batchProvider = context.read<BatchProvider>();
+              if (batchProvider.batches.isEmpty) {
+                await batchProvider.loadBatches();
+              }
+              if (!context.mounted) return;
+              // ignore: use_build_context_synchronously
+              final allRoutines = await context.read<RoutineProvider>().getAllRoutines();
+              if (!context.mounted) return;
+              // ignore: use_build_context_synchronously
+              final profile = context.read<ProfileProvider>().profile;
+              final instituteName = profile?.instituteName ?? 'Institute Profile Not Found';
+              await RoutinePdfExportHelper.generateAndPreviewRoutinePdf(batchProvider.batches, allRoutines, instituteName);
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Center(
@@ -184,72 +202,40 @@ class _RoutineScreenState extends State<RoutineScreen> {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Consumer<BatchProvider>(
-              builder: (context, batchProvider, child) {
-                return Container(
-                  height: 48,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int?>(
-                      value: _selectedBatch?.id,
-                      isExpanded: true,
-                      menuMaxHeight: 300,
-                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
-                      style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500),
-                      items: batchProvider.batches.map((b) {
-                        return DropdownMenuItem<int?>(
-                          value: b.id,
-                          child: Text(b.name, overflow: TextOverflow.ellipsis),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          try {
-                            final newBatch = batchProvider.batches.firstWhere((b) => b.id == val);
-                            _onBatchChanged(newBatch);
-                          } catch (_) {}
-                        }
-                      },
-                    ),
-                  ),
-                );
-              },
+      child: Consumer<BatchProvider>(
+        builder: (context, batchProvider, child) {
+          return Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(10),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: Container(
-              height: 48,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedPeriod,
-                  isExpanded: true,
-                  menuMaxHeight: 300,
-                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
-                  style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500),
-                  items: _periods.map((p) {
-                    return DropdownMenuItem(value: p, child: Text(p));
-                  }).toList(),
-                  onChanged: (val) => setState(() => _selectedPeriod = val!),
-                ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int?>(
+                value: _selectedBatch?.id,
+                isExpanded: true,
+                menuMaxHeight: 300,
+                icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
+                style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500),
+                items: batchProvider.batches.map((b) {
+                  return DropdownMenuItem<int?>(
+                    value: b.id,
+                    child: Text(b.name, overflow: TextOverflow.ellipsis),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    try {
+                      final newBatch = batchProvider.batches.firstWhere((b) => b.id == val);
+                      _onBatchChanged(newBatch);
+                    } catch (_) {}
+                  }
+                },
               ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -432,11 +418,13 @@ class _RoutineScreenState extends State<RoutineScreen> {
                               ],
                             ),
                           );
-                          if (confirm == true && context.mounted) {
+                          if (confirm == true) {
+                            if (!context.mounted) return;
+                            // ignore: use_build_context_synchronously
                             await context.read<RoutineProvider>().deleteRoutine(r.id!, r.batchId);
-                            if (context.mounted) {
-                              context.read<RoutineProvider>().loadRoutinesByDay(_selectedDay);
-                            }
+                            if (!context.mounted) return;
+                            // ignore: use_build_context_synchronously
+                            context.read<RoutineProvider>().loadRoutinesByDay(_selectedDay);
                           }
                         },
                         child: const Padding(
@@ -488,23 +476,86 @@ class _RoutineScreenState extends State<RoutineScreen> {
               final fullDay = fullDays[i];
 
               final routinesForDay = provider.routines.where((r) => r.dayOfWeek == fullDay).toList();
-              final subjects = routinesForDay.map((r) {
-                String timeStr = '';
-                if (r.startTime.isNotEmpty && r.endTime.isNotEmpty) {
-                  timeStr = '${r.startTime} - ${r.endTime}';
-                } else if (_selectedBatch != null) {
-                  timeStr = _selectedBatch!.timeSlot ?? '';
-                  if (timeStr.isEmpty && _selectedBatch!.startTime != null && _selectedBatch!.startTime!.isNotEmpty && _selectedBatch!.endTime != null && _selectedBatch!.endTime!.isNotEmpty) {
-                    timeStr = '${_selectedBatch!.startTime} - ${_selectedBatch!.endTime}';
-                  }
-                }
-                return timeStr.isNotEmpty ? '${r.subject} ($timeStr)' : r.subject;
-              }).join('\n');
+              
+              Widget routinesWidget;
+              if (routinesForDay.isEmpty) {
+                routinesWidget = _buildTableCell('-');
+              } else {
+                routinesWidget = Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: routinesForDay.map((r) {
+                      String timeStr = '';
+                      if (r.startTime.isNotEmpty && r.endTime.isNotEmpty) {
+                        timeStr = '${r.startTime} - ${r.endTime}';
+                      } else if (_selectedBatch != null) {
+                        timeStr = _selectedBatch!.timeSlot ?? '';
+                        if (timeStr.isEmpty && _selectedBatch!.startTime != null && _selectedBatch!.startTime!.isNotEmpty && _selectedBatch!.endTime != null && _selectedBatch!.endTime!.isNotEmpty) {
+                          timeStr = '${_selectedBatch!.startTime} - ${_selectedBatch!.endTime}';
+                        }
+                      }
+                      final subjectText = timeStr.isNotEmpty ? '${r.subject} ($timeStr)' : r.subject;
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                subjectText,
+                                textAlign: TextAlign.left,
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black87),
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => RoutineFormScreen(routine: r)));
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.all(4.0),
+                                child: Icon(Icons.edit, size: 16, color: Colors.blue),
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('Delete Routine'),
+                                    content: const Text('Are you sure you want to delete this routine?'),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                      TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  if (!context.mounted) return;
+                                  // ignore: use_build_context_synchronously
+                                  await context.read<RoutineProvider>().deleteRoutine(r.id!, r.batchId);
+                                  if (!context.mounted) return;
+                                  // ignore: use_build_context_synchronously
+                                  context.read<RoutineProvider>().loadRoutinesByBatch(_selectedBatch!.id!);
+                                }
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.all(4.0),
+                                child: Icon(Icons.delete, size: 16, color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              }
 
               return TableRow(
                 children: [
                   _buildTableCell(shortDay, isHeader: true),
-                  _buildTableCell(subjects.isEmpty ? '-' : subjects),
+                  routinesWidget,
                 ],
               );
             }),

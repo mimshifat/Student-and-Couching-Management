@@ -46,6 +46,16 @@ class RoutineProvider with ChangeNotifier {
     }
   }
 
+  Future<List<Routine>> getAllRoutines() async {
+    try {
+      return await _repository.getAllRoutines();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return [];
+    }
+  }
+
   Future<bool> addRoutine(Routine routine) async {
     try {
       await _repository.insertRoutine(routine);

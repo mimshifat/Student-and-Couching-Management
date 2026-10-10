@@ -6,4 +6,5 @@ abstract class RoutineRepository {
   Future<int> deleteRoutine(int id);
   Future<List<Routine>> getRoutinesByBatch(int batchId);
   Future<List<Routine>> getRoutinesByDay(String dayOfWeek);
+  Future<List<Routine>> getAllRoutines();
 }

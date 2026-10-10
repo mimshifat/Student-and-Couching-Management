@@ -98,4 +98,11 @@ class RoutineRepositoryImpl implements RoutineRepository {
     final maps = await db.query(_table, where: 'day_of_week = ?', whereArgs: [dayOfWeek], orderBy: 'start_time ASC');
     return List.generate(maps.length, (i) => RoutineModel.fromMap(maps[i]));
   }
+
+  @override
+  Future<List<Routine>> getAllRoutines() async {
+    final db = await _dbHelper.database;
+    final maps = await db.query(_table, orderBy: 'start_time ASC');
+    return List.generate(maps.length, (i) => RoutineModel.fromMap(maps[i]));
+  }
 }
