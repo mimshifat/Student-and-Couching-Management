@@ -24,23 +24,31 @@ class DatabaseHelper {
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
+      onOpen: _onOpen,
     );
   }
 
   Future<void> _onConfigure(Database db) async {
     // Enable foreign keys
     await db.execute('PRAGMA foreign_keys = ON');
+  }
+
+  Future<void> _onOpen(Database db) async {
     // Performance indexes — safe: IF NOT EXISTS, no version bump needed
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_results_student_id ON results(student_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_results_batch_id ON results(batch_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_exams_exam_date ON exams(exam_date)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_exams_batch_id ON exams(batch_id)');
-    // Critical indexes for 5,000+ student scale
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_enrollments_student_id ON enrollments(student_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_fee_records_student_year ON fee_records(student_id, year)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_students_deleted_at ON students(deleted_at)');
-    // Ensure no duplicate results for same student in same exam
-    await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_results_unique_student_exam ON results(exam_id, student_id)');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_results_student_id ON results(student_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_results_batch_id ON results(batch_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_exams_exam_date ON exams(exam_date)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_exams_batch_id ON exams(batch_id)');
+      // Critical indexes for 5,000+ student scale
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_enrollments_student_id ON enrollments(student_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_fee_records_student_year ON fee_records(student_id, year)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_students_deleted_at ON students(deleted_at)');
+      // Ensure no duplicate results for same student in same exam
+      await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_results_unique_student_exam ON results(exam_id, student_id)');
+    } catch (e) {
+      // Ignore if it fails for some reason
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {

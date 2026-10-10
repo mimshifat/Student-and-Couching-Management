@@ -105,7 +105,7 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
     for (final r in scored) {
       obtained += r.obtainedMarks!;
       available += r.totalMarks;
-      final pct = (r.obtainedMarks! / r.totalMarks) * 100;
+      final pct = r.totalMarks > 0 ? (r.obtainedMarks! / r.totalMarks) * 100 : 0.0;
       if (pct > high) high = pct;
       if (pct < low) low = pct;
     }
@@ -456,8 +456,20 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
       final r = sorted[i];
       if (r.isAbsent || r.obtainedMarks == null) continue;
       
-      final pct = (r.obtainedMarks! / r.totalMarks) * 100;
+      final pct = r.totalMarks > 0 ? (r.obtainedMarks! / r.totalMarks) * 100 : 0.0;
       spots.add(FlSpot(i.toDouble(), double.parse(pct.toCleanString())));
+    }
+
+    if (spots.isEmpty) {
+      return _cardShell(
+        child: const SizedBox(
+          height: 220,
+          child: Center(
+            child: Text('Not enough data for trend chart',
+                style: TextStyle(color: Colors.black45)),
+          ),
+        ),
+      );
     }
 
     return _cardShell(
@@ -596,14 +608,15 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
     if (s.total == 0) return const SizedBox.shrink();
 
     final sections = [
-      PieChartSectionData(
-        value: present.toDouble(),
-        color: _green,
-        title: '$present\nPresent',
-        radius: 60,
-        titleStyle: const TextStyle(
-            fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-      ),
+      if (present > 0)
+        PieChartSectionData(
+          value: present.toDouble(),
+          color: _green,
+          title: '$present\nPresent',
+          radius: 60,
+          titleStyle: const TextStyle(
+              fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
       if (s.absents > 0)
         PieChartSectionData(
           value: s.absents.toDouble(),
@@ -648,7 +661,7 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
                     style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: int.parse(presentPct) >= 75 ? _green : _red)),
+                        color: double.parse(presentPct) >= 75 ? _green : _red)),
               ],
             ),
           ),
@@ -688,7 +701,7 @@ class _StudentPerformanceWidgetState extends State<StudentPerformanceWidget> {
     return Column(
       children: sorted.map((r) {
         final absent = r.isAbsent || r.obtainedMarks == null;
-        final pct = absent
+        final pct = absent || r.totalMarks == 0
             ? 0.0
             : (r.obtainedMarks! / r.totalMarks) * 100;
         Color statusColor;

@@ -72,32 +72,44 @@ void callbackDispatcher() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    // Initialize Firebase
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  // Set up the initial Firestore Document for App Updates (Runs in background so it never freezes startup)
-  AppUpdater.createInitialDocument().catchError((e) => debugPrint("Firestore Setup Error: $e"));
+    // Set up the initial Firestore Document for App Updates (Runs in background so it never freezes startup)
+    AppUpdater.createInitialDocument().catchError((e) => debugPrint("Firestore Setup Error: $e"));
+  } catch (e, stacktrace) {
+    debugPrint("Firebase init error: $e\n$stacktrace");
+  }
   
-  // Initialize Database
-  await DatabaseHelper().database;
+  try {
+    // Initialize Database
+    await DatabaseHelper().database;
+  } catch (e, stacktrace) {
+    debugPrint("Database init error: $e\n$stacktrace");
+  }
 
-  // Initialize Workmanager
-  Workmanager().initialize(
-    callbackDispatcher,
-  );
-  
-  // Register daily backup task — only runs when network is available
-  Workmanager().registerPeriodicTask(
-    "dailyBackup",
-    "dailyBackupTask",
-    frequency: const Duration(hours: 24),
-    constraints: Constraints(
-      networkType: NetworkType.connected,
-    ),
-    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
-  );
+  try {
+    // Initialize Workmanager
+    Workmanager().initialize(
+      callbackDispatcher,
+    );
+    
+    // Register daily backup task — only runs when network is available
+    Workmanager().registerPeriodicTask(
+      "dailyBackup",
+      "dailyBackupTask",
+      frequency: const Duration(hours: 24),
+      constraints: Constraints(
+        networkType: NetworkType.connected,
+      ),
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+    );
+  } catch (e, stacktrace) {
+    debugPrint("Workmanager init error: $e\n$stacktrace");
+  }
 
     runApp(
       MultiProvider(

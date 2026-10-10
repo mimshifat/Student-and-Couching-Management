@@ -199,8 +199,8 @@ class _StudentListScreenState extends State<StudentListScreen> {
   }
 
   String _getInitials(String name) {
+    if (name.trim().isEmpty) return '?';
     List<String> parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty) return '?';
     if (parts.length == 1) {
       return parts[0].substring(0, 1).toUpperCase();
     }

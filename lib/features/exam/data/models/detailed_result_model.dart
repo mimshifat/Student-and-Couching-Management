@@ -35,11 +35,11 @@ class DetailedResultModel extends DetailedResult {
       }
     }
 
-    String? finalBatchName;
-    if (snapshot != null && snapshot['name'] != null) {
-      finalBatchName = snapshot['name'];
-    } else {
-      finalBatchName = map['live_batch_name'] ?? map['batch_name'];
+    String? finalBatchName = map['live_batch_name'] ?? map['batch_name'];
+    if (finalBatchName == null || finalBatchName.isEmpty) {
+      if (snapshot != null && snapshot['name'] != null) {
+        finalBatchName = snapshot['name'];
+      }
     }
 
     return DetailedResultModel(

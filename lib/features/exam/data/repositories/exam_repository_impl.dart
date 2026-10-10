@@ -367,13 +367,18 @@ class ExamRepositoryImpl implements ExamRepository {
     ''', args);
 
     var summaries = maps.map((m) {
-      String finalName = (m['live_batch_name'] as String?) ?? 'Unknown Batch';
+      String finalName = (m['live_batch_name'] as String?) ?? '';
+      
       final snapshotJson = m['batch_snapshot'] as String?;
-      if (snapshotJson != null && snapshotJson.isNotEmpty) {
+      if (finalName.isEmpty && snapshotJson != null && snapshotJson.isNotEmpty) {
          try {
            final map = jsonDecode(snapshotJson);
            if (map['name'] != null) finalName = map['name'];
          } catch (_) {}
+      }
+      
+      if (finalName.isEmpty) {
+        finalName = 'Unknown Batch';
       }
 
       return BatchSummary(

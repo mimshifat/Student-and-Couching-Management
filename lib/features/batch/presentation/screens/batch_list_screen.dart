@@ -153,7 +153,11 @@ class _BatchListScreenState extends State<BatchListScreen> {
                         MaterialPageRoute(
                           builder: (_) => BatchDetailScreen(batch: batch),
                         ),
-                      );
+                      ).then((_) {
+                        if (context.mounted) {
+                          context.read<BatchProvider>().loadBatches();
+                        }
+                      });
                     },
                     onLongPress: () async {
                       final confirmed = await _confirmDelete(context, batch.name);
