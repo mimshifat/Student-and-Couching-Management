@@ -32,16 +32,16 @@ class CustomFormWidgets {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: const Color(0xFFEEF2FF),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: primaryColor, size: 20),
+          child: Icon(icon, color: primaryColor, size: 18),
         ),
+        const SizedBox(width: 10),
+        Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: primaryColor)),
         const SizedBox(width: 12),
-        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryColor)),
-        const SizedBox(width: 16),
         Expanded(child: Divider(color: Colors.indigo.withValues(alpha: 0.1), thickness: 1)),
       ],
     );
@@ -63,40 +63,49 @@ class CustomFormWidgets {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primaryColor)),
-        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: primaryColor)),
+        const SizedBox(height: 5),
         TextFormField(
           controller: controller,
-          keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+          keyboardType: isNumber ? TextInputType.number : (maxLines > 1 ? TextInputType.multiline : TextInputType.text),
           inputFormatters: inputFormatters ?? (isNumber ? [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))] : null),
           maxLines: maxLines,
           readOnly: readOnly,
           onTap: onTap,
           style: const TextStyle(fontSize: 14, color: Colors.black87),
           decoration: InputDecoration(
+            isDense: true,
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-            prefixIcon: icon != null ? Container(
-              width: 40,
-              alignment: Alignment.topCenter,
-              padding: const EdgeInsets.only(top: 12), // Align with first line of text
-              child: Icon(icon, color: Colors.grey.shade500, size: 20),
-            ) : Container(
-              width: 40,
-              alignment: Alignment.topCenter,
-              padding: const EdgeInsets.only(top: 10, left: 12),
-              child: Text(prefixText ?? '', style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
-            ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 0),
-            prefixText: icon != null ? prefixText : null, // If we showed text as icon, don't show prefixText
-            prefixStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13.5),
+            prefixIcon: icon != null
+                ? Padding(
+                    padding: EdgeInsets.only(
+                      left: 10,
+                      right: 8,
+                      top: maxLines > 1 ? 10 : 0,
+                    ),
+                    child: Icon(icon, color: Colors.grey.shade500, size: 19),
+                  )
+                : null,
+            prefixIconConstraints: icon != null
+                ? BoxConstraints(
+                    minWidth: 38,
+                    minHeight: maxLines > 1 ? 0 : 38,
+                    maxHeight: maxLines > 1 ? 38 : double.infinity,
+                  )
+                : const BoxConstraints(minWidth: 0, minHeight: 0),
+            prefixText: prefixText,
+            prefixStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 15),
             filled: true,
-            fillColor: readOnly ? Colors.grey.shade50 : Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor)),
-            errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red)),
+            fillColor: readOnly ? const Color(0xFFF9FAFB) : Colors.white,
+            contentPadding: EdgeInsets.symmetric(
+              vertical: 11,
+              horizontal: icon == null ? 12 : 6,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
+            errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.red)),
           ),
           validator: validator,
         ),
@@ -255,39 +264,47 @@ class CustomFormWidgets {
     required String saveLabel,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            offset: const Offset(0, -2),
+            blurRadius: 6,
+          ),
+        ],
       ),
       child: SafeArea(
+        top: false,
         child: Row(
           children: [
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: onCancel,
                 icon: const Icon(Icons.close, size: 18),
-                label: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: primaryColor,
                   side: const BorderSide(color: Color(0xFFE0E7FF), width: 1.5),
                   backgroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: onSave,
                 icon: const Icon(Icons.save_outlined, size: 18),
-                label: Text(saveLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
+                label: Text(saveLabel, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
                   backgroundColor: primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
                 ),
               ),

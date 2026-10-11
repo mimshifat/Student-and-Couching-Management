@@ -213,7 +213,7 @@ class SmsService {
         return SmsSendResult(
           success: false,
           mode: mode,
-          message: 'Direct background SMS is only supported on Android devices.',
+          message: 'Automatic SMS is only supported on Android phones.',
         );
       }
 
@@ -233,13 +233,13 @@ class SmsService {
           return SmsSendResult(
             success: false,
             mode: mode,
-            message: 'SMS permission is disabled. Please enable it from Android App Settings.',
+            message: 'SMS permission is required. Please enable it in app settings.',
           );
         }
         return SmsSendResult(
           success: false,
           mode: mode,
-          message: 'SMS permission was not granted.',
+          message: 'SMS permission was not allowed. Please allow it to send messages.',
         );
       }
 
@@ -266,20 +266,20 @@ class SmsService {
           return SmsSendResult(
             success: false,
             mode: mode,
-            message: 'Failed to send SMS via SIM.',
+            message: 'Could not send SMS. Please check your SIM card and mobile balance.',
           );
         }
       } on TimeoutException {
         return SmsSendResult(
           success: false,
           mode: mode,
-          message: 'SMS request timed out. Please check your SIM network signal.',
+          message: 'Message sending timed out. Please check your mobile network signal.',
         );
       } on PlatformException catch (e) {
         return SmsSendResult(
           success: false,
           mode: mode,
-          message: e.message ?? 'Native SMS error',
+          message: e.message ?? 'Could not send SMS. Please check SIM balance or signal.',
         );
       } catch (e) {
         return SmsSendResult(

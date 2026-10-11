@@ -188,35 +188,33 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         CustomFormWidgets.buildSectionHeader('Student Details', Icons.person_outline),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 12),
                         CustomFormWidgets.buildTextField(
                           label: 'Student',
                           controller: _studentNameCtrl,
-                          icon: Icons.person,
+                          icon: Icons.person_outline,
                           readOnly: true,
-                          maxLines: 2,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 10),
                         CustomFormWidgets.buildTextField(
                           label: 'Batch',
                           controller: _batchNameCtrl,
                           icon: Icons.class_outlined,
                           readOnly: true,
-                          maxLines: 2,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 10),
                         CustomFormWidgets.buildTextField(
                           label: 'Month',
                           controller: TextEditingController(text: monthName),
@@ -224,16 +222,16 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                           readOnly: true,
                         ),
                         
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 18),
                         CustomFormWidgets.buildSectionHeader('Payment Details', Icons.payment_outlined),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 12),
                         
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF8F9FA),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: Colors.grey.shade200),
                           ),
                           child: Column(
@@ -242,28 +240,28 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  const Text('Total Fee (Calculated)', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600)),
-                                  Text('৳ ${widget.feeRecord.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+                                  const Text('Total Fee (Calculated)', style: TextStyle(fontSize: 13.5, color: Colors.black54, fontWeight: FontWeight.w600)),
+                                  Text('৳ ${widget.feeRecord.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black87)),
                                 ],
                               ),
                               if (widget.feeRecord.paidAmount > 0) ...[
                                 const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  padding: EdgeInsets.symmetric(vertical: 6),
                                   child: Divider(height: 1, color: Colors.black12),
                                 ),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    const Text('Already Paid', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w600)),
-                                    Text('৳ ${widget.feeRecord.paidAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2B9348))),
+                                    const Text('Already Paid', style: TextStyle(fontSize: 13.5, color: Colors.black54, fontWeight: FontWeight.w600)),
+                                    Text('৳ ${widget.feeRecord.paidAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF2B9348))),
                                   ],
                                 ),
                               ]
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 12),
                         
                         CustomFormWidgets.buildTextField(
                           label: 'Amount to Pay Now *',
@@ -280,23 +278,23 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 10),
                         CustomFormWidgets.buildTextField(
                           label: 'Note (Optional)',
                           hint: 'Write note here...',
                           icon: Icons.notes_outlined,
                           controller: _noteCtrl,
-                          maxLines: 2,
+                          maxLines: 1,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 12),
                         Container(
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey.shade200),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             color: _isSettled ? const Color(0xFFE8F8EE) : Colors.white,
                           ),
                           child: CheckboxListTile(
-                            title: const Text('Mark as Paid', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            title: const Text('Mark as Paid', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                             subtitle: const Text(
                               'Check this if the student has settled this month\'s fee, even if the paid amount is less than the total fee.',
                               style: TextStyle(fontSize: 11, color: Colors.black54),
@@ -307,21 +305,22 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                               setState(() => _isSettled = val ?? false);
                             },
                             controlAffinity: ListTileControlAffinity.leading,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                            dense: true,
                           ),
                         ),
                         if (_smsMode != SmsService.modeNoSms) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 10),
                           Container(
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.grey.shade200),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                               color: _sendSmsConfirmation ? const Color(0xFFF0F7FF) : Colors.white,
                             ),
                             child: CheckboxListTile(
                               title: Row(
                                 children: [
-                                  const Text('Send SMS Confirmation', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                  const Text('Send SMS Confirmation', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                                   const SizedBox(width: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -350,7 +349,8 @@ class _FeePaymentScreenState extends State<FeePaymentScreen> {
                                 setState(() => _sendSmsConfirmation = val ?? false);
                               },
                               controlAffinity: ListTileControlAffinity.leading,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                              dense: true,
                             ),
                           ),
                         ],
