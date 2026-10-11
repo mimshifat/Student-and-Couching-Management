@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 import '../providers/fee_provider.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import '../../../enrollment/presentation/providers/enrollment_provider.dart';
@@ -9,6 +9,7 @@ import '../../../profile/presentation/providers/profile_provider.dart';
 import 'fee_payment_screen.dart';
 import 'fee_collection_report_screen.dart';
 import '../../../../core/widgets/app_drawer.dart';
+import '../../../../core/services/sms_service.dart';
 
 class FeeOverviewScreen extends StatefulWidget {
   const FeeOverviewScreen({super.key});
@@ -25,6 +26,7 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
   int? _selectedBatchId;
   Set<int>? _initialUnpaidIds;
   int _lastDataVersion = -1;
+  final Set<int> _sendingSmsIds = {};
 
   static const Color primaryNavy = Color(0xFF191A4E);
 
@@ -403,13 +405,19 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                         r.studentName ?? 'Unknown', 
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
                       ),
-                      if (r.batchDetailsSnapshot != null && r.batchDetailsSnapshot!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          r.batchDetailsSnapshot!,
-                          style: const TextStyle(fontSize: 10, color: Colors.black54),
-                        ),
-                      ]
+                      Builder(
+                        builder: (_) {
+                          final cleanBatch = SmsService.cleanBatchName(r.batchDetailsSnapshot);
+                          if (cleanBatch.isEmpty) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              cleanBatch,
+                              style: const TextStyle(fontSize: 10, color: Colors.black54),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   )
                 ),
@@ -446,34 +454,63 @@ class _FeeOverviewScreenState extends State<FeeOverviewScreen> {
                   flex: 2, 
                   child: Center(
                     child: (paid >= total || r.isSettled)
-                      ? IconButton(
-                          icon: const Icon(Icons.message, color: Color(0xFF2B9348)),
-                          onPressed: () async {
-                            // Fetch only this student's phone — no need to load all students
-                            final phone = await context.read<StudentProvider>().fetchStudentPhone(r.studentId);
-                            if (!context.mounted) return;
-                            if (phone != null && phone.isNotEmpty) {
-                              final studentName = r.studentName ?? 'Student';
-                              final profile = context.read<ProfileProvider>().profile;
-                              final shortName = profile?.instituteShortName ?? profile?.instituteName ?? 'Institute';
-                              final ownerName = profile?.ownerName ?? 'Admin';
-                              String batchPart = (r.batchDetailsSnapshot != null && r.batchDetailsSnapshot!.isNotEmpty)
-                                  ? ' (Batch: ${r.batchDetailsSnapshot})'
-                                  : '';
-                              final message = '[$shortName]\nDear $studentName, your fee payment of Tk. ${r.paidAmount.toStringAsFixed(0)} for $monthName ${r.year}$batchPart has been received. Thank you!\n-$ownerName';
-                              final uri = Uri.parse('sms:$phone?body=${Uri.encodeComponent(message)}');
-                              if (await canLaunchUrl(uri)) {
-                                await launchUrl(uri);
-                              } else {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open messaging app.')));
+                      ? (_sendingSmsIds.contains(r.id)
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: Padding(
+                                padding: EdgeInsets.all(3.0),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2B9348)),
+                              ),
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.message, color: Color(0xFF2B9348)),
+                              tooltip: 'Send SMS Confirmation',
+                              onPressed: () async {
+                                final recordId = r.id;
+                                if (recordId == null || _sendingSmsIds.contains(recordId)) return;
+                                setState(() => _sendingSmsIds.add(recordId));
+
+                                try {
+                                  final phone = await context.read<StudentProvider>().fetchStudentPhone(r.studentId);
+                                  if (!context.mounted) return;
+                                  if (phone != null && phone.trim().isNotEmpty) {
+                                    final studentName = (r.studentName != null && r.studentName!.trim().isNotEmpty) ? r.studentName!.trim() : 'Student';
+                                    final profile = context.read<ProfileProvider>().profile;
+                                    final shortName = profile?.instituteShortName ?? profile?.instituteName ?? 'Institute';
+                                    final ownerName = profile?.ownerName ?? 'Admin';
+                                    final batchPart = SmsService.formatBatchPart(r.batchDetailsSnapshot);
+                                    final fullMonthName = (r.month >= 1 && r.month <= 12)
+                                        ? DateFormat('MMMM').format(DateTime(r.year, r.month))
+                                        : monthName;
+                                    final amountPart = r.paidAmount > 0
+                                        ? 'fee payment of Tk. ${r.paidAmount.toStringAsFixed(0)}'
+                                        : 'fee';
+                                    final message = '[$shortName]\nDear $studentName, your $amountPart for $fullMonthName ${r.year}$batchPart has been received. Thank you!\n-$ownerName';
+                                    
+                                    final res = await SmsService.sendSms(phone: phone, message: message);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                        content: Text(res.message ?? (res.success ? 'SMS processed successfully.' : 'Could not send SMS.')),
+                                        backgroundColor: res.success ? const Color(0xFF2B9348) : Colors.orange,
+                                      ));
+                                    }
+                                  } else {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student has no phone number.')));
+                                    }
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error sending SMS: ${e.toString()}')));
+                                  }
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => _sendingSmsIds.remove(recordId));
+                                  }
                                 }
-                              }
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student has no phone number.')));
-                            }
-                          },
-                        )
+                              },
+                            ))
                       : Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(

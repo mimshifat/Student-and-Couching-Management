@@ -98,6 +98,14 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.sms_outlined),
+            title: const Text('SMS Settings'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              Navigator.pushNamed(context, '/sms-settings');
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.bar_chart_rounded),
             title: const Text('Annual Report'),
             onTap: () {

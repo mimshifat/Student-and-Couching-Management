@@ -6,7 +6,7 @@ class DatabaseHelper {
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  static const int _databaseVersion = 25;
+  static const int _databaseVersion = 26;
 
   static Database? _database;
 
@@ -46,6 +46,19 @@ class DatabaseHelper {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_students_deleted_at ON students(deleted_at)');
       // Ensure no duplicate results for same student in same exam
       await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_results_unique_student_exam ON results(exam_id, student_id)');
+      
+      // SMS Settings table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS sms_settings (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          sms_mode TEXT NOT NULL DEFAULT 'default_app',
+          sim_slot INTEGER NOT NULL DEFAULT 1
+        )
+      ''');
+      final existingSmsSettings = await db.query('sms_settings', where: 'id = 1');
+      if (existingSmsSettings.isEmpty) {
+        await db.insert('sms_settings', {'id': 1, 'sms_mode': 'default_app', 'sim_slot': 1});
+      }
     } catch (e) {
       // Ignore if it fails for some reason
     }
@@ -275,6 +288,23 @@ class DatabaseHelper {
         // Ignore if already exists
       }
     }
+    if (oldVersion < 26) {
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS sms_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            sms_mode TEXT NOT NULL DEFAULT 'default_app',
+            sim_slot INTEGER NOT NULL DEFAULT 1
+          )
+        ''');
+        final existing = await db.query('sms_settings', where: 'id = 1');
+        if (existing.isEmpty) {
+          await db.insert('sms_settings', {'id': 1, 'sms_mode': 'default_app', 'sim_slot': 1});
+        }
+      } catch (e) {
+        // Ignore if already exists
+      }
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -460,6 +490,15 @@ class DatabaseHelper {
 
     // Create unique index for enrollments
     await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_enrollments_unique ON enrollments(student_id, batch_id) WHERE leave_date IS NULL');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS sms_settings (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        sms_mode TEXT NOT NULL DEFAULT 'default_app',
+        sim_slot INTEGER NOT NULL DEFAULT 1
+      )
+    ''');
+    await db.insert('sms_settings', {'id': 1, 'sms_mode': 'default_app', 'sim_slot': 1});
   }
 
   Future<String> getDatabasePathStr() async {

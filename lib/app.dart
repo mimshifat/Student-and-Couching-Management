@@ -18,6 +18,8 @@ import 'features/license/presentation/providers/license_provider.dart';
 import 'features/license/presentation/screens/license_activation_screen.dart';
 import 'splash_screen.dart';
 
+import 'features/settings/presentation/screens/sms_settings_screen.dart';
+
 class CoachingApp extends StatelessWidget {
   const CoachingApp({super.key});
 
@@ -36,6 +38,7 @@ class CoachingApp extends StatelessWidget {
         '/routine': (context) => const RoutineScreen(),
         '/result-analytics': (context) => const ResultAnalyticsScreen(),
         '/annual-report': (context) => const AnnualReportScreen(),
+        '/sms-settings': (context) => const SmsSettingsScreen(),
       },
     );
   }

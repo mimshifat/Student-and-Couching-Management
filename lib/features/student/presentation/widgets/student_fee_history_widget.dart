@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../fee/presentation/providers/fee_provider.dart';
 import '../../../fee/presentation/screens/fee_payment_screen.dart';
 import '../providers/student_provider.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../../core/services/sms_service.dart';
 
 class StudentFeeHistoryWidget extends StatefulWidget {
   final int studentId;
@@ -19,6 +19,7 @@ class StudentFeeHistoryWidget extends StatefulWidget {
 class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
   int? _selectedYear;
   int _selectedTab = 0; // 0 for Due, 1 for Paid
+  final Set<int> _sendingSmsIds = {};
 
   @override
   void initState() {
@@ -317,47 +318,77 @@ class _StudentFeeHistoryWidgetState extends State<StudentFeeHistoryWidget> {
                                 ),
                               ] else ...[
                                 const SizedBox(height: 8),
-                                InkWell(
-                                  onTap: () async {
-                                    // Fetch phone on-demand — no student list required
-                                    final phone = await context.read<StudentProvider>().fetchStudentPhone(widget.studentId);
-                                    if (!context.mounted) return;
-                                    if (phone != null && phone.isNotEmpty) {
-                                      final studentName = record.studentName ?? 'Student';
-                                      final profile = context.read<ProfileProvider>().profile;
-                                      final shortName = profile?.instituteShortName ?? profile?.instituteName ?? 'Institute';
-                                      final ownerName = profile?.ownerName ?? 'Admin';
-                                      String batchPart = (record.batchDetailsSnapshot != null && record.batchDetailsSnapshot!.isNotEmpty)
-                                          ? ' (Batch: ${record.batchDetailsSnapshot})'
-                                          : '';
-                                      final message = '[$shortName]\nDear $studentName, your fee payment of Tk. ${record.paidAmount.toStringAsFixed(0)} for $monthName ${record.year}$batchPart has been received. Thank you!\n-$ownerName';
-                                      final uri = Uri.parse('sms:$phone?body=${Uri.encodeComponent(message)}');
-                                      if (await canLaunchUrl(uri)) {
-                                        await launchUrl(uri);
-                                      } else {
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open messaging app.')));
-                                        }
-                                      }
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student has no phone number.')));
-                                    }
+                                Builder(
+                                  builder: (_) {
+                                    final recordId = record.id;
+                                    final isSending = recordId != null && _sendingSmsIds.contains(recordId);
+
+                                    return InkWell(
+                                      onTap: isSending
+                                          ? null
+                                          : () async {
+                                              if (recordId == null || _sendingSmsIds.contains(recordId)) return;
+                                              setState(() => _sendingSmsIds.add(recordId));
+
+                                              try {
+                                                final phone = await context.read<StudentProvider>().fetchStudentPhone(widget.studentId);
+                                                if (!context.mounted) return;
+                                                if (phone != null && phone.trim().isNotEmpty) {
+                                                  final studentName = (record.studentName != null && record.studentName!.trim().isNotEmpty) ? record.studentName!.trim() : 'Student';
+                                                  final profile = context.read<ProfileProvider>().profile;
+                                                  final shortName = profile?.instituteShortName ?? profile?.instituteName ?? 'Institute';
+                                                  final ownerName = profile?.ownerName ?? 'Admin';
+                                                  final batchPart = SmsService.formatBatchPart(record.batchDetailsSnapshot);
+                                                  final amountPart = record.paidAmount > 0
+                                                      ? 'fee payment of Tk. ${record.paidAmount.toStringAsFixed(0)}'
+                                                      : 'fee';
+                                                  final message = '[$shortName]\nDear $studentName, your $amountPart for $monthName ${record.year}$batchPart has been received. Thank you!\n-$ownerName';
+                                                  
+                                                  final res = await SmsService.sendSms(phone: phone, message: message);
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                                      content: Text(res.message ?? (res.success ? 'SMS processed successfully.' : 'Could not send SMS.')),
+                                                      backgroundColor: res.success ? const Color(0xFF2B9348) : Colors.orange,
+                                                    ));
+                                                  }
+                                                } else {
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Student has no phone number.')));
+                                                  }
+                                                }
+                                              } catch (e) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error sending SMS: ${e.toString()}')));
+                                                }
+                                              } finally {
+                                                if (mounted) {
+                                                  setState(() => _sendingSmsIds.remove(recordId));
+                                                }
+                                              }
+                                            },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE8F8EE),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: isSending
+                                            ? const SizedBox(
+                                                width: 14,
+                                                height: 14,
+                                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2B9348)),
+                                              )
+                                            : const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.message, size: 14, color: Color(0xFF2B9348)),
+                                                  SizedBox(width: 4),
+                                                  Text('Message', style: TextStyle(color: Color(0xFF2B9348), fontSize: 12, fontWeight: FontWeight.bold)),
+                                                ],
+                                              ),
+                                      ),
+                                    );
                                   },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE8F8EE),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.message, size: 14, color: Color(0xFF2B9348)),
-                                        SizedBox(width: 4),
-                                        Text('Message', style: TextStyle(color: Color(0xFF2B9348), fontSize: 12, fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
                                 ),
                               ],
                             ],
