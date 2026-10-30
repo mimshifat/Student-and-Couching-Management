@@ -14,6 +14,9 @@ class Exam {
   // Snapshot of batch details at the time of exam creation/update
   final Map<String, dynamic>? batchSnapshot;
 
+  // Number of results entered with marks or attendance
+  final int? enteredResultsCount;
+
   Exam({
     this.id,
     required this.batchId,
@@ -25,7 +28,11 @@ class Exam {
     required this.createdAt,
     this.batchName,
     this.batchSnapshot,
+    this.enteredResultsCount,
   });
+
+  /// True if at least one student has marks or absent status entered
+  bool get hasEnteredResults => (enteredResultsCount ?? 0) > 0;
 
   // --- Snapshot getters ---
   String? get snapshotBatchName => batchSnapshot?['name'] as String?;
@@ -63,6 +70,7 @@ class Exam {
     DateTime? createdAt,
     String? batchName,
     Map<String, dynamic>? batchSnapshot,
+    int? enteredResultsCount,
   }) {
     return Exam(
       id: id ?? this.id,
@@ -75,6 +83,7 @@ class Exam {
       createdAt: createdAt ?? this.createdAt,
       batchName: batchName ?? this.batchName,
       batchSnapshot: batchSnapshot ?? this.batchSnapshot,
+      enteredResultsCount: enteredResultsCount ?? this.enteredResultsCount,
     );
   }
 }

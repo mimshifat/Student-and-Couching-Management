@@ -15,6 +15,7 @@ class ExamModel extends Exam {
     required super.createdAt,
     super.batchName,
     super.batchSnapshot,
+    super.enteredResultsCount,
   });
 
   factory ExamModel.fromEntity(Exam entity) {
@@ -29,6 +30,7 @@ class ExamModel extends Exam {
       createdAt: entity.createdAt,
       batchName: entity.batchName,
       batchSnapshot: entity.batchSnapshot,
+      enteredResultsCount: entity.enteredResultsCount,
     );
   }
 
@@ -61,6 +63,7 @@ class ExamModel extends Exam {
       createdAt: DateUtilsHelper.parseFromDb(map['created_at']),
       batchName: finalBatchName,
       batchSnapshot: snapshot,
+      enteredResultsCount: (map['entered_results_count'] as num?)?.toInt(),
     );
   }
 

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/exam_provider.dart';
+import '../../domain/entities/exam.dart';
 import '../../../batch/presentation/providers/batch_provider.dart';
 import 'exam_form_screen.dart';
 import 'result_entry_screen.dart';
@@ -351,15 +352,38 @@ class _ExamListScreenState extends State<ExamListScreen> {
 
 
 
-  Widget _buildExamCard(dynamic exam, ExamProvider provider) {
-    // Determine status based on date
-    final today = DateTime.now();
-    final examDate = exam.examDate;
-    final isCompleted = examDate.isBefore(today) || (examDate.year == today.year && examDate.month == today.month && examDate.day == today.day);
+  Widget _buildExamCard(Exam exam, ExamProvider provider) {
+    // Determine status based on marks entered and date:
+    // 1. If results with marks/absent are entered -> 'Completed'
+    // 2. Else if exam date is strictly in the future -> 'Upcoming'
+    // 3. Else (exam date is today or in the past, but no marks entered) -> 'Needs Marks'
+    final now = DateTime.now();
+    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    final isUpcoming = exam.examDate.isAfter(todayEnd);
+    final hasMarks = exam.hasEnteredResults;
 
-    final statusText = isCompleted ? 'Completed' : 'Upcoming';
-    final statusBgColor = isCompleted ? const Color(0xFFE8F8EE) : const Color(0xFFEEECFA); // Green vs Purple-ish
-    final statusTextColor = isCompleted ? const Color(0xFF2B9348) : const Color(0xFF5A52B8);
+    final String statusText;
+    final Color statusBgColor;
+    final Color statusTextColor;
+
+    if (hasMarks) {
+      statusText = 'Completed';
+      statusBgColor = const Color(0xFFE8F8EE); // Green
+      statusTextColor = const Color(0xFF2B9348);
+    } else if (isUpcoming) {
+      statusText = 'Upcoming';
+      statusBgColor = const Color(0xFFEEECFA); // Purple
+      statusTextColor = const Color(0xFF5A52B8);
+    } else {
+      statusText = 'Needs Marks';
+      statusBgColor = const Color(0xFFFFF3E0); // Warm amber
+      statusTextColor = const Color(0xFFE65100);
+    }
+
+    final fee = exam.examFee;
+    final feeText = (fee != null && fee > 0)
+        ? ' • Fee: ৳${fee == fee.truncateToDouble() ? fee.toInt() : fee}'
+        : '';
 
     return InkWell(
       onTap: () async {
@@ -407,7 +431,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Batch: ${exam.displayBatchName} • ${exam.examType}${exam.examFee != null && exam.examFee > 0 ? ' • Fee: ৳${exam.examFee == exam.examFee.truncateToDouble() ? exam.examFee.toInt() : exam.examFee}' : ''}',
+                    'Batch: ${exam.displayBatchName} • ${exam.examType}$feeText',
                     style: const TextStyle(color: Colors.black54, fontSize: 13),
                   ),
                   const SizedBox(height: 4),

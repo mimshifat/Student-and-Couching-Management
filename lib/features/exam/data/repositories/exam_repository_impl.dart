@@ -71,7 +71,8 @@ class ExamRepositoryImpl implements ExamRepository {
   // ---------------------------------------------------------------------------
   static const String _examSelect = '''
     SELECT e.*,
-           b.name AS live_batch_name
+           b.name AS live_batch_name,
+           (SELECT COUNT(*) FROM results r WHERE r.exam_id = e.id AND (r.obtained_marks IS NOT NULL OR r.is_absent = 1)) AS entered_results_count
     FROM exams e
     LEFT JOIN batches b ON e.batch_id = b.id
   ''';

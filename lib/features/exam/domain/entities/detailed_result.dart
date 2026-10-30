@@ -1,3 +1,6 @@
+
+import '../../../../core/utils/grade_utils.dart';
+
 class DetailedResult {
   final int? id;
   final int examId;
@@ -63,4 +66,14 @@ class DetailedResult {
     if (isAbsent || obtainedMarks == null || totalMarks <= 0) return null;
     return (obtainedMarks! / totalMarks) * 100;
   }
+
+  /// Letter grade based on BD GPA 5.0 scale (A+, A, A-, B, C, D, F).
+  /// Returns '-' if absent.
+  String get grade => GradeUtils.getGrade(percentage);
+
+  /// Grade point (0.00 – 5.00). Returns null if absent.
+  double? get gradePoint => GradeUtils.getGradePoint(percentage);
+
+  /// Whether the student passed this exam (>= 33%).
+  bool get isPassing => GradeUtils.isPassing(percentage);
 }

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../features/student/domain/entities/student.dart';
 import '../../features/exam/domain/entities/detailed_result.dart';
 import 'number_format_extension.dart';
+import 'grade_utils.dart';
 
 class PdfReportService {
   static Future<Uint8List> generateStudentReport({
@@ -164,68 +165,95 @@ class PdfReportService {
 
     final dateFormat = DateFormat('dd MMM yyyy');
 
-    List<String> headers = ['Date', 'Exam Title', 'Type', 'Obtained Marks', 'Total Marks', 'Percentage'];
+    List<String> headers = ['Date', 'Exam Title', 'Type', 'Obtained\nMarks', 'Total\nMarks', 'Percentage', 'Grade', 'GPA'];
     if (showBatchColumn) {
       headers.insert(1, 'Batch');
     }
 
+    // Build data rows
+    final data = results.map((r) {
+      String obtainedStr = r.isAbsent ? 'Absent' : (r.obtainedMarks?.toCleanString() ?? '-');
+      String percentageStr = '-';
+      String gradeStr = '-';
+      String gpaStr = '-';
+
+      if (!r.isAbsent && r.obtainedMarks != null && r.totalMarks > 0) {
+        percentageStr = '${((r.obtainedMarks! / r.totalMarks) * 100).toCleanString()}%';
+        gradeStr = r.grade;
+        gpaStr = GradeUtils.formatGradePoint(r.gradePoint);
+      }
+
+      List<String> row = [
+        dateFormat.format(r.examDate),
+        r.examTitle,
+        r.examType,
+        obtainedStr,
+        r.totalMarks.toCleanString(),
+        percentageStr,
+        gradeStr,
+        gpaStr,
+      ];
+
+      if (showBatchColumn) {
+        row.insert(1, r.displayBatchName);
+      }
+
+      return row;
+    }).toList();
+
+    // Center all number and status columns in the middle
+    final int colOffset = showBatchColumn ? 1 : 0;
+    final Map<int, pw.Alignment> alignments = {
+      0: pw.Alignment.center,                  // Date
+      if (showBatchColumn) 1: pw.Alignment.centerLeft, // Batch
+      1 + colOffset: pw.Alignment.centerLeft,  // Exam Title
+      2 + colOffset: pw.Alignment.center,      // Type
+      3 + colOffset: pw.Alignment.center,      // Obtained Marks (centered in middle)
+      4 + colOffset: pw.Alignment.center,      // Total Marks (centered in middle)
+      5 + colOffset: pw.Alignment.center,      // Percentage (centered in middle)
+      6 + colOffset: pw.Alignment.center,      // Grade (centered in middle)
+      7 + colOffset: pw.Alignment.center,      // GPA (centered in middle)
+    };
+
+    // Column widths specifically sized so header text never wraps awkwardly or overflows
+    final Map<int, pw.TableColumnWidth> columnWidths = showBatchColumn ? {
+      0: const pw.FixedColumnWidth(56),   // Date
+      1: const pw.FlexColumnWidth(1.4),   // Batch
+      2: const pw.FlexColumnWidth(2.6),   // Exam Title
+      3: const pw.FixedColumnWidth(38),   // Type
+      4: const pw.FixedColumnWidth(50),   // Obtained Marks
+      5: const pw.FixedColumnWidth(46),   // Total Marks
+      6: const pw.FixedColumnWidth(54),   // Percentage
+      7: const pw.FixedColumnWidth(38),   // Grade
+      8: const pw.FixedColumnWidth(36),   // GPA
+    } : {
+      0: const pw.FixedColumnWidth(60),   // Date
+      1: const pw.FlexColumnWidth(3.0),   // Exam Title (takes all remaining space)
+      2: const pw.FixedColumnWidth(40),   // Type
+      3: const pw.FixedColumnWidth(54),   // Obtained Marks
+      4: const pw.FixedColumnWidth(48),   // Total Marks
+      5: const pw.FixedColumnWidth(58),   // Percentage (wide enough so it never wraps)
+      6: const pw.FixedColumnWidth(40),   // Grade
+      7: const pw.FixedColumnWidth(38),   // GPA
+    };
+
     return pw.TableHelper.fromTextArray(
       context: null,
       headers: headers,
-      data: results.map((r) {
-        String obtainedStr = r.isAbsent ? 'Absent' : (r.obtainedMarks?.toCleanString() ?? '-');
-        String percentageStr = '-';
-        if (!r.isAbsent && r.obtainedMarks != null && r.totalMarks > 0) {
-          percentageStr = '${((r.obtainedMarks! / r.totalMarks) * 100).toCleanString()}%';
-        }
-        
-        List<String> row = [
-          dateFormat.format(r.examDate),
-          r.examTitle,
-          r.examType,
-          obtainedStr,
-          r.totalMarks.toCleanString(),
-          percentageStr,
-        ];
-        
-        if (showBatchColumn) {
-          row.insert(1, r.displayBatchName);
-        }
-        
-        return row;
-      }).toList(),
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+      data: data,
+      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 8),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.indigo900),
       rowDecoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.5))),
-      cellAlignment: pw.Alignment.centerLeft,
-      cellAlignments: showBatchColumn ? {
-        4: pw.Alignment.centerRight,
-        5: pw.Alignment.centerRight,
-        6: pw.Alignment.centerRight,
-      } : {
-        3: pw.Alignment.centerRight,
-        4: pw.Alignment.centerRight,
-        5: pw.Alignment.centerRight,
-      },
-      cellStyle: const pw.TextStyle(fontSize: 9),
-      headerHeight: 22,
-      cellHeight: 18,
-      columnWidths: showBatchColumn ? {
-        0: const pw.FixedColumnWidth(60), // Date
-        1: const pw.FlexColumnWidth(2),   // Batch
-        2: const pw.FlexColumnWidth(2.5), // Exam Title
-        3: const pw.FlexColumnWidth(1.5), // Type
-        4: const pw.FlexColumnWidth(1.5), // Obtained
-        5: const pw.FlexColumnWidth(1.5), // Total
-        6: const pw.FlexColumnWidth(1.5), // Percentage
-      } : {
-        0: const pw.FixedColumnWidth(60), // Date
-        1: const pw.FlexColumnWidth(3.5), // Exam Title
-        2: const pw.FlexColumnWidth(1.5), // Type
-        3: const pw.FlexColumnWidth(1.5), // Obtained
-        4: const pw.FlexColumnWidth(1.5), // Total
-        5: const pw.FlexColumnWidth(1.5), // Percentage
-      },
+      cellAlignment: pw.Alignment.center,
+      cellAlignments: alignments,
+      headerAlignments: alignments,
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+      headerPadding: const pw.EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+      cellStyle: const pw.TextStyle(fontSize: 8.5),
+      headerHeight: 26,
+      cellHeight: 20,
+      columnWidths: columnWidths,
+      oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey50),
     );
   }
 
@@ -244,6 +272,10 @@ class PdfReportService {
     }
     
     double overallAvg = totalAvailable > 0 ? (totalObtained / totalAvailable) * 100 : 0.0;
+    
+    // Calculate overall GPA and Grade based on BD 5.0 system
+    final overallGPA = GradeUtils.calculateOverallGPA(results);
+    final overallGrade = GradeUtils.getGradeFromGPA(overallGPA);
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),
@@ -258,6 +290,8 @@ class PdfReportService {
           _summaryItem('Absents', absents.toString()),
           _summaryItem('Total Marks', '${totalObtained.toCleanString()} / ${totalAvailable.toCleanString()}'),
           _summaryItem('Overall %', '${overallAvg.toCleanString()}%'),
+          _summaryItem('GPA', overallGPA != null ? overallGPA.toStringAsFixed(2) : '-'),
+          _summaryItem('Grade', overallGrade),
         ],
       ),
     );
