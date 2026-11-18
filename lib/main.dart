@@ -31,6 +31,7 @@ import 'features/enrollment/presentation/providers/annual_report_provider.dart';
 import 'features/enrollment/data/repositories/enrollment_repository_impl.dart' show EnrollmentRepositoryImpl;
 
 import 'features/license/data/repositories/license_repository.dart';
+import 'features/license/data/repositories/trial_repository.dart';
 import 'features/license/presentation/providers/license_provider.dart';
 
 import 'features/profile/data/repositories/profile_repository_impl.dart';
@@ -114,7 +115,7 @@ void main() async {
     runApp(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => LicenseProvider(LicenseRepository())),
+          ChangeNotifierProvider(create: (_) => LicenseProvider(LicenseRepository(), TrialRepository())),
           ChangeNotifierProvider(create: (_) => ProfileProvider(ProfileRepositoryImpl())),
           ChangeNotifierProvider(create: (_) => StudentProvider(StudentRepositoryImpl())),
           ChangeNotifierProvider(create: (_) => BatchProvider(BatchRepositoryImpl())),

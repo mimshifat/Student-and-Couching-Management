@@ -38,6 +38,32 @@ service cloud.firestore {
       allow write: if false; // Only admin can update this
     }
 
+    // Trial devices collection
+    // Tracks the first-install date per device for anti-cheat (data-clear reset prevention).
+    // A device can create its own record and update its own lastSeenAt.
+    // The critical field is trialStartDate — it can only be SET on create, never changed.
+    match /trial_devices/{deviceId} {
+      // Allow any device to read its own trial record
+      allow read: if true;
+
+      // Allow creating a new trial record (first install)
+      // The trialStartDate field is required and must be a string
+      allow create: if
+        request.resource.data.keys().hasAll(['deviceId', 'trialStartDate'])
+        && request.resource.data.trialStartDate is string
+        && request.resource.data.trialStartDate.size() > 0;
+
+      // Allow updating ONLY lastSeenAt — the trialStartDate can NEVER be changed
+      // This prevents someone from resetting their trial by updating the document
+      allow update: if
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['lastSeenAt'])
+        && request.resource.data.trialStartDate == resource.data.trialStartDate;
+
+      // No one can delete trial records from the app (admin only via console)
+      allow delete: if false;
+    }
+
     // Block all other collections by default
     match /{document=**} {
       allow read, write: if false;

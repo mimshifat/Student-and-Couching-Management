@@ -46,15 +46,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     if (_hasNavigated || !mounted) return;
     _hasNavigated = true;
 
-    if (licenseProvider.status == LicenseStatus.activated) {
-      // License is valid — check profile
+    if (licenseProvider.status == LicenseStatus.activated ||
+        licenseProvider.status == LicenseStatus.trialActive) {
+      // License valid OR trial still active — check profile and go to home
       final profileProvider = context.read<ProfileProvider>();
-      // Wait for it to load if it's still loading initially
       while (profileProvider.isLoading) {
         await Future.delayed(const Duration(milliseconds: 100));
         if (!mounted) return;
       }
-      
+
       if (profileProvider.profile != null) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
@@ -65,7 +65,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         );
       }
     } else {
-      // No valid license — show activation screen
+      // No valid license and trial expired/not found — show activation screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const LicenseActivationScreen()),
       );

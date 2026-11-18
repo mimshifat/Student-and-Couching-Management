@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_updater.dart';
 import '../../features/profile/presentation/providers/profile_provider.dart';
+import '../../features/license/presentation/providers/license_provider.dart';
+import '../../features/license/presentation/screens/license_activation_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProfileProvider>(
-      builder: (context, profileProvider, child) {
+    return Consumer2<ProfileProvider, LicenseProvider>(
+      builder: (context, profileProvider, licenseProvider, child) {
         final profile = profileProvider.profile;
         final instituteName = profile?.instituteName ?? 'Coaching Management';
         final ownerName = profile?.ownerName ?? 'Admin';
+        final isOnTrial = licenseProvider.isOnTrial;
+        final trialDays = licenseProvider.trialDaysRemaining;
 
         return Drawer(
           child: ListView(
@@ -50,6 +55,10 @@ class AppDrawer extends StatelessWidget {
                   ],
                 ),
               ),
+
+              // ── Trial countdown banner ──
+              if (isOnTrial)
+                _buildTrialBanner(context, trialDays),
           ListTile(
             leading: const Icon(Icons.home),
             title: const Text('Home'),
@@ -137,6 +146,64 @@ class AppDrawer extends StatelessWidget {
       ),
     );
       },
+    );
+  }
+
+  // ── Trial Countdown Banner ──
+  Widget _buildTrialBanner(BuildContext context, int daysRemaining) {
+    final isUrgent = daysRemaining <= 3;
+    final color = isUrgent ? AppTheme.errorColor : AppTheme.primaryColor;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LicenseActivationScreen()),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isUrgent ? Icons.warning_amber_rounded : Icons.hourglass_top_rounded,
+              color: color,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ফ্রি ট্রায়াল — $daysRemaining দিন বাকি',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
+                  Text(
+                    'লাইসেন্স কিনতে এখানে ট্যাপ করুন',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: color.withValues(alpha: 0.75),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 14, color: color),
+          ],
+        ),
+      ),
     );
   }
 }

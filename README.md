@@ -15,8 +15,8 @@ A comprehensive, offline-first Flutter application designed for teachers and coa
     *   **Auto-Backup**: Automatically sends a daily backup of your entire database to your personal Telegram via a bot. Runs reliably in the background using `WorkManager`, even when the app is closed.
     *   **Local Export/Import**: Export your SQLite database locally or import a `.db` file to restore your data. Includes worst-case scenario handling (corrupted file detection and automatic original DB rollback).
 *   **OTA (Over-The-Air) Updates**: Seamless in-app update mechanism via Firebase Firestore. Users get a prompt to download and install new versions directly from the app.
-*   **License Security System**: Device-bound license activation via Firebase. Prevents unauthorized sharing with secure Android ID binding. Works entirely offline after a one-time activation.
-*   **Fast & Offline**: Built entirely on top of SQLite, ensuring lighting-fast performance without the need for an internet connection (except for Telegram backups and initial license activation).
+*   **14-Day Free Trial & License System**: Built-in 14-day trial for new users to test and experience all features without requiring upfront registration or payment. Seamlessly transitions to a secure, device-bound lifetime license activation system powered by Firebase. Works entirely offline after initial activation.
+*   **Fast & Offline**: Built entirely on top of SQLite, ensuring lighting-fast performance without the need for an internet connection (except for Telegram backups, trial sync, and initial license activation).
 
 ## 🛠️ Tech Stack
 

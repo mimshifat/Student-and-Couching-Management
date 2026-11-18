@@ -155,6 +155,20 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
               child: Column(
                 children: [
                   const SizedBox(height: 16),
+
+                  // ── Trial status banner ──
+                  Consumer<LicenseProvider>(
+                    builder: (context, provider, _) {
+                      if (provider.status == LicenseStatus.trialExpired) {
+                        return _buildTrialExpiredBanner();
+                      }
+                      if (provider.isOnTrial) {
+                        return _buildTrialActiveBanner(provider.trialDaysRemaining);
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+
                   // Header Icon
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -503,6 +517,124 @@ class _LicenseActivationScreenState extends State<LicenseActivationScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ── Trial Expired Banner ──
+  Widget _buildTrialExpiredBanner() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.errorColor.withValues(alpha: 0.1),
+            AppTheme.errorColor.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.errorColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.timer_off_rounded,
+                    color: AppTheme.errorColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '১৪ দিনের ফ্রি ট্রায়াল শেষ হয়েছে',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.errorColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'আপনার সব ডেটা সুরক্ষিত আছে। লাইসেন্স কিনে ব্যবহার চালিয়ে যান।',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppTheme.errorColor.withValues(alpha: 0.85),
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Trial Active Banner (shown when navigated from app settings/drawer) ──
+  Widget _buildTrialActiveBanner(int daysRemaining) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryColor.withValues(alpha: 0.1),
+            AppTheme.primaryColor.withValues(alpha: 0.04),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.hourglass_top_rounded,
+                color: AppTheme.primaryColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ফ্রি ট্রায়াল চলছে — $daysRemaining দিন বাকি',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'এখনই লাইসেন্স অ্যাক্টিভ করুন এবং বিরতিহীনভাবে ব্যবহার করুন।',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppTheme.textSecondaryColor,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -83,8 +83,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _onLicenseStatusChanged() {
-    if (_licenseProvider?.status == LicenseStatus.notActivated && mounted) {
-      // License was revoked while app was running — redirect immediately
+    if (!mounted) return;
+    final status = _licenseProvider?.status;
+    if (status == LicenseStatus.notActivated ||
+        status == LicenseStatus.trialExpired) {
+      // License revoked OR trial expired while app was open — redirect immediately
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LicenseActivationScreen()),
         (route) => false,

@@ -235,14 +235,22 @@ class LicenseRepository {
           message: 'Activation blocked. This key may be invalid, disabled, or locked to another device. Please contact support.',
         );
       }
+      if (e.code == 'unavailable' ||
+          e.code == 'network-request-failed' ||
+          e.code == 'deadline-exceeded') {
+        return const ActivationResult(
+          success: false,
+          message: 'No internet connection. Please turn on Wi-Fi or Mobile Data to activate your license.',
+        );
+      }
       return ActivationResult(
         success: false,
-        message: 'Server error. Please try again later. (${e.code})',
+        message: 'Server error. Please check your internet connection and try again. (${e.code})',
       );
     } on SocketException catch (_) {
       return const ActivationResult(
         success: false,
-        message: 'No internet connection. Please check your network and try again.',
+        message: 'No internet connection. Please turn on Wi-Fi or Mobile Data to activate your license.',
       );
     } catch (e) {
       return const ActivationResult(
